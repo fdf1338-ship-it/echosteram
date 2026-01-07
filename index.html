@@ -175,16 +175,16 @@
     </div>
 
     <script>
-        // === REPLACE THIS WITH YOUR OWN FIREBASE CONFIG ===
+        // Your real Firebase config (already inserted)
         const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_PROJECT_ID.appspot.com",
-            messagingSenderId: "YOUR_SENDER_ID",
-            appId: "YOUR_APP_ID"
+          apiKey: "AIzaSyCmY_zfNcH5XnEaQxlqaTW1D8EUR670-Zo",
+          authDomain: "echostream-a102a.firebaseapp.com",
+          projectId: "echostream-a102a",
+          storageBucket: "echostream-a102a.firebasestorage.app",
+          messagingSenderId: "789062222400",
+          appId: "1:789062222400:web:73d478269135a77d7d55a5",
+          measurementId: "G-QCJ1240EC5"
         };
-        // ================================================
 
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
@@ -220,7 +220,6 @@
             document.getElementById('userHandle').textContent = '@' + (currentUser.email?.split('@')[0] || 'user');
             document.getElementById('userAvatar').textContent = (currentUser.displayName || 'U')[0].toUpperCase();
 
-            // Followers / Following count
             db.collection('followers').doc(currentUser.uid).collection('userFollowers').onSnapshot(snap => {
                 document.getElementById('followersCount').textContent = snap.size;
             });
@@ -233,7 +232,6 @@
             const seedCheck = await db.collection('system').doc('seeded').get();
             if (seedCheck.exists) return;
 
-            // Create fake users and posts
             const batch = db.batch();
             let postCount = 0;
 
@@ -242,7 +240,6 @@
                 const name = nicknames[i % nicknames.length];
                 const handle = name.toLowerCase();
 
-                // Fake user profile
                 batch.set(db.collection('users').doc(fakeUid), {
                     displayName: name,
                     handle: handle,
@@ -250,7 +247,6 @@
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
 
-                // 2 posts per fake user
                 for (let j = 0; j < 2; j++) {
                     if (postCount >= 100) break;
                     const postRef = db.collection('posts').doc();
@@ -292,7 +288,6 @@
         }
 
         function loadFeed() {
-            // Clean up old listeners
             unsubscribes.forEach(unsub => unsub());
             unsubscribes = [];
 
