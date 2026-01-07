@@ -7,28 +7,51 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
-        body { margin:0; font-family:system-ui,sans-serif; background:#f0f0f0; color:#000; }
-        .container { max-width:600px; margin:0 auto; padding:20px; text-align:center; padding-top:100px; }
-        h1 { font-size:48px; }
-        .tagline { color:#ff0000; font-size:16px; margin:20px 0; }
-        button { padding:14px 32px; background:#4285F4; color:white; border:none; border-radius:8px; font-size:18px; cursor:pointer; }
+        :root { --bg: #fff; --text: #000; --card: #fff; --border: #ddd; --accent: #1da1f2; --red: #ff0000; }
+        body.dark { --bg: #000; --text: #fff; --card: #1a1a1a; --border: #333; }
+        body { margin:0; font-family:system-ui,-apple-system,sans-serif; background:var(--bg); color:var(--text); transition:0.3s; }
+        .container { max-width:600px; margin:0 auto; text-align:center; padding-top:100px; }
+        h1 { font-size:48px; margin:0; }
+        .tagline { color:var(--red); font-size:16px; margin:15px 0 30px; font-weight:600; }
+        button { padding:12px 28px; background:var(--accent); color:white; border:none; border-radius:999px; cursor:pointer; font-size:16px; font-weight:600; }
+        button:hover { opacity:0.9; }
         #app { display:none; }
-        .header { position:fixed; top:0; left:0; right:0; background:#fff; border-bottom:1px solid #ddd; padding:10px; text-align:right; z-index:10; }
-        .post-box { margin-top:70px; padding:20px; }
-        textarea { width:100%; height:100px; padding:12px; border:1px solid #ccc; border-radius:8px; font-size:16px; resize:none; }
-        .feed { padding:20px; }
-        .post { background:white; padding:15px; margin:10px 0; border-radius:8px; box-shadow:0 2px 5px rgba(0,0,0,0.1); text-align:left; }
-        .post-header { display:flex; align-items:center; gap:12px; margin-bottom:10px; }
-        .avatar { width:48px; height:48px; border-radius:50%; background:#666; color:white; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:20px; }
-        .username { font-weight:bold; }
-        .time { margin-left:auto; color:#666; font-size:14px; }
-        .post-text { margin:10px 0; white-space:pre-wrap; }
-        .post-actions { display:flex; justify-content:space-around; color:#666; font-size:20px; margin-top:15px; }
-        .action { cursor:pointer; }
-        .modal { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.6); align-items:center; justify-content:center; z-index:20; }
-        .modal-content { background:white; padding:30px; border-radius:12px; width:90%; max-width:400px; text-align:center; }
+        .header { position:fixed; top:0; left:0; right:0; background:var(--bg); border-bottom:1px solid var(--border); padding:10px 16px; display:flex; justify-content:space-between; align-items:center; z-index:10; }
+        .logo { width:40px; height:40px; }
+        .avatar { width:48px; height:48px; border-radius:50%; object-fit:cover; background:#666; display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:bold; color:white; }
+        .bottom-nav { position:fixed; bottom:0; left:0; right:0; background:var(--bg); border-top:1px solid var(--border); display:flex; justify-content:space-around; padding:8px 0; z-index:10; }
+        .nav-item { font-size:26px; color:#666; cursor:pointer; }
+        .nav-item.active { color:var(--accent); }
+        .post-box { margin:70px 20px 80px; }
+        textarea { width:100%; min-height:100px; padding:16px; border:1px solid var(--border); border-radius:16px; background:var(--card); color:var(--text); font-size:16px; resize:none; }
+        .feed { padding-bottom:100px; }
+        .post { background:var(--card); margin:12px 20px; padding:16px; border-radius:16px; box-shadow:0 1px 3px rgba(0,0,0,0.1); }
+        .post-header { display:flex; align-items:center; gap:12px; margin-bottom:12px; }
+        .post-user { display:flex; align-items:center; gap:8px; }
+        .username { font-weight:600; }
+        .verified { color:var(--accent); }
+        .time { font-size:14px; color:#666; margin-left:auto; }
+        .post-text { margin:8px 0 16px; white-space:pre-wrap; font-size:16px; line-height:1.5; }
+        .post-actions { display:flex; justify-content:space-around; font-size:20px; color:#666; }
+        .action { cursor:pointer; display:flex; align-items:center; gap:6px; }
+        .action.liked { color:#e0245e; }
+        .action-count { font-size:14px; }
+        #settings-sidebar { position:fixed; top:0; bottom:0; right:-320px; width:320px; background:var(--card); box-shadow:-4px 0 16px rgba(0,0,0,0.2); transition:right 0.3s; z-index:20; padding:20px; overflow-y:auto; }
+        #settings-sidebar.open { right:0; }
+        .settings-header { font-size:20px; font-weight:bold; margin-bottom:20px; }
+        .settings-item { padding:16px 0; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; }
+        .switch { position:relative; display:inline-block; width:52px; height:32px; }
+        .switch input { opacity:0; width:0; height:0; }
+        .slider { position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background:#ccc; transition:0.4s; border-radius:34px; }
+        .slider:before { position:absolute; content:""; height:26px; width:26px; left:3px; bottom:3px; background:white; transition:0.4s; border-radius:50%; }
+        input:checked + .slider { background:var(--accent); }
+        input:checked + .slider:before { transform:translateX(20px); }
+        .modal { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.6); align-items:center; justify-content:center; z-index:30; }
+        .modal-content { background:var(--card); padding:32px; border-radius:16px; width:90%; max-width:400px; text-align:center; }
+        #messages-view, #profile-view, #search-view { display:none; padding:20px; margin-top:70px; }
     </style>
 </head>
 <body>
@@ -40,7 +63,11 @@
 
     <div id="app">
         <div class="header">
-            <button onclick="logout()">Logout</button>
+            <svg class="logo" viewBox="0 0 32 32">
+                <circle cx="16" cy="16" r="14" fill="none" stroke="currentColor" stroke-width="2"/>
+                <circle cx="16" cy="16" r="4" fill="var(--red)"/>
+            </svg>
+            <i class="fas fa-cog" style="font-size:26px;cursor:pointer;" onclick="toggleSettings()"></i>
         </div>
 
         <div class="post-box">
@@ -49,8 +76,46 @@
         </div>
 
         <div class="feed" id="feed"></div>
+
+        <div id="search-view">
+            <h2>Search</h2>
+            <p>Search coming soon.</p>
+        </div>
+
+        <div id="messages-view">
+            <h2>Messages</h2>
+            <p>Direct messages coming soon.</p>
+        </div>
+
+        <div id="profile-view">
+            <h2>Profile</h2>
+            <p>Your profile coming soon.</p>
+        </div>
+
+        <div class="bottom-nav">
+            <i class="fas fa-home nav-item active" onclick="switchTab('home')"></i>
+            <i class="fas fa-search nav-item" onclick="switchTab('search')"></i>
+            <i class="fas fa-envelope nav-item" onclick="switchTab('messages')"></i>
+            <i class="fas fa-user nav-item" onclick="switchTab('profile')"></i>
+        </div>
     </div>
 
+    <!-- Settings Sidebar -->
+    <div id="settings-sidebar">
+        <div class="settings-header">Settings</div>
+        <div class="settings-item">
+            <span>Dark mode</span>
+            <label class="switch">
+                <input type="checkbox" id="dark-toggle" onchange="toggleDark()">
+                <span class="slider"></span>
+            </label>
+        </div>
+        <div class="settings-item"><span>Change profile picture</span><input type="file" accept="image/*" onchange="uploadProfilePic(event)"></div>
+        <div class="settings-item"><span>About</span><span>Built with hope and a laptop</span></div>
+        <button style="background:#d33; width:100%; padding:14px; margin-top:30px; border-radius:999px;" onclick="logout()">Logout</button>
+    </div>
+
+    <!-- Username Modal -->
     <div id="username-modal" class="modal">
         <div class="modal-content">
             <h2>Pick a username</h2>
@@ -69,9 +134,10 @@
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.firestore();
+        const storage = firebase.storage();
 
         let currentUser = null;
-        let username = null;
+        let currentUserData = null;
 
         document.getElementById('google-signin').onclick = () => auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
 
@@ -80,15 +146,22 @@
                 currentUser = user;
                 document.getElementById('login-screen').style.display = 'none';
                 document.getElementById('app').style.display = 'block';
-                const doc = await db.collection('users').doc(user.uid).get();
-                if (doc.exists && doc.data().username) {
-                    username = doc.data().username;
-                } else {
-                    document.getElementById('username-modal').style.display = 'flex';
-                }
-                loadPosts();
+                await loadUserData();
+                loadFeed();
             }
         });
+
+        async function loadUserData() {
+            const doc = await db.collection('users').doc(currentUser.uid).get();
+            if (doc.exists) {
+                currentUserData = doc.data();
+                if (!currentUserData.username) {
+                    document.getElementById('username-modal').style.display = 'flex';
+                }
+            } else {
+                document.getElementById('username-modal').style.display = 'flex';
+            }
+        }
 
         async function saveUsername() {
             const input = document.getElementById('username-input').value.trim();
@@ -96,25 +169,36 @@
             const snap = await db.collection('users').where('username', '==', input).get();
             if (!snap.empty) return alert('Taken');
             await db.collection('users').doc(currentUser.uid).set({username: input}, {merge: true});
-            username = input;
+            currentUserData = {username: input};
             document.getElementById('username-modal').style.display = 'none';
-            loadPosts();
+            loadFeed();
+        }
+
+        function toggleDark() {
+            document.body.classList.toggle('dark');
+            localStorage.setItem('darkMode', document.body.classList.contains('dark'));
+        }
+
+        if (localStorage.getItem('darkMode') === 'true') {
+            document.body.classList.add('dark');
+            document.getElementById('dark-toggle').checked = true;
         }
 
         async function createPost() {
             const text = document.getElementById('post-text').value.trim();
             if (!text) return;
             await db.collection('posts').add({
-                text: text,
+                text,
                 uid: currentUser.uid,
-                username: username || currentUser.displayName || 'Anonymous',
+                username: currentUserData.username,
+                likes: 0,
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
             });
             document.getElementById('post-text').value = '';
-            loadPosts();
+            loadFeed();
         }
 
-        async function loadPosts() {
+        async function loadFeed() {
             const snap = await db.collection('posts').orderBy('timestamp', 'desc').get();
             const feed = document.getElementById('feed');
             feed.innerHTML = '';
@@ -127,12 +211,14 @@
                 div.innerHTML = `
                     <div class="post-header">
                         <div class="avatar">${firstLetter}</div>
-                        <div class="username">${userName}</div>
-                        <div class="time">${timeAgo(d.timestamp)}</div>
+                        <div class="post-user">
+                            <div class="username">${userName}</div>
+                            <div class="time">${timeAgo(d.timestamp)}</div>
+                        </div>
                     </div>
-                    <div class="post-text">${d.text || ''}</div>
+                    <div class="post-text">${d.text}</div>
                     <div class="post-actions">
-                        <div class="action"><i class="far fa-heart"></i></div>
+                        <div class="action"><i class="far fa-heart"></i> <span class="action-count">${d.likes || 0}</span></div>
                         <div class="action"><i class="far fa-comment"></i></div>
                         <div class="action"><i class="fas fa-retweet"></i></div>
                     </div>
@@ -148,6 +234,39 @@
             if (seconds < 3600) return Math.floor(seconds / 60) + 'm';
             if (seconds < 86400) return Math.floor(seconds / 3600) + 'h';
             return Math.floor(seconds / 86400) + 'd';
+        }
+
+        function toggleSettings() {
+            document.getElementById('settings-sidebar').classList.toggle('open');
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('#feed, #search-view, #messages-view, #profile-view').forEach(el => el.style.display = 'none');
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            if (tab === 'home') {
+                document.getElementById('feed').style.display = 'block';
+                document.querySelector('.fa-home').parentElement.classList.add('active');
+            } else if (tab === 'search') {
+                document.getElementById('search-view').style.display = 'block';
+                document.querySelector('.fa-search').parentElement.classList.add('active');
+            } else if (tab === 'messages') {
+                document.getElementById('messages-view').style.display = 'block';
+                document.querySelector('.fa-envelope').parentElement.classList.add('active');
+            } else if (tab === 'profile') {
+                document.getElementById('profile-view').style.display = 'block';
+                document.querySelector('.fa-user').parentElement.classList.add('active');
+            }
+        }
+
+        async function uploadProfilePic(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const ref = storage.ref(`avatars/${currentUser.uid}`);
+                await ref.put(file);
+                const url = await ref.getDownloadURL();
+                await db.collection('users').doc(currentUser.uid).update({photoURL: url});
+                alert('Profile picture updated');
+            }
         }
 
         function logout() {
