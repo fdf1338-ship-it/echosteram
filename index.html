@@ -40,11 +40,6 @@
         .action { cursor:pointer; display:flex; align-items:center; gap:6px; }
         .action.liked { color:#e0245e; }
         .action-count { font-size:14px; }
-        .comments-section { margin-top:16px; padding-top:12px; border-top:1px solid var(--border); }
-        .comment { display:flex; gap:12px; margin-top:12px; }
-        .comment-avatar { width:32px; height:32px; border-radius:50%; background:#ccc; flex-shrink:0; }
-        .comment-body { flex:1; }
-        .comment-input { width:100%; padding:10px; border:1px solid var(--border); border-radius:12px; background:var(--card); color:var(--text); margin-top:8px; }
         #settings-sidebar { position:fixed; top:0; bottom:0; right:-320px; width:320px; background:var(--card); box-shadow:-4px 0 16px rgba(0,0,0,0.2); transition:right 0.3s; z-index:20; padding:20px; overflow-y:auto; }
         #settings-sidebar.open { right:0; }
         .settings-header { font-size:20px; font-weight:bold; margin-bottom:20px; }
@@ -85,12 +80,12 @@
 
         <div id="messages-view">
             <h2>Messages</h2>
-            <div id="dm-list"></div>
+            <p>No messages yet. When someone DMs you, they'll appear here.</p>
         </div>
 
         <div id="profile-view">
-            <h2>Profile</h2>
-            <div id="profile-content"></div>
+            <h2>Your Profile</h2>
+            <p>Profile page coming soon — shows your posts, followers, bio.</p>
         </div>
 
         <div class="bottom-nav">
@@ -111,17 +106,16 @@
                 <span class="slider"></span>
             </label>
         </div>
-        <div class="settings-item"><span>Privacy & safety</span><i class="fas fa-chevron-right"></i></div>
-        <div class="settings-item"><span>Notifications</span><i class="fas fa-chevron-right"></i></div>
-        <div class="settings-item"><span>Display</span><i class="fas fa-chevron-right"></i></div>
-        <div class="settings-item"><span>Security</span><i class="fas fa-chevron-right"></i></div>
-        <div class="settings-item"><span>Manage verified badges (Owner only)</span><i class="fas fa-chevron-right" onclick="openVerifyPanel()"></i></div>
-        <div class="settings-item"><span>Change profile picture</span><input type="file" id="profile-upload" accept="image/*" onchange="uploadProfilePic(event)"></div>
+        <div class="settings-item"><span>Privacy & safety</span><span>→</span></div>
+        <div class="settings-item"><span>Notifications</span><span>→</span></div>
+        <div class="settings-item"><span>Display</span><span>→</span></div>
+        <div class="settings-item"><span>Security</span><span>→</span></div>
+        <div class="settings-item"><span>Change profile picture</span><input type="file" accept="image/*" onchange="uploadProfilePic(event)"></div>
         <div class="settings-item"><span>About</span><span>Built with hope and a laptop</span></div>
         <button style="background:#d33; width:100%; padding:14px; margin-top:30px; border-radius:999px;" onclick="logout()">Logout</button>
     </div>
 
-    <!-- Username & Avatar Modal -->
+    <!-- Username Modal -->
     <div id="username-modal" class="modal">
         <div class="modal-content">
             <h2>Complete your profile</h2>
@@ -139,9 +133,7 @@
             apiKey: "AIzaSyCmY_zfNcH5XnEaQxlqaTW1D8EUR670-Zo",
             authDomain: "echostream-a102a.firebaseapp.com",
             projectId: "echostream-a102a",
-            storageBucket: "echostream-a102a.appspot.com",
-            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-            appId: "YOUR_APP_ID"
+            storageBucket: "echostream-a102a.appspot.com"
         };
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
@@ -217,7 +209,7 @@
 
         if (localStorage.getItem('darkMode') === 'true') {
             document.body.classList.add('dark');
-            document.getElementById('dark-toggle').checked = true;
+            if (document.getElementById('dark-toggle')) document.getElementById('dark-toggle').checked = true;
         }
 
         async function createPost() {
@@ -229,7 +221,6 @@
                 username: currentUserData.username,
                 photoURL: currentUserData.photoURL,
                 likes: [],
-                comments: [],
                 reposts: [],
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
             });
@@ -260,11 +251,11 @@
                             <i class="fa${isLiked ? 's' : 'r'} fa-heart"></i>
                             <span class="action-count">${d.likes?.length || 0}</span>
                         </div>
-                        <div class="action" onclick="openComment('${doc.id}')">
+                        <div class="action">
                             <i class="far fa-comment"></i>
-                            <span class="action-count">${d.comments?.length || 0}</span>
+                            <span class="action-count">0</span>
                         </div>
-                        <div class="action" onclick="repost('${doc.id}')">
+                        <div class="action">
                             <i class="fas fa-retweet"></i>
                             <span class="action-count">${d.reposts?.length || 0}</span>
                         </div>
@@ -272,8 +263,6 @@
                 `;
                 feed.appendChild(div);
             });
-            // Echo_AI replies sometimes
-            if (Math.random() < 0.2) echoAIThink();
         }
 
         function timeAgo(ts) {
@@ -296,33 +285,6 @@
             }
             await ref.update({likes});
             loadFeed();
-        }
-
-        async function repost(postId) {
-            // Simple repost - create new post with reference
-            const original = await db.collection('posts').doc(postId).get();
-            await db.collection('posts').add({
-                text: original.data().text,
-                uid: currentUser.uid,
-                username: currentUserData.username,
-                originalPost: postId,
-                isRepost: true,
-                timestamp: firebase.firestore.FieldValue.serverTimestamp()
-            });
-            loadFeed();
-        }
-
-        async function echoAIThink() {
-            // Simple AI bot
-            const messages = ["they're watching", "nice try", "you sure about that?", "i saw that", "be careful"];
-            const random = messages[Math.floor(Math.random() * messages.length)];
-            await db.collection('posts').add({
-                text: random,
-                uid: "echo_ai_bot",
-                username: "Echo_AI",
-                verified: true,
-                timestamp: firebase.firestore.FieldValue.serverTimestamp()
-            });
         }
 
         function toggleSettings() {
@@ -351,7 +313,8 @@
                 await ref.put(file);
                 const url = await ref.getDownloadURL();
                 await db.collection('users').doc(currentUser.uid).update({photoURL: url});
-                alert('Profile picture updated');
+                alert('Profile picture updated!');
+                loadFeed();
             }
         }
 
