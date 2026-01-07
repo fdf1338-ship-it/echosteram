@@ -1,326 +1,394 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EchoStream</title>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root { --bg: #fff; --text: #000; --card: #fff; --border: #ddd; --accent: #1da1f2; --red: #ff0000; }
-        body.dark { --bg: #000; --text: #fff; --card: #1a1a1a; --border: #333; }
-        body { margin:0; font-family:system-ui,-apple-system,sans-serif; background:var(--bg); color:var(--text); transition:0.3s; }
-        .container { max-width:600px; margin:0 auto; text-align:center; padding-top:100px; }
-        h1 { font-size:48px; margin:0; }
-        .tagline { color:var(--red); font-size:16px; margin:15px 0 30px; font-weight:600; }
-        button { padding:12px 28px; background:var(--accent); color:white; border:none; border-radius:999px; cursor:pointer; font-size:16px; font-weight:600; }
-        button:hover { opacity:0.9; }
-        #app { display:none; }
-        .header { position:fixed; top:0; left:0; right:0; background:var(--bg); border-bottom:1px solid var(--border); padding:10px 16px; display:flex; justify-content:space-between; align-items:center; z-index:10; }
-        .logo { width:40px; height:40px; animation: pulse 66s infinite linear; }
-        @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.7; } }
-        .avatar { width:48px; height:48px; border-radius:50%; object-fit:cover; background:#ccc; display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:bold; color:white; }
-        .bottom-nav { position:fixed; bottom:0; left:0; right:0; background:var(--bg); border-top:1px solid var(--border); display:flex; justify-content:space-around; padding:8px 0; z-index:10; }
-        .nav-item { font-size:26px; color:#666; cursor:pointer; }
-        .nav-item.active { color:var(--accent); }
-        .post-box { margin:70px 20px 80px; }
-        textarea { width:100%; min-height:100px; padding:16px; border:1px solid var(--border); border-radius:16px; background:var(--card); color:var(--text); font-size:16px; resize:none; }
-        .feed { padding-bottom:100px; }
-        .post { background:var(--card); margin:12px 20px; padding:16px; border-radius:16px; box-shadow:0 1px 3px rgba(0,0,0,0.1); }
-        .post-header { display:flex; align-items:center; gap:12px; margin-bottom:12px; }
-        .post-user { display:flex; align-items:center; gap:8px; }
-        .username { font-weight:600; }
-        .verified { color:var(--accent); }
-        .time { font-size:14px; color:#666; margin-left:auto; }
-        .post-text { margin:8px 0 16px; white-space:pre-wrap; font-size:16px; line-height:1.5; }
-        .post-actions { display:flex; justify-content:space-around; font-size:20px; color:#666; }
-        .action { cursor:pointer; display:flex; align-items:center; gap:6px; }
-        .action.liked { color:#e0245e; }
-        .action-count { font-size:14px; }
-        #settings-sidebar { position:fixed; top:0; bottom:0; right:-320px; width:320px; background:var(--card); box-shadow:-4px 0 16px rgba(0,0,0,0.2); transition:right 0.3s; z-index:20; padding:20px; overflow-y:auto; }
-        #settings-sidebar.open { right:0; }
-        .settings-header { font-size:20px; font-weight:bold; margin-bottom:20px; }
-        .settings-item { padding:16px 0; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; }
-        .switch { position:relative; display:inline-block; width:52px; height:32px; }
-        .switch input { opacity:0; width:0; height:0; }
-        .slider { position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background:#ccc; transition:0.4s; border-radius:34px; }
-        .slider:before { position:absolute; content:""; height:26px; width:26px; left:3px; bottom:3px; background:white; transition:0.4s; border-radius:50%; }
-        input:checked + .slider { background:var(--accent); }
-        input:checked + .slider:before { transform:translateX(20px); }
-        .modal { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.6); align-items:center; justify-content:center; z-index:30; }
-        .modal-content { background:var(--card); padding:32px; border-radius:16px; width:90%; max-width:400px; text-align:center; }
-        #messages-view, #profile-view { display:none; padding:20px; margin-top:70px; }
-    </style>
-</head>
-<body>
-    <div id="login-screen" class="container">
-        <h1>EchoStream</h1>
-        <p class="tagline">The feed they don't want you seeing.</p>
-        <button id="google-signin">Sign in with Google</button>
+<!-- Main App -->
+<div id="app">
+    <div class="header">
+        <svg class="logo" viewBox="0 0 32 32">
+            <circle cx="16" cy="16" r="14" fill="none" stroke="currentColor" stroke-width="2"/>
+            <circle cx="16" cy="16" r="4" fill="var(--red)"/>
+        </svg>
+        <i class="fas fa-cog" style="font-size:26px;cursor:pointer;" onclick="toggleSettings()"></i>
     </div>
 
-    <div id="app">
-        <div class="header">
-            <svg class="logo" viewBox="0 0 32 32">
-                <circle cx="16" cy="16" r="14" fill="none" stroke="currentColor" stroke-width="2"/>
-                <circle cx="16" cy="16" r="4" fill="var(--red)"/>
-            </svg>
-            <i class="fas fa-cog" style="font-size:26px;cursor:pointer;" onclick="toggleSettings()"></i>
-        </div>
-
-        <div class="post-box">
-            <textarea id="post-text" placeholder="What's happening?"></textarea>
-            <button onclick="createPost()">Post</button>
-        </div>
-
-        <div class="feed" id="feed"></div>
-
-        <div id="messages-view">
-            <h2>Messages</h2>
-            <p>No messages yet. When someone DMs you, they'll appear here.</p>
-        </div>
-
-        <div id="profile-view">
-            <h2>Your Profile</h2>
-            <p>Profile page coming soon — shows your posts, followers, bio.</p>
-        </div>
-
-        <div class="bottom-nav">
-            <i class="fas fa-home nav-item active" onclick="switchTab('home')"></i>
-            <i class="fas fa-search nav-item" onclick="switchTab('search')"></i>
-            <i class="fas fa-envelope nav-item" onclick="switchTab('messages')"></i>
-            <i class="fas fa-user nav-item" onclick="switchTab('profile')"></i>
-        </div>
+    <div class="post-box">
+        <textarea id="post-text" placeholder="What's happening?"></textarea>
+        <button onclick="createPost()">Post</button>
     </div>
 
-    <!-- Settings Sidebar -->
-    <div id="settings-sidebar">
-        <div class="settings-header">Settings</div>
-        <div class="settings-item">
-            <span>Dark mode</span>
-            <label class="switch">
-                <input type="checkbox" id="dark-toggle" onchange="toggleDark()">
-                <span class="slider"></span>
-            </label>
-        </div>
-        <div class="settings-item"><span>Privacy & safety</span><span>→</span></div>
-        <div class="settings-item"><span>Notifications</span><span>→</span></div>
-        <div class="settings-item"><span>Display</span><span>→</span></div>
-        <div class="settings-item"><span>Security</span><span>→</span></div>
-        <div class="settings-item"><span>Change profile picture</span><input type="file" accept="image/*" onchange="uploadProfilePic(event)"></div>
-        <div class="settings-item"><span>About</span><span>Built with hope and a laptop</span></div>
-        <button style="background:#d33; width:100%; padding:14px; margin-top:30px; border-radius:999px;" onclick="logout()">Logout</button>
+    <div class="feed" id="feed"></div>
+
+    <!-- Search View -->
+    <div id="search-view">
+        <input id="search-input" placeholder="Search posts..." style="width:100%; padding:12px; border:1px solid var(--border); border-radius:12px; margin-bottom:20px;"/>
+        <div id="search-results"></div>
     </div>
 
-    <!-- Username Modal -->
-    <div id="username-modal" class="modal">
-        <div class="modal-content">
-            <h2>Complete your profile</h2>
-            <div style="margin:20px 0;">
-                <div class="avatar" id="avatar-preview">?</div>
-                <input type="file" id="avatar-upload" accept="image/*" onchange="previewAvatar(event)" style="margin-top:12px;">
-            </div>
-            <input id="username-input" placeholder="@username" maxlength="20" style="width:100%; padding:12px; font-size:16px; margin:15px 0; border-radius:12px; border:1px solid var(--border);"/>
-            <button onclick="saveProfile()">Save & Continue</button>
-        </div>
+    <!-- Messages View -->
+    <div id="messages-view">
+        <h2>Messages</h2>
+        <div id="dm-list"></div>
     </div>
 
-    <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyCmY_zfNcH5XnEaQxlqaTW1D8EUR670-Zo",
-            authDomain: "echostream-a102a.firebaseapp.com",
-            projectId: "echostream-a102a",
-            storageBucket: "echostream-a102a.appspot.com"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const db = firebase.firestore();
-        const storage = firebase.storage();
+    <!-- Profile View -->
+    <div id="profile-view">
+        <div style="text-align:center; margin:20px 0;">
+            <div class="avatar" id="profile-avatar" style="margin:0 auto; width:80px; height:80px;"></div>
+            <h2 id="profile-username"></h2>
+            <p id="profile-bio"></p>
+        </div>
+        <div id="profile-posts"></div>
+    </div>
 
-        let currentUser = null;
-        let currentUserData = null;
+    <div class="bottom-nav">
+        <i class="fas fa-home nav-item active" onclick="switchTab('home')"></i>
+        <i class="fas fa-search nav-item" onclick="switchTab('search')"></i>
+        <i class="fas fa-envelope nav-item" onclick="switchTab('messages')"></i>
+        <i class="fas fa-user nav-item" onclick="switchTab('profile')"></i>
+    </div>
+</div>
 
-        document.getElementById('google-signin').onclick = () => auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+<!-- Settings Sidebar -->
+<div id="settings-sidebar">
+    <div class="settings-header">Settings</div>
+    <div class="settings-item">
+        <span>Dark mode</span>
+        <label class="switch">
+            <input type="checkbox" id="dark-toggle" onchange="toggleDark()">
+            <span class="slider"></span>
+        </label>
+    </div>
+    <div class="settings-item"><span>Privacy & safety</span><span>Public</span></div>
+    <div class="settings-item"><span>Notifications</span><span>All on</span></div>
+    <div class="settings-item"><span>Display</span><span>Standard</span></div>
+    <div class="settings-item"><span>Security</span><span>2FA off</span></div>
+    <div class="settings-item"><span>Manage verified badges (Owner only)</span><span onclick="toggleVerifyPanel()">→</span></div>
+    <div class="settings-item"><span>Change profile picture</span><input type="file" accept="image/*" onchange="uploadProfilePic(event)"></div>
+    <div class="settings-item"><span>Update bio</span><input id="bio-input" placeholder="Your bio" style="width:100%;"></div>
+    <button style="background:var(--accent); width:100%; padding:14px; margin-top:10px;" onclick="updateBio()">Save bio</button>
+    <div class="settings-item"><span>About</span><span>Built with hope and a laptop</span></div>
+    <button style="background:#d33; width:100%; padding:14px; margin-top:30px; border-radius:999px;" onclick="logout()">Logout</button>
+</div>
 
-        auth.onAuthStateChanged(async user => {
-            if (user) {
-                currentUser = user;
-                document.getElementById('login-screen').style.display = 'none';
-                document.getElementById('app').style.display = 'block';
-                await loadUserData();
-                loadFeed();
-            }
-        });
+<!-- Owner Verified Panel -->
+<div id="verify-panel">
+    <h2>Manage Verified Badges</h2>
+    <div id="user-list"></div>
+    <button style="background:#666; width:100%; margin-top:20px;" onclick="toggleVerifyPanel()">Close</button>
+</div>
 
-        async function loadUserData() {
-            const doc = await db.collection('users').doc(currentUser.uid).get();
-            if (doc.exists) {
-                currentUserData = doc.data();
-                if (!currentUserData.username) {
-                    document.getElementById('username-modal').style.display = 'flex';
-                }
-            } else {
+<!-- Username Modal -->
+<div id="username-modal" class="modal">
+    <div class="modal-content">
+        <h2>Complete your profile</h2>
+        <div style="margin:20px 0;">
+            <div class="avatar" id="avatar-preview">?</div>
+            <input type="file" id="avatar-upload" accept="image/*" onchange="previewAvatar(event)" style="margin-top:12px;">
+        </div>
+        <input id="username-input" placeholder="@username" maxlength="20" style="width:100%; padding:12px; font-size:16px; margin:15px 0; border-radius:12px; border:1px solid var(--border);"/>
+        <button onclick="saveProfile()">Save & Continue</button>
+    </div>
+</div>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyCmY_zfNcH5XnEaQxlqaTW1D8EUR670-Zo",
+        authDomain: "echostream-a102a.firebaseapp.com",
+        projectId: "echostream-a102a",
+        storageBucket: "echostream-a102a.appspot.com"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    const storage = firebase.storage();
+
+    let currentUser = null;
+    let currentUserData = null;
+
+    document.getElementById('google-signin').onclick = () => auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+
+    auth.onAuthStateChanged(async user => {
+        if (user) {
+            currentUser = user;
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('app').style.display = 'block';
+            await loadUserData();
+            loadFeed();
+            loadProfile();
+        } else {
+            document.getElementById('login-screen').style.display = 'block';
+            document.getElementById('app').style.display = 'none';
+        }
+    });
+
+    async function loadUserData() {
+        const doc = await db.collection('users').doc(currentUser.uid).get();
+        if (doc.exists) {
+            currentUserData = doc.data();
+            if (!currentUserData.username) {
                 document.getElementById('username-modal').style.display = 'flex';
             }
+        } else {
+            document.getElementById('username-modal').style.display = 'flex';
+        }
+    }
+
+    function previewAvatar(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (ev) => document.getElementById('avatar-preview').style.backgroundImage = `url(${ev.target.result})`;
+            reader.readAsDataURL(file);
+        }
+    }
+
+    async function saveProfile() {
+        const input = document.getElementById('username-input').value.trim().replace('@','');
+        if (input.length < 3) return alert('Username too short');
+        const snap = await db.collection('users').where('username', '==', input).get();
+        if (!snap.empty) return alert('Username taken');
+
+        let photoURL = currentUser.photoURL || null;
+        const file = document.getElementById('avatar-upload').files[0];
+        if (file) {
+            const ref = storage.ref(`avatars/${currentUser.uid}`);
+            await ref.put(file);
+            photoURL = await ref.getDownloadURL();
         }
 
-        function previewAvatar(e) {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (ev) => document.getElementById('avatar-preview').style.backgroundImage = `url(${ev.target.result})`;
-                reader.readAsDataURL(file);
-            }
-        }
+        await db.collection('users').doc(currentUser.uid).set({
+            username: input,
+            photoURL: photoURL,
+            verified: false,
+            bio: ""
+        }, {merge: true});
 
-        async function saveProfile() {
-            const input = document.getElementById('username-input').value.trim().replace('@','');
-            if (input.length < 3) return alert('Username too short');
-            const snap = await db.collection('users').where('username', '==', input).get();
-            if (!snap.empty) return alert('Username taken');
+        currentUserData = {username: input, photoURL, verified: false, bio: ""};
+        document.getElementById('username-modal').style.display = 'none';
+        loadFeed();
+    }
 
-            let photoURL = currentUser.photoURL || null;
-            const file = document.getElementById('avatar-upload').files[0];
-            if (file) {
-                const ref = storage.ref(`avatars/${currentUser.uid}`);
-                await ref.put(file);
-                photoURL = await ref.getDownloadURL();
-            }
+    function toggleDark() {
+        document.body.classList.toggle('dark');
+        localStorage.setItem('darkMode', document.body.classList.contains('dark'));
+    }
 
-            await db.collection('users').doc(currentUser.uid).set({
-                username: input,
-                photoURL: photoURL,
-                verified: false,
-                bio: ""
-            }, {merge: true});
+    if (localStorage.getItem('darkMode') === 'true') {
+        document.body.classList.add('dark');
+        document.getElementById('dark-toggle').checked = true;
+    }
 
-            currentUserData = {username: input, photoURL, verified: false};
-            document.getElementById('username-modal').style.display = 'none';
-            loadFeed();
-        }
+    async function createPost() {
+        const text = document.getElementById('post-text').value.trim();
+        if (!text) return;
+        await db.collection('posts').add({
+            text,
+            uid: currentUser.uid,
+            username: currentUserData.username,
+            photoURL: currentUserData.photoURL,
+            likes: [],
+            comments: [],
+            reposts: [],
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        document.getElementById('post-text').value = '';
+        loadFeed();
+    }
 
-        function toggleDark() {
-            document.body.classList.toggle('dark');
-            localStorage.setItem('darkMode', document.body.classList.contains('dark'));
-        }
-
-        if (localStorage.getItem('darkMode') === 'true') {
-            document.body.classList.add('dark');
-            if (document.getElementById('dark-toggle')) document.getElementById('dark-toggle').checked = true;
-        }
-
-        async function createPost() {
-            const text = document.getElementById('post-text').value.trim();
-            if (!text) return;
-            await db.collection('posts').add({
-                text,
-                uid: currentUser.uid,
-                username: currentUserData.username,
-                photoURL: currentUserData.photoURL,
-                likes: [],
-                reposts: [],
-                timestamp: firebase.firestore.FieldValue.serverTimestamp()
-            });
-            document.getElementById('post-text').value = '';
-            loadFeed();
-        }
-
-        async function loadFeed() {
-            const snap = await db.collection('posts').orderBy('timestamp', 'desc').get();
-            const feed = document.getElementById('feed');
-            feed.innerHTML = '';
-            snap.forEach(doc => {
-                const d = doc.data();
-                const isLiked = d.likes?.includes(currentUser.uid);
-                const div = document.createElement('div');
-                div.className = 'post';
-                div.innerHTML = `
-                    <div class="post-header">
-                        <div class="avatar" style="background-image:url(\( {d.photoURL || ''})"> \){(d.username||'A')[0]}</div>
-                        <div class="post-user">
-                            <div class="username">\( {d.username || 'Anonymous'} \){d.verified ? '<span class="verified">✓</span>' : ''}</div>
-                            <div class="time">${timeAgo(d.timestamp)}</div>
-                        </div>
+    async function loadFeed() {
+        const snap = await db.collection('posts').orderBy('timestamp', 'desc').get();
+        const feed = document.getElementById('feed');
+        feed.innerHTML = '';
+        snap.forEach(doc => {
+            const d = doc.data();
+            const isLiked = d.likes?.includes(currentUser.uid);
+            const div = document.createElement('div');
+            div.className = 'post';
+            div.innerHTML = `
+                <div class="post-header">
+                    <div class="avatar" style="background-image:url(\( {d.photoURL || ''})"> \){(d.username||'A')[0]}</div>
+                    <div class="post-user">
+                        <div class="username">\( {d.username || 'Anonymous'} \){d.verified ? '<span class="verified">✓</span>' : ''}</div>
+                        <div class="time">${timeAgo(d.timestamp)}</div>
                     </div>
-                    <div class="post-text">${d.text}</div>
-                    <div class="post-actions">
-                        <div class="action \( {isLiked ? 'liked' : ''}" onclick="toggleLike(' \){doc.id}')">
-                            <i class="fa${isLiked ? 's' : 'r'} fa-heart"></i>
-                            <span class="action-count">${d.likes?.length || 0}</span>
-                        </div>
-                        <div class="action">
-                            <i class="far fa-comment"></i>
-                            <span class="action-count">0</span>
-                        </div>
-                        <div class="action">
-                            <i class="fas fa-retweet"></i>
-                            <span class="action-count">${d.reposts?.length || 0}</span>
-                        </div>
+                </div>
+                <div class="post-text">${d.text}</div>
+                <div class="post-actions">
+                    <div class="action \( {isLiked ? 'liked' : ''}" onclick="toggleLike(' \){doc.id}')">
+                        <i class="fa${isLiked ? 's' : 'r'} fa-heart"></i>
+                        <span class="action-count">${d.likes?.length || 0}</span>
                     </div>
-                `;
-                feed.appendChild(div);
-            });
-        }
+                    <div class="action" onclick="toggleComments('${doc.id}')">
+                        <i class="far fa-comment"></i>
+                        <span class="action-count">${d.comments?.length || 0}</span>
+                    </div>
+                    <div class="action" onclick="repost('${doc.id}')">
+                        <i class="fas fa-retweet"></i>
+                        <span class="action-count">${d.reposts?.length || 0}</span>
+                    </div>
+                </div>
+                <div class="comments-section" id="comments-${doc.id}" style="display:none;">
+                    <input class="comment-input" id="comment-input-${doc.id}" placeholder="Reply...">
+                    <button onclick="addComment('${doc.id}')">Send</button>
+                    <div id="comments-list-${doc.id}"></div>
+                </div>
+            `;
+            feed.appendChild(div);
+        });
+        // AI reply chance
+        if (Math.random() < 0.2) echoAIReply(snap.docs[0].id); // Reply to the newest post
+    }
 
-        function timeAgo(ts) {
-            if (!ts) return 'now';
-            const seconds = Math.floor((Date.now() - ts.toDate()) / 1000);
-            if (seconds < 60) return seconds + 's';
-            if (seconds < 3600) return Math.floor(seconds / 60) + 'm';
-            if (seconds < 86400) return Math.floor(seconds / 3600) + 'h';
-            return Math.floor(seconds / 86400) + 'd';
-        }
+    async function echoAIReply(postId) {
+        const messages = ["Interesting point.", "I see what you mean.", "That's thought-provoking.", "Be careful what you wish for."];
+        const random = messages[Math.floor(Math.random() * messages.length)];
+        await addComment(postId, random, 'Echo_AI', true);
+    }
 
-        async function toggleLike(postId) {
-            const ref = db.collection('posts').doc(postId);
-            const doc = await ref.get();
-            const likes = doc.data().likes || [];
-            if (likes.includes(currentUser.uid)) {
-                likes.splice(likes.indexOf(currentUser.uid), 1);
-            } else {
-                likes.push(currentUser.uid);
-            }
-            await ref.update({likes});
-            loadFeed();
-        }
+    async function toggleComments(postId) {
+        const section = document.getElementById(`comments-${postId}`);
+        section.style.display = section.style.display === 'none' ? 'block' : 'none';
+        if (section.style.display === 'block') loadComments(postId);
+    }
 
-        function toggleSettings() {
-            document.getElementById('settings-sidebar').classList.toggle('open');
-        }
+    async function addComment(postId, text = null, userName = currentUserData.username, isAI = false) {
+        text = text || document.getElementById(`comment-input-${postId}`).value.trim();
+        if (!text) return;
+        const comment = {
+            text,
+            uid: isAI ? 'echo_ai' : currentUser.uid,
+            username: isAI ? 'Echo_AI' : userName,
+            photoURL: isAI ? '' : currentUserData.photoURL,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        await db.collection('posts').doc(postId).update({comments: firebase.firestore.FieldValue.arrayUnion(comment)});
+        document.getElementById(`comment-input-${postId}`).value = '';
+        loadComments(postId);
+        loadFeed(); // Refresh count
+    }
 
-        function switchTab(tab) {
-            document.querySelectorAll('#feed, #messages-view, #profile-view').forEach(el => el.style.display = 'none');
-            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-            if (tab === 'home') {
-                document.getElementById('feed').style.display = 'block';
-                document.querySelector('.fa-home').parentElement.classList.add('active');
-            } else if (tab === 'messages') {
-                document.getElementById('messages-view').style.display = 'block';
-                document.querySelector('.fa-envelope').parentElement.classList.add('active');
-            } else if (tab === 'profile') {
-                document.getElementById('profile-view').style.display = 'block';
-                document.querySelector('.fa-user').parentElement.classList.add('active');
-            }
-        }
+    async function loadComments(postId) {
+        const doc = await db.collection('posts').doc(postId).get();
+        const comments = doc.data().comments || [];
+        const list = document.getElementById(`comments-list-${postId}`);
+        list.innerHTML = '';
+        comments.forEach(c => {
+            const div = document.createElement('div');
+            div.className = 'comment';
+            div.innerHTML = `
+                <div class="comment-avatar" style="background-image:url(\( {c.photoURL || ''})"> \){(c.username||'A')[0]}</div>
+                <div class="comment-body">
+                    <div class="username">${c.username}</div>
+                    <div>${c.text}</div>
+                    <div class="time">${timeAgo(c.timestamp)}</div>
+                </div>
+            `;
+            list.appendChild(div);
+        });
+    }
 
-        async function uploadProfilePic(e) {
-            const file = e.target.files[0];
-            if (file) {
-                const ref = storage.ref(`avatars/${currentUser.uid}`);
-                await ref.put(file);
-                const url = await ref.getDownloadURL();
-                await db.collection('users').doc(currentUser.uid).update({photoURL: url});
-                alert('Profile picture updated!');
-                loadFeed();
-            }
-        }
+    function timeAgo(ts) {
+        if (!ts) return 'now';
+        const seconds = Math.floor((Date.now() - ts.toDate().getTime()) / 1000);
+        if (seconds < 60) return seconds + 's';
+        if (seconds < 3600) return Math.floor(seconds / 60) + 'm';
+        if (seconds < 86400) return Math.floor(seconds / 3600) + 'h';
+        return Math.floor(seconds / 86400) + 'd';
+    }
 
-        function logout() {
-            auth.signOut();
+    async function toggleLike(postId) {
+        const ref = db.collection('posts').doc(postId);
+        const doc = await ref.get();
+        const likes = doc.data().likes || [];
+        if (likes.includes(currentUser.uid)) {
+            likes.splice(likes.indexOf(currentUser.uid), 1);
+        } else {
+            likes.push(currentUser.uid);
         }
-    </script>
-</body>
-</html>
+        await ref.update({likes});
+        loadFeed();
+    }
+
+    async function repost(postId) {
+        const original = await db.collection('posts').doc(postId).get();
+        await db.collection('posts').add({
+            text: original.data().text,
+            uid: currentUser.uid,
+            username: currentUserData.username,
+            photoURL: currentUserData.photoURL,
+            originalId: postId,
+            isRepost: true,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        loadFeed();
+    }
+
+    function toggleSettings() {
+        document.getElementById('settings-sidebar').classList.toggle('open');
+    }
+
+    function switchTab(tab) {
+        document.querySelectorAll('#feed, #search-view, #messages-view, #profile-view').forEach(el => el.style.display = 'none');
+        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+        if (tab === 'home') {
+            document.getElementById('feed').style.display = 'block';
+            document.querySelector('.fa-home').classList.add('active');
+        } else if (tab === 'search') {
+            document.getElementById('search-view').style.display = 'block';
+            document.querySelector('.fa-search').classList.add('active');
+        } else if (tab === 'messages') {
+            document.getElementById('messages-view').style.display = 'block';
+            document.querySelector('.fa-envelope').classList.add('active');
+        } else if (tab === 'profile') {
+            document.getElementById('profile-view').style.display = 'block';
+            document.querySelector('.fa-user').classList.add('active');
+            loadProfile();
+        }
+    }
+
+    async function loadProfile() {
+        document.getElementById('profile-username').textContent = currentUserData.username || 'Anonymous';
+        document.getElementById('profile-bio').textContent = currentUserData.bio || 'No bio yet';
+        document.getElementById('profile-avatar').style.backgroundImage = `url(${currentUserData.photoURL || ''})`;
+        const snap = await db.collection('posts').where('uid', '==', currentUser.uid).orderBy('timestamp', 'desc').get();
+        const posts = document.getElementById('profile-posts');
+        posts.innerHTML = '';
+        snap.forEach(doc => {
+            const d = doc.data();
+            const isLiked = d.likes?.includes(currentUser.uid);
+            const div = document.createElement('div');
+            div.className = 'post';
+            div.innerHTML = `
+                <div class="post-header">
+                    <div class="avatar" style="background-image:url(\( {d.photoURL || ''})"> \){(d.username||'A')[0]}</div>
+                    <div class="post-user">
+                        <div class="username">\( {d.username || 'Anonymous'} \){d.verified ? '<span class="verified">✓</span>' : ''}</div>
+                        <div class="time">${timeAgo(d.timestamp)}</div>
+                    </div>
+                </div>
+                <div class="post-text">${d.text}</div>
+                <div class="post-actions">
+                    <div class="action \( {isLiked ? 'liked' : ''}" onclick="toggleLike(' \){doc.id}')">
+                        <i class="fa${isLiked ? 's' : 'r'} fa-heart"></i>
+                        <span class="action-count">${d.likes?.length || 0}</span>
+                    </div>
+                    <div class="action" onclick="toggleComments('${doc.id}')">
+                        <i class="far fa-comment"></i>
+                        <span class="action-count">${d.comments?.length || 0}</span>
+                    </div>
+                    <div class="action" onclick="repost('${doc.id}')">
+                        <i class="fas fa-retweet"></i>
+                        <span class="action-count">${d.reposts?.length || 0}</span>
+                    </div>
+                </div>
+                <div class="comments-section" id="comments-${doc.id}" style="display:none;">
+                    <input class="comment-input" id="comment-input-${doc.id}" placeholder="Reply...">
+                    <button onclick="addComment('${doc.id}')">Send</button>
+                    <div id="comments-list-${doc.id}"></div>
+                </div>
+            `;
+            posts.appendChild(div);
+        });
+    }
+
+    function logout() {
+        auth.signOut();
+    }
+</script>
