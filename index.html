@@ -7,89 +7,97 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        :root { --bg: #f8f8f8; --text: #000; --accent: #4285F4; }
-        body.dark { --bg: #000; --text: #fff; --accent: #8ab4f8; }
-        body { margin:0; font-family: system-ui, sans-serif; background:var(--bg); color:var(--text); min-height:100vh; transition:0.3s; }
-        .container { max-width:600px; margin:0 auto; padding:20px; text-align:center; padding-top:100px; }
+        :root { --bg: #fff; --text: #000; --card: #fff; --border: #ddd; --accent: #1da1f2; --red-dot: #ff0000; }
+        body.dark { --bg: #000; --text: #fff; --card: #1a1a1a; --border: #333; }
+        body { margin:0; font-family:system-ui,sans-serif; background:var(--bg); color:var(--text); transition:0.3s; }
+        .container { max-width:600px; margin:0 auto; text-align:center; padding-top:100px; }
         h1 { font-size:48px; margin:0; }
-        .tagline { color:#ff0000; font-size:16px; margin:10px 0 30px; font-weight:600; }
-        button { padding:14px 32px; font-size:18px; background:var(--accent); color:white; border:none; border-radius:8px; cursor:pointer; }
+        .tagline { color:var(--red-dot); font-size:16px; margin:15px 0 30px; font-weight:600; }
+        button { padding:12px 24px; background:var(--accent); color:white; border:none; border-radius:8px; cursor:pointer; font-size:16px; }
         button:hover { opacity:0.9; }
         #app { display:none; }
-        .header { display:flex; justify-content:space-between; align-items:center; padding:10px 20px; border-bottom:1px solid #ddd; position:fixed; top:0; left:0; right:0; background:var(--bg); z-index:10; }
-        .logo { width:40px; }
-        .menu { cursor:pointer; font-size:24px; }
-        .post-box { margin:70px 20px 20px; }
-        textarea { width:100%; padding:12px; border:1px solid #ccc; border-radius:8px; font-size:16px; background:var(--bg); color:var(--text); }
-        .feed { max-width:600px; margin:0 auto; }
-        .post { padding:15px; border-bottom:1px solid #eee; text-align:left; }
+        .header { position:fixed; top:0; left:0; right:0; background:var(--bg); border-bottom:1px solid var(--border); padding:10px; display:flex; justify-content:space-between; align-items:center; z-index:10; }
+        .logo { width:40px; animation:pulse 66s infinite; }
+        @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.8; } }
+        .bottom-nav { position:fixed; bottom:0; left:0; right:0; background:var(--bg); border-top:1px solid var(--border); display:flex; justify-content:space-around; padding:10px 0; z-index:10; }
+        .nav-item { font-size:24px; color:var(--text); opacity:0.6; cursor:pointer; }
+        .nav-item.active { opacity:1; color:var(--accent); }
+        .post-box { margin:70px 20px 80px; }
+        textarea { width:100%; height:80px; padding:12px; border:1px solid var(--border); border-radius:12px; background:var(--card); color:var(--text); font-size:16px; resize:none; }
+        .feed { padding-bottom:100px; }
+        .post { background:var(--card); margin:12px 20px; padding:15px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.1); }
+        .post-header { display:flex; justify-content:space-between; align-items:center; }
         .username { font-weight:bold; }
-        .verified { color:#1da1f2; margin-left:4px; }
-        #modal, #username-modal { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.7); align-items:center; justify-content:center; }
-        .modal-content { background:var(--bg); padding:30px; border-radius:12px; width:90%; max-width:400px; text-align:center; }
-        .settings-item { padding:10px 0; display:flex; justify-content:space-between; align-items:center; }
+        .verified { color:var(--accent); margin-left:5px; }
+        .time { font-size:12px; color:#666; }
+        .post-actions { display:flex; justify-content:space-around; margin-top:12px; color:#666; font-size:20px; }
+        .action { cursor:pointer; }
+        .action:hover { color:var(--accent); }
+        .comments { margin-top:10px; padding-left:20px; border-left:2px solid var(--border); }
+        .comment { margin:8px 0; font-size:14px; }
+        .sticker { font-size:24px; cursor:pointer; }
+        #settings-sidebar { position:fixed; top:0; bottom:0; right:-300px; width:300px; background:var(--card); box-shadow:-2px 0 10px rgba(0,0,0,0.2); transition:0.3s; z-index:20; padding:20px; overflow-y:auto; }
+        #settings-sidebar.open { right:0; }
+        .settings-section { margin:20px 0; }
+        .settings-item { display:flex; justify-content:space-between; padding:12px 0; border-bottom:1px solid var(--border); }
+        .modal { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.7); align-items:center; justify-content:center; z-index:30; }
+        .modal-content { background:var(--card); padding:30px; border-radius:12px; width:90%; max-width:400px; text-align:center; }
     </style>
 </head>
 <body>
-    <!-- Logo -->
-    <svg class="logo" style="display:none;" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="16" cy="16" r="14" fill="none" stroke="currentColor" stroke-width="2"/>
-        <path d="M 16 8 Q 16 22 16 8" stroke="#ff0000" stroke-width="3" fill="none" stroke-linecap="round"/>
-    </svg>
-
     <div id="login-screen" class="container">
         <h1>EchoStream</h1>
         <p class="tagline">The feed they don't want you seeing.</p>
         <button id="google-signin">Sign in with Google</button>
-        <p style="margin-top:20px; color:#666;">New accounts are created automatically</p>
     </div>
 
     <div id="app">
         <div class="header">
-            <svg class="logo" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+            <svg class="logo" viewBox="0 0 32 32">
                 <circle cx="16" cy="16" r="14" fill="none" stroke="currentColor" stroke-width="2"/>
-                <path d="M 16 8 Q 16 22 16 8" stroke="#ff0000" stroke-width="3" fill="none" stroke-linecap="round"/>
+                <circle cx="16" cy="16" r="4" fill="var(--red-dot)"/>
             </svg>
-            <div class="menu" onclick="document.getElementById('settings-modal').style.display='flex'">☰</div>
+            <i class="fas fa-cog menu" onclick="document.getElementById('settings-sidebar').classList.toggle('open')"></i>
         </div>
 
         <div class="post-box">
             <textarea id="post-text" placeholder="What's happening?"></textarea>
-            <button style="margin-top:10px; width:100%;" onclick="post()">Post</button>
+            <button onclick="post()">Post</button>
         </div>
 
         <div class="feed" id="feed"></div>
-    </div>
 
-    <!-- Username modal -->
-    <div id="username-modal">
-        <div class="modal-content">
-            <h2>Choose your username</h2>
-            <input id="username-input" placeholder="@username" maxlength="20"/>
-            <button style="margin-top:20px;" onclick="saveUsername()">Save</button>
-            <button style="margin-left:10px; background:#666;" onclick="skipUsername()">Skip for now</button>
+        <div class="bottom-nav">
+            <i class="fas fa-home nav-item active" onclick="showView('feed')"></i>
+            <i class="fas fa-search nav-item" onclick="showView('search')"></i>
+            <i class="fas fa-envelope nav-item" onclick="showView('messages')"></i>
+            <i class="fas fa-user nav-item" onclick="showView('profile')"></i>
         </div>
     </div>
 
-    <!-- Settings modal -->
-    <div id="settings-modal">
+    <!-- Settings Sidebar -->
+    <div id="settings-sidebar">
+        <h2>Settings</h2>
+        <div class="settings-section">
+            <div class="settings-item"><span>Dark mode</span><input type="checkbox" id="dark-toggle" onchange="toggleDark()"/></div>
+            <div class="settings-item"><span>Privacy</span><span>Public</span></div>
+            <div class="settings-item"><span>Notifications</span><span>On</span></div>
+            <div class="settings-item"><span>Display</span><span>Standard</span></div>
+            <div class="settings-item"><span>Security</span><span>2FA off</span></div>
+            <div class="settings-item"><span>About</span><span>Built with hope and a laptop</span></div>
+        </div>
+        <button style="background:#d33; width:100%;" onclick="logout()">Logout</button>
+    </div>
+
+    <!-- Username Modal -->
+    <div id="username-modal" class="modal">
         <div class="modal-content">
-            <h2>Settings</h2>
-            <div class="settings-item">
-                <span>Dark mode</span>
-                <label><input type="checkbox" id="dark-toggle" onchange="toggleDark()"/></label>
-            </div>
-            <div class="settings-item">
-                <span>Privacy</span>
-                <span>Public</span>
-            </div>
-            <div class="settings-item">
-                <span>About</span>
-                <span>Built with hope and a laptop</span>
-            </div>
-            <button style="margin-top:30px; background:#d33;" onclick="logout()">Logout</button>
-            <button style="margin-top:10px; background:#666;" onclick="closeModal('settings-modal')">Close</button>
+            <h2>Choose username</h2>
+            <input id="username-input" placeholder="@username" maxlength="20"/>
+            <button onclick="saveUsername()">Save</button>
+            <button onclick="skipUsername()">Skip</button>
         </div>
     </div>
 
@@ -109,17 +117,13 @@
         let currentUser = null;
         let username = null;
 
-        document.getElementById('google-signin').addEventListener('click', () => {
-            const provider = new firebase.auth.GoogleAuthProvider();
-            auth.signInWithPopup(provider);
-        });
+        document.getElementById('google-signin').onclick = () => auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
 
         auth.onAuthStateChanged(user => {
             if (user) {
                 currentUser = user;
                 document.getElementById('login-screen').style.display = 'none';
                 document.getElementById('app').style.display = 'block';
-                document.querySelector('.logo').style.display = 'block';
                 checkUsername();
                 loadPosts();
             }
@@ -127,42 +131,47 @@
 
         async function checkUsername() {
             const doc = await db.collection('users').doc(currentUser.uid).get();
-            if (doc.exists && doc.data().username) {
-                username = doc.data().username;
-            } else {
-                document.getElementById('username-modal').style.display = 'flex';
-            }
+            if (doc.exists && doc.data().username) username = doc.data().username;
+            else document.getElementById('username-modal').style.display = 'flex';
         }
 
         async function saveUsername() {
-            const input = document.getElementById('username-input').value.trim();
+            const input = document.getElementById('username-input').value.trim().replace('@','');
             if (input) {
-                await db.collection('users').doc(currentUser.uid).set({ username: input, verified: false }, { merge: true });
-                username = input;
-                closeModal('username-modal');
+                const snap = await db.collection('users').where('username', '==', input).get();
+                if (snap.empty) {
+                    await db.collection('users').doc(currentUser.uid).set({username: input, verified: false}, {merge:true});
+                    username = input;
+                    document.getElementById('username-modal').style.display = 'none';
+                    loadPosts();
+                } else alert('Username taken');
             }
         }
 
         function skipUsername() {
-            closeModal('username-modal');
             username = 'Anonymous';
-        }
-
-        function closeModal(id) {
-            document.getElementById(id).style.display = 'none';
+            document.getElementById('username-modal').style.display = 'none';
         }
 
         function toggleDark() {
             document.body.classList.toggle('dark');
+            localStorage.setItem('dark', document.body.classList.contains('dark'));
+        }
+
+        if (localStorage.getItem('dark') === 'true') {
+            document.body.classList.add('dark');
+            document.getElementById('dark-toggle').checked = true;
         }
 
         async function post() {
             const text = document.getElementById('post-text').value.trim();
-            if (text && currentUser) {
+            if (text) {
                 await db.collection('posts').add({
-                    text: text,
+                    text,
                     uid: currentUser.uid,
                     username: username || currentUser.displayName,
+                    likes: 0,
+                    comments: [],
                     timestamp: firebase.firestore.FieldValue.serverTimestamp()
                 });
                 document.getElementById('post-text').value = '';
@@ -171,26 +180,47 @@
         }
 
         async function loadPosts() {
-            const snapshot = await db.collection('posts').orderBy('timestamp', 'desc').get();
+            const snap = await db.collection('posts').orderBy('timestamp','desc').get();
             const feed = document.getElementById('feed');
             feed.innerHTML = '';
-            snapshot.forEach(doc => {
-                const data = doc.data();
+            snap.forEach(doc => {
+                const d = doc.data();
                 const div = document.createElement('div');
                 div.className = 'post';
                 div.innerHTML = `
-                    <div class="username">${data.username || 'Anonymous'}
-                        ${data.verified ? '<span class="verified">✓</span>' : ''}
+                    <div class="post-header">
+                        <div><span class="username">\( {d.username}</span> \){d.verified ? '<span class="verified">✓</span>' : ''}</div>
+                        <span class="time">${timeAgo(d.timestamp)}</span>
                     </div>
-                    <div>${data.text}</div>
+                    <div class="post-text">${d.text}</div>
+                    <div class="post-actions">
+                        <i class="far fa-heart action" onclick="like('\( {doc.id}')"> \){d.likes || 0}</i>
+                        <i class="far fa-comment action"></i>
+                        <i class="fas fa-retweet action"></i>
+                    </div>
                 `;
                 feed.appendChild(div);
             });
         }
 
-        function logout() {
-            auth.signOut();
-            location.reload();
+        function timeAgo(ts) {
+            if (!ts) return 'now';
+            const sec = (Date.now() - ts.toDate()) / 1000;
+            if (sec < 60) return Math.floor(sec)+'s';
+            if (sec < 3600) return Math.floor(sec/60)+'m';
+            if (sec < 86400) return Math.floor(sec/3600)+'h';
+            return Math.floor(sec/86400)+'d';
+        }
+
+        async function like(id) {
+            await db.collection('posts').doc(id).update({likes: firebase.firestore.FieldValue.increment(1)});
+            loadPosts();
+        }
+
+        function logout() { auth.signOut(); }
+
+        function showView(view) {
+            alert(view + ' view coming soon');
         }
     </script>
 </body>
