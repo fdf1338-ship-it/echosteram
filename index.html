@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EchoStream</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background:#0d0d0d;
+            color:#e0e0e0;
+            min-height:100vh;
+        }
+        .container {
+            max-width:600px;
+            margin:0 auto;
+            padding:20px;
+        }
+        header {
+            text-align:center;
+            padding:30px 0;
+            font-size:28px;
+            font-weight:300;
+            letter-spacing:1px;
+        }
+        .card {
+            background:#1a1a1a;
+            border-radius:12px;
+            padding:20px;
+            margin-bottom:20px;
+            box-shadow:0 4px 20px rgba(0,0,0,0.4);
+        }
+        button {
+            background:#0066ff;
+            color:white;
+            border:none;
+            padding:12px 24px;
+            border-radius:8px;
+            cursor:pointer;
+            font-size:16px;
+            font-weight:600;
+        }
+        button:hover { background:#0055dd; }
+        button.secondary {
+            background:#333;
+        }
+        button.secondary:hover { background:#444; }
+        .post {
+            background:#1f1f1f;
+            padding:16px;
+            border-radius:10px;
+            margin-bottom:16px;
+            border-left:4px solid #0066ff;
+        }
+        .post-header {
+            display:flex;
+            align-items:center;
+            margin-bottom:12px;
+        }
+        .avatar {
+            width:48px;
+            height:48px;
+            border-radius:50%;
+            background:#0066ff;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            font-weight:bold;
+            font-size:20px;
+            margin-right:12px;
+        }
+        .username {
+            font-weight:600;
+            font-size:15px;
+        }
+        .handle {
+            color:#888;
+            font-size:14px;
+            margin-left:8px;
+        }
+        .timestamp {
+            color:#666;
+            font-size:13px;
+            margin-left:auto;
+        }
+        .post-content {
+            line-height:1.6;
+            margin-bottom:12px;
+            word-wrap:break-word;
+            white-space: pre-wrap;
+        }
+        .actions {
+            display:flex;
+            gap:24px;
+            color:#888;
+            font-size:14px;
+        }
+        .actions span {
+            cursor:pointer;
+            user-select:none;
+        }
+        .actions span:hover {
+            color:#0066ff;
+        }
+        .actions span.liked { color:#ff3366; }
+        .actions span.reposted { color:#00cc99; }
+        textarea {
+            width:100%;
+            padding:12px;
+            margin:10px 0;
+            border:none;
+            border-radius:8px;
+            background:#2a2a2a;
+            color:#fff;
+            font-size:16px;
+            resize:none;
+        }
+        #loginSection { display:block; }
+        #appSection { display:none; }
+        .profile-header {
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            margin-bottom:20px;
+        }
+        .stats {
+            display:flex;
+            gap:20px;
+            color:#888;
+            font-size:14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>EchoStream</header>
+
+        <div id="loginSection" class="card">
+            <h2 style="text-align:center;margin-bottom:20px;">Join EchoStream</h2>
+            <button id="googleSignIn" style="width:100%;padding:14px;">
+                Sign in with Google
+            </button>
+            <p style="text-align:center;margin-top:20px;color:#666;font-size:14px;">
+                New accounts are created automatically
+            </p>
+        </div>
+
+        <div id="appSection">
+            <div class="card profile-header">
+                <div>
+                    <div class="avatar" id="userAvatar"></div>
+                    <div class="username" id="displayName"></div>
+                    <div class="handle" id="userHandle"></div>
+                </div>
+                <div class="stats">
+                    <div><strong id="followingCount">0</strong> Following</div>
+                    <div><strong id="followersCount">0</strong> Followers</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <textarea id="postInput" placeholder="What's happening?" rows="3" maxlength="280"></textarea>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;">
+                    <span id="charCount" style="color:#888;font-size:14px;">280</span>
+                    <button onclick="createPost()">Post</button>
+                </div>
+            </div>
+
+            <div id="feed"></div>
+        </div>
+    </div>
+
+    <script>
+        // === REPLACE THIS WITH YOUR OWN FIREBASE CONFIG ===
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+        // ================================================
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+
+        const nicknames = ["NeoVibe","LunaEcho","JaxStorm","ZaraByte","KaiFrost","RivenShade","SableDrift","TalonSpark","VeraNova","DrakePulse"];
+        const postTemplates = ["Just shipped a new feature 🚀","Coffee + code = productivity ☕","Who else is grinding late?","Learning something new every day","Remote work life is the best.","Building in public is scary but worth it.","When the tests pass first try ✨","Dark mode forever 🌙","The joy of deleting code >>>","Ship it and fix later"];
+
+        let currentUser = null;
+        let unsubscribes = [];
+
+        document.getElementById('googleSignIn').onclick = () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            auth.signInWithPopup(provider);
+        };
+
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('loginSection').style.display = 'none';
+                document.getElementById('appSection').style.display = 'block';
+                setupUserProfile();
+                loadFeed();
+                seedFakeDataIfNeeded();
+            } else {
+                document.getElementById('loginSection').style.display = 'block';
+                document.getElementById('appSection').style.display = 'none';
+            }
+        });
+
+        function setupUserProfile() {
+            document.getElementById('displayName').textContent = currentUser.displayName || 'User';
+            document.getElementById('userHandle').textContent = '@' + (currentUser.email?.split('@')[0] || 'user');
+            document.getElementById('userAvatar').textContent = (currentUser.displayName || 'U')[0].toUpperCase();
+
+            // Followers / Following count
+            db.collection('followers').doc(currentUser.uid).collection('userFollowers').onSnapshot(snap => {
+                document.getElementById('followersCount').textContent = snap.size;
+            });
+            db.collection('following').doc(currentUser.uid).collection('userFollowing').onSnapshot(snap => {
+                document.getElementById('followingCount').textContent = snap.size;
+            });
+        }
+
+        async function seedFakeDataIfNeeded() {
+            const seedCheck = await db.collection('system').doc('seeded').get();
+            if (seedCheck.exists) return;
+
+            // Create fake users and posts
+            const batch = db.batch();
+            let postCount = 0;
+
+            for (let i = 0; i < 50; i++) {
+                const fakeUid = 'fake' + i;
+                const name = nicknames[i % nicknames.length];
+                const handle = name.toLowerCase();
+
+                // Fake user profile
+                batch.set(db.collection('users').doc(fakeUid), {
+                    displayName: name,
+                    handle: handle,
+                    photoURL: '',
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                // 2 posts per fake user
+                for (let j = 0; j < 2; j++) {
+                    if (postCount >= 100) break;
+                    const postRef = db.collection('posts').doc();
+                    batch.set(postRef, {
+                        authorId: fakeUid,
+                        authorName: name,
+                        authorHandle: handle,
+                        content: postTemplates[Math.floor(Math.random() * postTemplates.length)],
+                        timestamp: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000),
+                        likes: Math.floor(Math.random() * 300),
+                        reposts: Math.floor(Math.random() * 50),
+                        replies: Math.floor(Math.random() * 20)
+                    });
+                    postCount++;
+                }
+            }
+
+            batch.set(db.collection('system').doc('seeded'), { done: true });
+            await batch.commit();
+        }
+
+        function createPost() {
+            const content = document.getElementById('postInput').value.trim();
+            if (!content) return;
+
+            db.collection('posts').add({
+                authorId: currentUser.uid,
+                authorName: currentUser.displayName || 'User',
+                authorHandle: currentUser.email?.split('@')[0] || 'user',
+                content: content,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                likes: 0,
+                reposts: 0,
+                replies: 0
+            });
+
+            document.getElementById('postInput').value = '';
+            document.getElementById('charCount').textContent = '280';
+        }
+
+        function loadFeed() {
+            // Clean up old listeners
+            unsubscribes.forEach(unsub => unsub());
+            unsubscribes = [];
+
+            const feed = document.getElementById('feed');
+            feed.innerHTML = '<p style="text-align:center;color:#666;padding:40px;">Loading feed...</p>';
+
+            const unsub = db.collection('posts')
+                .orderBy('timestamp', 'desc')
+                .limit(50)
+                .onSnapshot(snapshot => {
+                    feed.innerHTML = '';
+                    if (snapshot.empty) {
+                        feed.innerHTML = '<p style="text-align:center;color:#666;padding:40px;">No posts yet. Be the first!</p>';
+                        return;
+                    }
+
+                    snapshot.docs.forEach(doc => {
+                        const post = doc.data();
+                        const postEl = document.createElement('div');
+                        postEl.className = 'post';
+                        postEl.innerHTML = `
+                            <div class="post-header">
+                                <div class="avatar">${post.authorName[0].toUpperCase()}</div>
+                                <div>
+                                    <div class="username">${post.authorName}</div>
+                                    <span class="handle">@${post.authorHandle}</span>
+                                </div>
+                                <div class="timestamp">${timeSince(post.timestamp?.toDate() || new Date())}</div>
+                            </div>
+                            <div class="post-content">${post.content.replace(/\n/g, '<br>')}</div>
+                            <div class="actions">
+                                <span>💬 ${post.replies || 0}</span>
+                                <span>🔁 ${post.reposts || 0}</span>
+                                <span>❤️ ${post.likes || 0}</span>
+                            </div>
+                        `;
+                        feed.appendChild(postEl);
+                    });
+                });
+
+            unsubscribes.push(unsub);
+        }
+
+        function timeSince(date) {
+            if (!date) return 'now';
+            const seconds = Math.floor((new Date() - date) / 1000);
+            let interval = seconds / 31536000;
+            if (interval > 1) return Math.floor(interval) + "y";
+            interval = seconds / 2592000;
+            if (interval > 1) return Math.floor(interval) + "mo";
+            interval = seconds / 86400;
+            if (interval > 1) return Math.floor(interval) + "d";
+            interval = seconds / 3600;
+            if (interval > 1) return Math.floor(interval) + "h";
+            interval = seconds / 60;
+            if (interval > 1) return Math.floor(interval) + "m";
+            return Math.floor(seconds) + "s";
+        }
+
+        document.getElementById('postInput').addEventListener('input', function() {
+            const count = 280 - this.value.length;
+            document.getElementById('charCount').textContent = count;
+            document.getElementById('charCount').style.color = count < 0 ? 'red' : '#888';
+        });
+
+        document.getElementById('postInput').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                createPost();
+            }
+        });
+    </script>
+</body>
+</html>
