@@ -96,7 +96,6 @@
             <div style="text-align:center; margin:20px 0;">
                 <div class="avatar" id="profile-avatar" style="margin:0 auto; width:80px; height:80px; font-size:32px;">?</div>
                 <h2 id="profile-username">Loading...</h2>
-                <p>Followers: 0 | Following: 0 | Posts: 0</p>
             </div>
             <div id="profile-posts"></div>
         </div>
@@ -162,7 +161,6 @@
                 document.getElementById('app').style.display = 'block';
                 await loadUserData();
                 loadFeed();
-                if (switchTab.name === 'profile') loadProfile();
             }
         });
 
@@ -206,9 +204,7 @@
                 text,
                 uid: currentUser.uid,
                 username: currentUserData.username,
-                likes: [],
-                comments: [],
-                reposts: [],
+                likes: 0,
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
             });
             document.getElementById('post-text').value = '';
@@ -226,87 +222,23 @@
             feed.innerHTML = '';
             posts.forEach(p => {
                 if (!p.username || p.username.length < 3) return; // hide bots
-                const isLiked = p.likes?.includes(currentUser.uid);
                 const div = document.createElement('div');
                 div.className = 'post';
                 div.innerHTML = `
                     <div class="post-header">
                         <div class="avatar">${p.username[0].toUpperCase()}</div>
-                        <div class="post-user">
-                            <div class="username">${p.username}</div>
-                            <div class="time">${timeAgo(p.timestamp)}</div>
-                        </div>
+                        <div class="username">${p.username}</div>
+                        <div class="time">${timeAgo(p.timestamp)}</div>
                     </div>
                     <div class="post-text">${p.text}</div>
                     <div class="post-actions">
-                        <div class="action \( {isLiked ? 'liked' : ''}" onclick="toggleLike(' \){p.id}')">
-                            <i class="fa${isLiked ? 's' : 'r'} fa-heart"></i>
-                            <span class="action-count">${p.likes?.length || 0}</span>
-                        </div>
-                        <div class="action" onclick="toggleComments('${p.id}')">
-                            <i class="far fa-comment"></i>
-                            <span class="action-count">${p.comments?.length || 0}</span>
-                        </div>
-                        <div class="action" onclick="repost('${p.id}')">
-                            <i class="fas fa-retweet"></i>
-                            <span class="action-count">${p.reposts?.length || 0}</span>
-                        </div>
-                    </div>
-                    <div class="comments-section" id="comments-${p.id}">
-                        <div id="comments-list-${p.id}"></div>
-                        <input class="comment-input" id="comment-input-${p.id}" placeholder="Write a reply...">
-                        <button onclick="addComment('${p.id}')">Send</button>
+                        <div class="action"><i class="far fa-heart"></i> ${p.likes || 0}</div>
+                        <div class="action"><i class="far fa-comment"></i> 0</div>
+                        <div class="action"><i class="fas fa-retweet"></i> 0</div>
                     </div>
                 `;
                 feed.appendChild(div);
             });
-        }
-
-        async function toggleLike(postId) {
-            const ref = db.collection('posts').doc(postId);
-            const doc = await ref.get();
-            let likes = doc.data().likes || [];
-            if (likes.includes(currentUser.uid)) {
-                likes = likes.filter(u => u !== currentUser.uid);
-            } else {
-                likes.push(currentUser.uid);
-            }
-            await ref.update({likes});
-            loadFeed();
-        }
-
-        async function addComment(postId) {
-            const input = document.getElementById(`comment-input-${postId}`);
-            const text = input.value.trim();
-            if (!text) return;
-            const comment = {
-                text,
-                uid: currentUser.uid,
-                username: currentUserData.username,
-                timestamp: firebase.firestore.FieldValue.serverTimestamp()
-            };
-            await db.collection('posts').doc(postId).update({comments: firebase.firestore.FieldValue.arrayUnion(comment)});
-            input.value = '';
-            loadFeed();
-        }
-
-        async function repost(postId) {
-            const original = await db.collection('posts').doc(postId).get();
-            const o = original.data();
-            await db.collection('posts').add({
-                text: o.text,
-                uid: currentUser.uid,
-                username: currentUserData.username,
-                originalId: postId,
-                isRepost: true,
-                timestamp: firebase.firestore.FieldValue.serverTimestamp()
-            });
-            loadFeed();
-        }
-
-        function toggleComments(postId) {
-            const section = document.getElementById(`comments-${postId}`);
-            section.style.display = section.style.display === 'block' ? 'none' : 'block';
         }
 
         function timeAgo(ts) {
@@ -338,33 +270,6 @@
             } else if (tab === 'profile') {
                 document.getElementById('profile-view').style.display = 'block';
                 document.querySelector('.fa-user').parentElement.classList.add('active');
-                loadProfile();
-            }
-        }
-
-        async function loadProfile() {
-            document.getElementById('profile-username').textContent = currentUserData.username || 'Anonymous';
-            const snap = await db.collection('posts').where('uid', '==', currentUser.uid).orderBy('timestamp', 'desc').get();
-            const postsDiv = document.getElementById('profile-posts');
-            postsDiv.innerHTML = '<h3>Your Posts</h3>';
-            snap.forEach(doc => {
-                const p = doc.data();
-                const div = document.createElement('div');
-                div.className = 'post';
-                div.innerHTML = `<div class="post-text">${p.text}</div>`;
-                postsDiv.appendChild(div);
-            });
-        }
-
-        async function uploadProfilePic(e) {
-            const file = e.target.files[0];
-            if (file) {
-                const ref = storage.ref(`avatars/${currentUser.uid}`);
-                await ref.put(file);
-                const url = await ref.getDownloadURL();
-                await db.collection('users').doc(currentUser.uid).update({photoURL: url});
-                alert('Profile picture updated!');
-                loadFeed();
             }
         }
 
