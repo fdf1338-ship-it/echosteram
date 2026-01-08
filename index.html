@@ -105,14 +105,14 @@ button{background:var(--accent); color:white; border:none; padding:10px 18px; bo
 </nav>
 
 <script>
-// ===== FIREBASE CONFIG (REAL ONE FROM YOUR PROJECT) =====
+// ===== FIREBASE CONFIG (latest from your project) =====
 firebase.initializeApp({
   apiKey: "AIzaSyCmY_zfNcH5XnEaQxlqaTW1D8EUR670-Zo",
   authDomain: "echostream-a102a.firebaseapp.com",
   projectId: "echostream-a102a",
-  storageBucket: "echostream-a102a.appspot.com",
+  storageBucket: "echostream-a102a.firebasestorage.app",
   messagingSenderId: "789062222400",
-  appId: "1:789062222400:web:734478269135a77d7d55a5",
+  appId: "1:789062222400:web:73d478269135a77d7d55a5",
   measurementId: "G-QCJ1240EC5"
 });
 
@@ -162,7 +162,7 @@ auth.onAuthStateChanged(async user => {
   if (localStorage.getItem("darkMode") === "true") document.body.classList.add("dark");
 
   route("feed");
-  loadFeed(); // Important: load the feed after login
+  loadFeed();
 });
 
 // ===== ROUTING =====
@@ -226,6 +226,7 @@ async function createPost() {
   document.getElementById("postImage").value = "";
 }
 
+// ===== POST RENDERING =====
 function createPostElement(post) {
   const div = document.createElement("div");
   div.className = "card";
@@ -250,7 +251,7 @@ function createPostElement(post) {
     <div style="display:flex; align-items:center; gap:12px;">
       <div class="avatar">${(post.username || "?")[0].toUpperCase()}</div>
       <div>
-        <strong class="username-link" onclick="viewUserProfile('\( {post.username}')"> \){post.username || "unknown"}</strong> ${verifiedBadge}<br>
+        <strong class="username-link" onclick="viewUserProfile('\( {post.username || ""}')"> \){post.username || "unknown"}</strong> ${verifiedBadge}<br>
         <small>${timeAgo(post.timestamp)}</small>
       </div>
     </div>
@@ -278,7 +279,7 @@ function createPostElement(post) {
 
 async function loadFeed() {
   const postsDiv = document.getElementById("posts");
-  postsDiv.innerHTML = "<p>Loading...</p>";
+  postsDiv.innerHTML = "<p>Loading feed...</p>";
 
   db.collection("posts").orderBy("timestamp", "desc").onSnapshot(async snapshot => {
     postsDiv.innerHTML = "";
@@ -288,7 +289,6 @@ async function loadFeed() {
     for (const doc of snapshot.docs) {
       const post = { id: doc.id, ...doc.data() };
 
-      // Private account check
       if (post.uid !== myUid) {
         const posterSnap = await db.collection("users").doc(post.uid).get();
         const posterData = posterSnap.data();
@@ -338,8 +338,7 @@ async function addComment(postId) {
 }
 
 function toggleComments(postId) {
-  const section = document.getElementById(`comments-${postId}`);
-  section.classList.toggle("hidden");
+  document.getElementById(`comments-${postId}`).classList.toggle("hidden");
 }
 
 async function repost(postId) {
@@ -364,7 +363,7 @@ async function repost(postId) {
 async function loadProfile(uid) {
   const isOwn = uid === currentUser.uid;
   const profileDiv = document.getElementById("profile");
-  profileDiv.innerHTML = "<p>Loading...</p>";
+  profileDiv.innerHTML = "<p>Loading profile...</p>";
 
   const userSnap = isOwn ? { data: () => userData } : await db.collection("users").doc(uid).get();
   const userDoc = isOwn ? userData : userSnap.data();
@@ -389,8 +388,8 @@ async function loadProfile(uid) {
 
   profileDiv.innerHTML = `
     <div style="text-align:center; margin-bottom:16px;">
-      <div class="avatar">${userDoc.username[0].toUpperCase()}</div>
-      <h3>\( {userDoc.username} \){verifiedBadge}</h3>
+      <div class="avatar">${(userDoc.username || "?")[0].toUpperCase()}</div>
+      <h3>\( {userDoc.username || "user"} \){verifiedBadge}</h3>
       <p>Followers: ${followersCount} | Following: ${followingCount}</p>
       \( {!isOwn ? `<button onclick="toggleFollow(' \){uid}')">Follow / Unfollow</button>` : ""}
     </div>
@@ -445,7 +444,7 @@ async function verifyUser() {
 
 async function loadAdminPanel() {
   const panel = document.getElementById("adminPanel");
-  panel.innerHTML = "<p>Loading...</p>";
+  panel.innerHTML = "<p>Loading users...</p>";
 
   const usersSnap = await db.collection("users").get();
   let html = "<h3>All Users</h3>";
@@ -465,11 +464,11 @@ async function loadAdminPanel() {
 
 async function saveUsername() {
   let input = document.getElementById("usernameInput").value.trim().toLowerCase();
-  if (input.length < 3) return alert("Too short");
-  if (!/^[a-z0-9_]+$/.test(input)) return alert("Only letters, numbers, underscore");
+  if (input.length < 3) return alert("Username too short");
+  if (!/^[a-z0-9_]+$/.test(input)) return alert("Only lowercase letters, numbers, underscore");
 
   const snap = await db.collection("users").where("username", "==", input).get();
-  if (!snap.empty) return alert("Taken");
+  if (!snap.empty) return alert("Username taken");
 
   await db.collection("users").doc(currentUser.uid).update({ username: input });
   userData.username = input;
