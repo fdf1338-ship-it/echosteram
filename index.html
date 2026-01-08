@@ -31,8 +31,7 @@
         .post { background:var(--card); margin:12px 20px; padding:16px; border-radius:16px; box-shadow:0 1px 3px rgba(0,0,0,0.1); }
         .post-header { display:flex; align-items:center; gap:12px; margin-bottom:12px; }
         .post-user { display:flex; align-items:center; gap:8px; }
-        .username { font-weight:600; }
-        .verified { color:var(--accent); }
+        .username { font-weight:600; cursor:pointer; color:var(--accent); }
         .time { font-size:14px; color:#666; margin-left:auto; }
         .post-text { margin:8px 0 16px; white-space:pre-wrap; font-size:16px; line-height:1.5; }
         .post-actions { display:flex; justify-content:space-around; font-size:20px; color:#666; }
@@ -231,7 +230,7 @@
                     <div class="post-header">
                         <div class="avatar">${p.username[0].toUpperCase()}</div>
                         <div class="post-user">
-                            <div class="username">${p.username}</div>
+                            <div class="username" onclick="openProfile('\( {p.username}')"> \){p.username}</div>
                             <div class="time">${timeAgo(p.timestamp)}</div>
                         </div>
                     </div>
