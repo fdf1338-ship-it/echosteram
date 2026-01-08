@@ -31,7 +31,7 @@
         .post { background:var(--card); margin:12px 20px; padding:16px; border-radius:16px; box-shadow:0 1px 3px rgba(0,0,0,0.1); }
         .post-header { display:flex; align-items:center; gap:12px; margin-bottom:12px; }
         .post-user { display:flex; align-items:center; gap:8px; }
-        .username { font-weight:600; cursor:pointer; color:var(--accent); }
+        .username { font-weight:600; cursor:pointer; color:var(--accent); text-decoration:underline; }
         .time { font-size:14px; color:#666; margin-left:auto; }
         .post-text { margin:8px 0 16px; white-space:pre-wrap; font-size:16px; line-height:1.5; }
         .post-actions { display:flex; justify-content:space-around; font-size:20px; color:#666; }
@@ -46,7 +46,7 @@
         #settings-sidebar { position:fixed; top:0; bottom:0; right:-320px; width:320px; background:var(--card); box-shadow:-4px 0 16px rgba(0,0,0,0.2); transition:right 0.3s ease; z-index:20; padding:20px; overflow-y:auto; }
         #settings-sidebar.open { right:0; }
         .settings-header { font-size:20px; font-weight:bold; margin-bottom:20px; }
-        .settings-item { padding:16px 0; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; }
+        .settings-item { padding:16px 0; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; cursor:pointer; }
         .switch { position:relative; display:inline-block; width:52px; height:32px; }
         .switch input { opacity:0; width:0; height:0; }
         .slider { position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background:#ccc; transition:0.4s; border-radius:34px; }
@@ -56,6 +56,7 @@
         .modal { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.6); align-items:center; justify-content:center; z-index:30; }
         .modal-content { background:var(--card); padding:32px; border-radius:16px; width:90%; max-width:400px; text-align:center; }
         #search-view, #messages-view, #profile-view { display:none; padding:20px; margin-top:70px; }
+        .overlay { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:15; display:none; }
     </style>
 </head>
 <body>
@@ -107,8 +108,11 @@
         </div>
     </div>
 
+    <div class="overlay" onclick="toggleSettings()"></div>
+
     <!-- Settings Sidebar -->
     <div id="settings-sidebar">
+        <i class="fas fa-times" style="position:absolute; top:16px; right:16px; font-size:26px; cursor:pointer;" onclick="toggleSettings()"></i>
         <div class="settings-header">Settings</div>
         <div class="settings-item">
             <span>Dark mode</span>
@@ -223,14 +227,14 @@
             feed.innerHTML = '';
             posts.forEach(p => {
                 if (!p.username || p.username.length < 3) return;
-                const isLiked = p.likes?.includes(currentUser.uid);
+                const isLiked = p.likes?.includes(currentUser?.uid);
                 const div = document.createElement('div');
                 div.className = 'post';
                 div.innerHTML = `
                     <div class="post-header">
                         <div class="avatar">${p.username[0].toUpperCase()}</div>
                         <div class="post-user">
-                            <div class="username" onclick="openProfile('\( {p.username}')"> \){p.username}</div>
+                            <div class="username" onclick="alert('Profile view coming soon')">${p.username}</div>
                             <div class="time">${timeAgo(p.timestamp)}</div>
                         </div>
                     </div>
@@ -244,7 +248,7 @@
                             <i class="far fa-comment"></i>
                             <span class="action-count">${p.comments?.length || 0}</span>
                         </div>
-                        <div class="action" onclick="repost('${p.id}')">
+                        <div class="action" onclick="alert('Repost coming soon')">
                             <i class="fas fa-retweet"></i>
                             <span class="action-count">${p.reposts?.length || 0}</span>
                         </div>
@@ -260,6 +264,7 @@
         }
 
         async function toggleLike(postId) {
+            if (!currentUser) return alert('Sign in to like');
             const ref = db.collection('posts').doc(postId);
             const doc = await ref.get();
             let likes = doc.data().likes || [];
@@ -273,6 +278,7 @@
         }
 
         async function addComment(postId) {
+            if (!currentUser) return alert('Sign in to comment');
             const input = document.getElementById(`comment-input-${postId}`);
             const text = input.value.trim();
             if (!text) return;
@@ -284,20 +290,6 @@
             };
             await db.collection('posts').doc(postId).update({comments: firebase.firestore.FieldValue.arrayUnion(comment)});
             input.value = '';
-            loadFeed();
-        }
-
-        async function repost(postId) {
-            const original = await db.collection('posts').doc(postId).get();
-            const o = original.data();
-            await db.collection('posts').add({
-                text: o.text,
-                uid: currentUser.uid,
-                username: currentUserData.username,
-                originalId: postId,
-                isRepost: true,
-                timestamp: firebase.firestore.FieldValue.serverTimestamp()
-            });
             loadFeed();
         }
 
@@ -317,7 +309,9 @@
 
         function toggleSettings() {
             const sidebar = document.getElementById('settings-sidebar');
+            const overlay = document.querySelector('.overlay');
             sidebar.classList.toggle('open');
+            overlay.style.display = sidebar.classList.contains('open') ? 'block' : 'none';
         }
 
         function switchTab(tab) {
@@ -354,6 +348,7 @@
         }
 
         async function uploadProfilePic(e) {
+            if (!currentUser) return alert('Sign in first');
             const file = e.target.files[0];
             if (file) {
                 const ref = storage.ref(`avatars/${currentUser.uid}`);
