@@ -9,105 +9,109 @@
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
 <style>
-:root{
-  --bg:#ffffff;
-  --text:#000000;
-  --card:#f3f3f3;
-  --accent:#1da1f2;
-  --border:#dddddd;
+:root {
+  --bg: #fff;
+  --text: #000;
+  --card: #f3f3f3;
+  --border: #ddd;
+  --accent: #1da1f2;
 }
-body.dark{
-  --bg:#000000;
-  --text:#ffffff;
-  --card:#1c1c1c;
-  --border:#333333;
+body.dark {
+  --bg: #000;
+  --text: #fff;
+  --card: #1a1a1a;
+  --border: #333;
 }
-body{
-  margin:0;
-  font-family:system-ui;
-  background:var(--bg);
-  color:var(--text);
+body {
+  margin: 0;
+  font-family: system-ui;
+  background: var(--bg);
+  color: var(--text);
+  transition: 0.3s;
 }
-header{
-  position:fixed;
-  top:0;
-  width:100%;
-  padding:14px;
-  font-weight:700;
-  background:var(--bg);
-  border-bottom:1px solid var(--border);
-  z-index:10;
+header {
+  position: fixed;
+  top: 0;
+  width: 100%;
+  padding: 14px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  font-weight: bold;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 10;
 }
-nav{
-  position:fixed;
-  bottom:0;
-  width:100%;
-  display:flex;
-  justify-content:space-around;
-  padding:12px 0;
-  background:var(--bg);
-  border-top:1px solid var(--border);
+nav {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  display: flex;
+  justify-content: space-around;
+  padding: 12px 0;
+  background: var(--bg);
+  border-top: 1px solid var(--border);
 }
-nav i{
-  font-size:20px;
-  cursor:pointer;
+nav i {
+  font-size: 20px;
+  cursor: pointer;
 }
-main{
-  padding:80px 16px 90px;
-  max-width:600px;
-  margin:auto;
+main {
+  padding: 80px 16px 90px;
+  max-width: 600px;
+  margin: auto;
 }
-.card{
-  background:var(--card);
-  padding:16px;
-  border-radius:16px;
-  margin-bottom:12px;
+.card {
+  background: var(--card);
+  padding: 16px;
+  border-radius: 16px;
+  margin-bottom: 12px;
 }
-textarea,input{
-  width:100%;
-  padding:10px;
-  border-radius:10px;
-  border:1px solid var(--border);
-  background:var(--bg);
-  color:var(--text);
+textarea,input {
+  width: 100%;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
 }
-button{
-  background:var(--accent);
-  color:white;
-  border:none;
-  padding:10px 18px;
-  border-radius:999px;
-  font-weight:600;
-  margin-top:8px;
-  cursor:pointer;
+button {
+  background: var(--accent);
+  color: white;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 999px;
+  font-weight: 600;
+  margin-top: 8px;
+  cursor: pointer;
 }
-.hidden{display:none}
-.avatar{
-  width:60px;
-  height:60px;
-  border-radius:50%;
-  background:#666;
-  color:white;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:24px;
-  font-weight:700;
+.hidden { display: none; }
+.avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: #666;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: 700;
 }
-.verified{
-  color:#1da1f2;
-  margin-left:6px;
-}
+.verified { color: #1da1f2; margin-left: 6px; }
 </style>
 </head>
-
 <body>
 
-<header>EchoStream</header>
+<header>
+  EchoStream
+  <i class="fas fa-cog" onclick="route('settings')"></i>
+</header>
 
 <main>
 
@@ -133,14 +137,8 @@ button{
 <div id="settings" class="hidden">
   <div class="card">
     <h3>Settings</h3>
-    <label>
-      <input type="checkbox" onchange="togglePrivate(this.checked)">
-      Private account
-    </label><br><br>
-    <label>
-      <input type="checkbox" onchange="toggleDark()">
-      Dark mode
-    </label>
+    <label><input type="checkbox" id="darkToggle" onchange="toggleDark()"> Dark mode</label><br><br>
+    <label><input type="checkbox" id="privateToggle" onchange="togglePrivate(this.checked)"> Private account</label>
   </div>
 </div>
 
@@ -163,23 +161,25 @@ button{
 </nav>
 
 <script>
-/* FIREBASE CONFIG */
+/* Firebase config */
 firebase.initializeApp({
   apiKey: "AIzaSyCmY_zfNcH5XnEaQxlqaTW1D8EUR670-Zo",
   authDomain: "echostream-a102a.firebaseapp.com",
-  projectId: "echostream-a102a"
+  projectId: "echostream-a102a",
+  storageBucket: "echostream-a102a.appspot.com"
 });
 
 const auth = firebase.auth();
 const db = firebase.firestore();
+const storage = firebase.storage();
 let userData = null;
 
 /* AUTH */
-function login(){
+function login() {
   auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
 }
 
-auth.onAuthStateChanged(async user=>{
+auth.onAuthStateChanged(async user => {
   if(!user) return;
   document.getElementById("login").style.display="none";
   route("feed");
@@ -187,7 +187,7 @@ auth.onAuthStateChanged(async user=>{
   const ref = db.collection("users").doc(user.uid);
   const snap = await ref.get();
 
-  if(!snap.exists){
+  if(!snap.exists) {
     await ref.set({
       username: user.displayName.replace(/\s/g,"").toLowerCase(),
       verified: false,
@@ -195,16 +195,14 @@ auth.onAuthStateChanged(async user=>{
       private: false
     });
   }
-
   userData = (await ref.get()).data();
   loadFeed();
+  if(localStorage.getItem("darkMode")==="true") toggleDark();
 });
 
 /* ROUTER */
-function route(page){
-  ["feed","profile","settings","admin"].forEach(p=>{
-    document.getElementById(p).classList.add("hidden");
-  });
+function route(page) {
+  ["feed","profile","settings","admin"].forEach(p => document.getElementById(p).classList.add("hidden"));
   document.getElementById(page).classList.remove("hidden");
 
   if(page==="profile") loadProfile();
@@ -215,59 +213,118 @@ function route(page){
 }
 
 /* POSTS */
-async function createPost(){
+async function createPost() {
   if(!postText.value.trim()) return;
   await db.collection("posts").add({
     uid: auth.currentUser.uid,
     username: userData.username,
     text: postText.value,
-    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    likes: [],
+    comments: [],
+    timestamp: firebase.firestore.FieldValue.serverTimestamp()
   });
   postText.value="";
   loadFeed();
 }
 
-async function loadFeed(){
+async function loadFeed() {
   posts.innerHTML="";
-  const snap = await db.collection("posts").orderBy("createdAt","desc").get();
+  const snap = await db.collection("posts").orderBy("timestamp","desc").get();
   snap.forEach(d=>{
     const p=d.data();
     const div=document.createElement("div");
     div.className="card";
-    div.innerHTML=`<b>${p.username}</b><p>${p.text}</p>`;
+    const liked = p.likes.includes(auth.currentUser?.uid);
+    div.innerHTML=`
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div class="avatar">${p.username[0].toUpperCase()}</div>
+        <div><b>${p.username}${userData.verified ? '<i class="fa fa-check-circle verified"></i>':''}</b><br>${p.text}</div>
+      </div>
+      <div style="margin-top:8px;">
+        <button onclick="toggleLike('${d.id}')">${liked?'❤️':'🤍'} ${p.likes.length}</button>
+        <button onclick="toggleComments('${d.id}')">💬 ${p.comments.length}</button>
+      </div>
+      <div id="comments-${d.id}" style="margin-top:8px; display:none;">
+        <input id="commentInput-${d.id}" placeholder="Write a reply..." style="width:100%;margin-bottom:4px;">
+        <button onclick="addComment('${d.id}')">Send</button>
+        <div id="commentsList-${d.id}"></div>
+      </div>
+    `;
     posts.appendChild(div);
   });
 }
 
-/* PROFILE */
-function loadProfile(){
+/* Likes & Comments */
+async function toggleLike(postId) {
+  const ref = db.collection("posts").doc(postId);
+  const doc = await ref.get();
+  let likes = doc.data().likes || [];
+  if(likes.includes(auth.currentUser.uid)) likes = likes.filter(u=>u!==auth.currentUser.uid);
+  else likes.push(auth.currentUser.uid);
+  await ref.update({likes});
+  loadFeed();
+}
+
+async function toggleComments(postId) {
+  const el=document.getElementById(`comments-${postId}`);
+  el.style.display=el.style.display==="block"?"none":"block";
+  loadComments(postId);
+}
+
+async function addComment(postId) {
+  const input=document.getElementById(`commentInput-${postId}`);
+  const text=input.value.trim();
+  if(!text) return;
+  await db.collection("posts").doc(postId).update({
+    comments: firebase.firestore.FieldValue.arrayUnion({
+      uid: auth.currentUser.uid,
+      username: userData.username,
+      text,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    })
+  });
+  input.value="";
+  loadComments(postId);
+}
+
+async function loadComments(postId) {
+  const doc=await db.collection("posts").doc(postId).get();
+  const listEl=document.getElementById(`commentsList-${postId}`);
+  listEl.innerHTML="";
+  doc.data().comments.forEach(c=>{
+    const div=document.createElement("div");
+    div.textContent=`${c.username}: ${c.text}`;
+    listEl.appendChild(div);
+  });
+}
+
+/* Profile */
+function loadProfile() {
   profile.innerHTML=`
     <div class="card">
       <div class="avatar">${userData.username[0].toUpperCase()}</div>
-      <h3>${userData.username}
-      ${userData.verified ? '<i class="fa fa-check-circle verified"></i>' : ''}
-      </h3>
+      <h3>${userData.username}${userData.verified?'<i class="fa fa-check-circle verified"></i>':''}</h3>
       <p>Role: ${userData.role}</p>
     </div>
   `;
 }
 
-/* SETTINGS */
+/* Settings */
+function toggleDark() {
+  document.body.classList.toggle("dark");
+  localStorage.setItem("darkMode",document.body.classList.contains("dark"));
+}
 async function togglePrivate(val){
   await db.collection("users").doc(auth.currentUser.uid).update({private:val});
 }
-function toggleDark(){
-  document.body.classList.toggle("dark");
-}
 
-/* ADMIN */
-async function verifyUser(){
+/* Admin */
+async function verifyUser() {
   const uid=document.getElementById("verifyUid").value.trim();
   if(!uid) return;
   await db.collection("users").doc(uid).update({verified:true});
   alert("User verified");
 }
 </script>
-
 </body>
 </html>
