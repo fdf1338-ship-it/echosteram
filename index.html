@@ -39,7 +39,12 @@
         .action { cursor:pointer; display:flex; align-items:center; gap:6px; }
         .action.liked { color:#e0245e; }
         .action-count { font-size:14px; }
-        #settings-sidebar { position:fixed; top:0; bottom:0; right:-320px; width:320px; background:var(--card); box-shadow:-4px 0 16px rgba(0,0,0,0.2); transition:right 0.3s; z-index:20; padding:20px; overflow-y:auto; }
+        .comments-section { margin-top:16px; padding-top:12px; border-top:1px solid var(--border); display:none; }
+        .comment { display:flex; gap:12px; margin-top:12px; }
+        .comment-avatar { width:32px; height:32px; border-radius:50%; background:#666; flex-shrink:0; display:flex; align-items:center; justify-content:center; color:white; font-weight:bold; }
+        .comment-body { flex:1; }
+        .comment-input { width:100%; padding:10px; border:1px solid var(--border); border-radius:12px; background:var(--card); color:var(--text); margin-top:8px; }
+        #settings-sidebar { position:fixed; top:0; bottom:0; right:-320px; width:320px; background:var(--card); box-shadow:-4px 0 16px rgba(0,0,0,0.2); transition:right 0.3s ease; z-index:20; padding:20px; overflow-y:auto; }
         #settings-sidebar.open { right:0; }
         .settings-header { font-size:20px; font-weight:bold; margin-bottom:20px; }
         .settings-item { padding:16px 0; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; }
@@ -51,7 +56,7 @@
         input:checked + .slider:before { transform:translateX(20px); }
         .modal { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.6); align-items:center; justify-content:center; z-index:30; }
         .modal-content { background:var(--card); padding:32px; border-radius:16px; width:90%; max-width:400px; text-align:center; }
-        #messages-view, #profile-view, #search-view { display:none; padding:20px; margin-top:70px; }
+        #search-view, #messages-view, #profile-view { display:none; padding:20px; margin-top:70px; }
     </style>
 </head>
 <body>
@@ -78,18 +83,21 @@
         <div class="feed" id="feed"></div>
 
         <div id="search-view">
-            <h2>Search</h2>
-            <p>Search coming soon.</p>
+            <input id="search-input" placeholder="Search EchoStream..." oninput="searchPosts()" style="width:100%; padding:12px; border:1px solid var(--border); border-radius:12px; margin-bottom:20px;"/>
+            <div id="search-results"></div>
         </div>
 
         <div id="messages-view">
             <h2>Messages</h2>
-            <p>Direct messages coming soon.</p>
+            <p>Start a conversation with any user (coming in next update).</p>
         </div>
 
         <div id="profile-view">
-            <h2>Profile</h2>
-            <p>Your profile coming soon.</p>
+            <div style="text-align:center; margin:20px 0;">
+                <div class="avatar" id="profile-avatar" style="margin:0 auto; width:80px; height:80px; font-size:32px;">?</div>
+                <h2 id="profile-username">Loading...</h2>
+            </div>
+            <div id="profile-posts"></div>
         </div>
 
         <div class="bottom-nav">
@@ -110,6 +118,10 @@
                 <span class="slider"></span>
             </label>
         </div>
+        <div class="settings-item"><span>Privacy & safety</span><span>Public</span></div>
+        <div class="settings-item"><span>Notifications</span><span>All on</span></div>
+        <div class="settings-item"><span>Display</span><span>Standard</span></div>
+        <div class="settings-item"><span>Security</span><span>2FA off</span></div>
         <div class="settings-item"><span>Change profile picture</span><input type="file" accept="image/*" onchange="uploadProfilePic(event)"></div>
         <div class="settings-item"><span>About</span><span>Built with hope and a laptop</span></div>
         <button style="background:#d33; width:100%; padding:14px; margin-top:30px; border-radius:999px;" onclick="logout()">Logout</button>
@@ -138,6 +150,7 @@
 
         let currentUser = null;
         let currentUserData = null;
+        let allPosts = [];
 
         document.getElementById('google-signin').onclick = () => auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
 
@@ -192,6 +205,8 @@
                 uid: currentUser.uid,
                 username: currentUserData.username,
                 likes: 0,
+                comments: 0,
+                reposts: 0,
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
             });
             document.getElementById('post-text').value = '';
@@ -200,44 +215,57 @@
 
         async function loadFeed() {
             const snap = await db.collection('posts').orderBy('timestamp', 'desc').get();
+            allPosts = snap.docs.map(doc => ({id: doc.id, ...doc.data()}));
+            renderFeed(allPosts);
+            if (document.getElementById('profile-view').style.display === 'block') loadProfile();
+        }
+
+        function renderFeed(posts) {
             const feed = document.getElementById('feed');
             feed.innerHTML = '';
-            snap.forEach(doc => {
-                const d = doc.data();
-                const userName = d.username || 'Anonymous';
-                const firstLetter = userName.charAt(0).toUpperCase() || 'A';
+            posts.forEach(p => {
                 const div = document.createElement('div');
                 div.className = 'post';
                 div.innerHTML = `
                     <div class="post-header">
-                        <div class="avatar">${firstLetter}</div>
-                        <div class="post-user">
-                            <div class="username">${userName}</div>
-                            <div class="time">${timeAgo(d.timestamp)}</div>
-                        </div>
+                        <div class="avatar">${p.username ? p.username[0].toUpperCase() : 'A'}</div>
+                        <div class="username">${p.username || 'Anonymous'}</div>
+                        <div class="time">${timeAgo(p.timestamp)}</div>
                     </div>
-                    <div class="post-text">${d.text}</div>
+                    <div class="post-text">${p.text}</div>
                     <div class="post-actions">
-                        <div class="action"><i class="far fa-heart"></i> <span class="action-count">${d.likes || 0}</span></div>
-                        <div class="action"><i class="far fa-comment"></i></div>
-                        <div class="action"><i class="fas fa-retweet"></i></div>
+                        <div class="action"><i class="far fa-heart"></i> ${p.likes || 0}</div>
+                        <div class="action"><i class="far fa-comment"></i> ${p.comments || 0}</div>
+                        <div class="action"><i class="fas fa-retweet"></i> ${p.reposts || 0}</div>
                     </div>
                 `;
                 feed.appendChild(div);
             });
         }
 
-        function timeAgo(ts) {
-            if (!ts) return 'now';
-            const seconds = Math.floor((Date.now() - ts.toDate()) / 1000);
-            if (seconds < 60) return seconds + 's';
-            if (seconds < 3600) return Math.floor(seconds / 60) + 'm';
-            if (seconds < 86400) return Math.floor(seconds / 3600) + 'h';
-            return Math.floor(seconds / 86400) + 'd';
+        function searchPosts() {
+            const query = document.getElementById('search-input').value.toLowerCase();
+            const filtered = allPosts.filter(p => p.text.toLowerCase().includes(query));
+            renderFeed(filtered);
+        }
+
+        async function loadProfile() {
+            document.getElementById('profile-username').textContent = currentUserData.username || 'Anonymous';
+            const snap = await db.collection('posts').where('uid', '==', currentUser.uid).orderBy('timestamp', 'desc').get();
+            const postsDiv = document.getElementById('profile-posts');
+            postsDiv.innerHTML = '<h3>Your Posts</h3>';
+            snap.forEach(doc => {
+                const p = doc.data();
+                const div = document.createElement('div');
+                div.className = 'post';
+                div.innerHTML = `<div class="post-text">${p.text}</div>`;
+                postsDiv.appendChild(div);
+            });
         }
 
         function toggleSettings() {
-            document.getElementById('settings-sidebar').classList.toggle('open');
+            const sidebar = document.getElementById('settings-sidebar');
+            sidebar.classList.toggle('open');
         }
 
         function switchTab(tab) {
@@ -255,6 +283,7 @@
             } else if (tab === 'profile') {
                 document.getElementById('profile-view').style.display = 'block';
                 document.querySelector('.fa-user').parentElement.classList.add('active');
+                loadProfile();
             }
         }
 
@@ -267,6 +296,15 @@
                 await db.collection('users').doc(currentUser.uid).update({photoURL: url});
                 alert('Profile picture updated');
             }
+        }
+
+        function timeAgo(ts) {
+            if (!ts) return 'now';
+            const seconds = Math.floor((Date.now() - ts.toDate()) / 1000);
+            if (seconds < 60) return seconds + 's';
+            if (seconds < 3600) return Math.floor(seconds / 60) + 'm';
+            if (seconds < 86400) return Math.floor(seconds / 3600) + 'h';
+            return Math.floor(seconds / 86400) + 'd';
         }
 
         function logout() {
