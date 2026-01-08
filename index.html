@@ -15,6 +15,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
 <style>
+/* Keep your styles the same */
 :root {
   --bg:#fff; --text:#000; --card:#f3f3f3; --border:#ddd; --accent:#1da1f2; --red:#ff0000;
 }
@@ -47,134 +48,100 @@ button{background:var(--accent); color:white; border:none; padding:10px 18px; bo
 </header>
 
 <main>
-<!-- LOGIN -->
-<div id="login">
-  <h2>Welcome to EchoStream</h2>
-  <button onclick="login()">Sign in with Google</button>
-</div>
-
-<!-- FEED -->
-<div id="feed" class="hidden">
-  <div class="card">
-    <textarea id="postText" placeholder="What’s happening?"></textarea>
-    <input type="file" id="postImage" accept="image/*" style="margin-top:8px;">
-    <button onclick="createPost()">Post</button>
+  <!-- LOGIN -->
+  <div id="login">
+    <h2>Welcome to EchoStream</h2>
+    <button id="loginBtn">Sign in with Google</button>
   </div>
-  <div id="posts"></div>
-</div>
 
-<!-- PROFILE -->
-<div id="profile" class="hidden"></div>
-
-<!-- SETTINGS -->
-<div id="settings" class="hidden">
-  <div class="card">
-    <h3>Settings</h3>
-    <label><input type="checkbox" id="darkToggle"> Dark mode</label><br><br>
-    <label><input type="checkbox" id="privateToggle"> Private account</label><br><br>
-    <button onclick="logout()">Logout</button>
+  <!-- FEED -->
+  <div id="feed" class="hidden">
+    <div class="card">
+      <textarea id="postText" placeholder="What’s happening?"></textarea>
+      <input type="file" id="postImage" accept="image/*" style="margin-top:8px;">
+      <button onclick="createPost()">Post</button>
+    </div>
+    <div id="posts"></div>
   </div>
-</div>
 
-<!-- ADMIN -->
-<div id="admin" class="hidden">
-  <div class="card">
-    <h3>Admin Panel</h3>
-    <input id="verifyUid" placeholder="User UID to verify">
-    <button onclick="verifyUser()">Verify User</button>
+  <!-- SETTINGS -->
+  <div id="settings" class="hidden">
+    <div class="card">
+      <h3>Settings</h3>
+      <label><input type="checkbox" id="darkToggle"> Dark mode</label><br><br>
+      <button onclick="logout()">Logout</button>
+    </div>
   </div>
-  <div id="adminPanel"></div>
-</div>
-
-<!-- USERNAME MODAL -->
-<div id="usernameModal" class="modal">
-  <div class="modal-content">
-    <h3>Pick a username</h3>
-    <input id="usernameInput" placeholder="username" maxlength="20">
-    <button onclick="saveUsername()">Save</button>
-  </div>
-</div>
-
 </main>
 
 <nav>
   <i class="fa fa-house" onclick="route('feed')"></i>
-  <i class="fa fa-user" onclick="route('profile')"></i>
   <i class="fa fa-gear" onclick="route('settings')"></i>
-  <i class="fa fa-shield" onclick="route('admin')"></i>
 </nav>
 
 <script>
-// ===== FIREBASE CONFIG - REPLACE WITH YOUR OWN =====
+// ===== FIREBASE CONFIG - REPLACE WITH YOUR PROJECT =====
 firebase.initializeApp({
-  apiKey: "REPLACE_WITH_YOUR_API_KEY",
-  authDomain: "REPLACE_WITH_YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "REPLACE_WITH_YOUR_PROJECT_ID",
-  storageBucket: "REPLACE_WITH_YOUR_PROJECT_ID.appspot.com"
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT_ID.appspot.com",
 });
 
+// ===== GLOBAL VARIABLES =====
 const auth = firebase.auth();
 const db = firebase.firestore();
 const storage = firebase.storage();
 let currentUser = null;
 let userData = null;
 
-// ===== AUTH =====
-function login() {
-  auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
-}
+// ===== LOGIN =====
+window.login = function() {
+  auth.signInWithPopup(new firebase.auth.GoogleAuthProvider())
+    .then(result => console.log("Logged in as:", result.user.displayName))
+    .catch(err => alert("Login error: " + err.message));
+};
 
+document.getElementById("loginBtn").addEventListener("click", login);
+
+// ===== LOGOUT =====
 function logout() {
   auth.signOut().then(() => location.reload());
 }
 
+// ===== AUTH STATE =====
 auth.onAuthStateChanged(async user => {
   if (!user) {
     document.getElementById("login").style.display = "block";
-    ["feed","profile","settings","admin"].forEach(p => document.getElementById(p).classList.add("hidden"));
+    ["feed","settings"].forEach(p => document.getElementById(p).classList.add("hidden"));
     return;
   }
+
   currentUser = user;
   document.getElementById("login").style.display = "none";
+  document.getElementById("feed").classList.remove("hidden");
 
-  const userRef = db.collection("users").doc(user.uid);
-  const snap = await userRef.get();
-
+  // Load user data
+  const snap = await db.collection("users").doc(user.uid).get();
   if (!snap.exists) {
-    await userRef.set({
-      username: user.displayName?.replace(/\s/g,"").toLowerCase() || "user",
-      verified: false,
-      role: "user", // manually change to "owner" for yourself after first login
-      private: false,
-      followers: [],
-      following: []
+    await db.collection("users").doc(user.uid).set({
+      username: user.displayName.replace(/\s/g,"").toLowerCase(),
+      role: "user",
+      private: false
     });
-    document.getElementById("usernameModal").style.display = "flex";
-  } else {
-    userData = snap.data();
-    document.getElementById("darkToggle").checked = localStorage.getItem("darkMode") === "true";
-    document.getElementById("privateToggle").checked = userData.private || false;
   }
+  userData = (await db.collection("users").doc(user.uid).get()).data();
 
+  // Apply dark mode if saved
   if (localStorage.getItem("darkMode") === "true") document.body.classList.add("dark");
 
-  route("feed");
+  loadFeed();
 });
 
 // ===== ROUTING =====
 function route(page) {
-  ["feed","profile","settings","admin"].forEach(p => document.getElementById(p).classList.add("hidden"));
+  ["feed","settings"].forEach(p => document.getElementById(p).classList.add("hidden"));
   document.getElementById(page).classList.remove("hidden");
-
-  if (page === "profile") loadProfile(currentUser.uid);
-  if (page === "admin") {
-    if (!userData || !["owner","admin"].includes(userData.role)) {
-      alert("Admins only");
-      route("feed");
-    } else {
-      loadAdminPanel();
-    }
-  }
 }
 
 // ===== DARK MODE =====
@@ -183,19 +150,7 @@ document.getElementById("darkToggle").onchange = function() {
   localStorage.setItem("darkMode", this.checked);
 };
 
-// ===== PRIVATE ACCOUNT =====
-document.getElementById("privateToggle").onchange = function() {
-  togglePrivate(this.checked);
-};
-
-async function togglePrivate(isPrivate) {
-  await db.collection("users").doc(currentUser.uid).update({ private: isPrivate });
-  userData.private = isPrivate;
-  alert(`Account is now ${isPrivate ? "private" : "public"}`);
-  loadFeed();
-}
-
-// ===== POST FUNCTIONS =====
+// ===== FEED FUNCTIONS =====
 async function createPost() {
   const text = document.getElementById("postText").value.trim();
   const file = document.getElementById("postImage").files[0];
@@ -203,7 +158,7 @@ async function createPost() {
 
   let imageUrl = "";
   if (file) {
-    const path = `posts/${currentUser.uid}/${Date.now()}_${file.name}`;
+    const path = "posts/" + currentUser.uid + "/" + Date.now() + "_" + file.name;
     const ref = storage.ref(path);
     await ref.put(file);
     imageUrl = await ref.getDownloadURL();
@@ -216,222 +171,33 @@ async function createPost() {
     imageUrl,
     likes: [],
     comments: [],
-    reposts: [],
     timestamp: firebase.firestore.FieldValue.serverTimestamp()
   });
 
   document.getElementById("postText").value = "";
   document.getElementById("postImage").value = "";
+  loadFeed();
 }
 
-function createPostElement(post) {
-  const div = document.createElement("div");
-  div.className = "card";
-
-  const liked = post.likes.includes(currentUser?.uid);
-  const verifiedBadge = post.verified ? `<span class="verified"><i class="fas fa-check-circle"></i></span>` : "";
-
-  let commentsHtml = "";
-  (post.comments || []).forEach(c => {
-    commentsHtml += `
-      <div class="comment">
-        <div class="avatar" style="width:36px;height:36px;font-size:18px;">${c.username[0].toUpperCase()}</div>
-        <div class="comment-body">
-          <strong>${c.username}</strong><br>
-          <small>${c.text}</small>
-        </div>
-      </div>
-    `;
-  });
-
-  div.innerHTML = `
-    <div style="display:flex; align-items:center; gap:12px;">
-      <div class="avatar">${post.username[0].toUpperCase()}</div>
-      <div>
-        <strong class="username-link" onclick="viewUserProfile('${post.username}')">${post.username}</strong> ${verifiedBadge}<br>
-        <small>${timeAgo(post.timestamp)}</small>
-      </div>
-    </div>
-    <p style="margin:12px 0;">${post.text || ""}</p>
-    ${post.imageUrl ? `<img src="${post.imageUrl}" class="post-image">` : ""}
-    <div style="display:flex; gap:20px; margin-top:8px;">
-      <span style="cursor:pointer;" onclick="toggleLike('${post.id}')">
-        <i class="${liked ? "fas" : "far"} fa-heart"></i> ${post.likes.length}
-      </span>
-      <span style="cursor:pointer;" onclick="toggleComments('${post.id}')">
-        <i class="far fa-comment"></i> ${post.comments.length}
-      </span>
-      <span style="cursor:pointer;" onclick="repost('${post.id}')">
-        <i class="fas fa-retweet"></i> ${post.reposts.length}
-      </span>
-    </div>
-    <div id="comments-${post.id}" class="hidden">
-      <div id="comments-list-${post.id}">${commentsHtml}</div>
-      <input type="text" placeholder="Write a comment..." id="comment-input-${post.id}">
-      <button onclick="addComment('${post.id}')">Send</button>
-    </div>
-  `;
-  return div;
-}
-
-// ===== FEED =====
 async function loadFeed() {
   const postsDiv = document.getElementById("posts");
-  postsDiv.innerHTML = "<p>Loading feed...</p>";
+  postsDiv.innerHTML = "<p>Loading...</p>";
 
-  db.collection("posts").orderBy("timestamp", "desc").onSnapshot(async snapshot => {
+  db.collection("posts").orderBy("timestamp", "desc").onSnapshot(snapshot => {
     postsDiv.innerHTML = "";
-    const myFollowing = userData?.following || [];
-    const myUid = currentUser.uid;
-
-    for (const doc of snapshot.docs) {
-      const post = { id: doc.id, ...doc.data() };
-
-      // Private account visibility
-      if (post.uid !== myUid) {
-        const posterSnap = await db.collection("users").doc(post.uid).get();
-        const posterData = posterSnap.data();
-        if (posterData?.private && !myFollowing.includes(post.uid)) continue;
-      }
-
-      postsDiv.appendChild(createPostElement(post));
-    }
+    snapshot.docs.forEach(doc => {
+      const post = doc.data();
+      const div = document.createElement("div");
+      div.className = "card";
+      div.innerHTML = `
+        <strong>${post.username}</strong><br>
+        <p>${post.text || ""}</p>
+        ${post.imageUrl ? `<img src="${post.imageUrl}" class="post-image">` : ""}
+      `;
+      postsDiv.appendChild(div);
+    });
   });
 }
-
-function timeAgo(timestamp) {
-  if (!timestamp) return "now";
-  const seconds = Math.floor((Date.now() - timestamp.toDate()) / 1000);
-  if (seconds < 60) return seconds + "s";
-  if (seconds < 3600) return Math.floor(seconds/60) + "m";
-  if (seconds < 86400) return Math.floor(seconds/3600) + "h";
-  return Math.floor(seconds/86400) + "d";
-}
-
-// ===== LIKE / COMMENT / REPOST =====
-async function toggleLike(postId) {
-  const ref = db.collection("posts").doc(postId);
-  const snap = await ref.get();
-  let likes = snap.data().likes || [];
-  if (likes.includes(currentUser.uid)) likes = likes.filter(u => u !== currentUser.uid);
-  else likes.push(currentUser.uid);
-  await ref.update({ likes });
-}
-
-async function addComment(postId) {
-  const input = document.getElementById(`comment-input-${postId}`);
-  const text = input.value.trim();
-  if (!text) return;
-  await db.collection("posts").doc(postId).update({
-    comments: firebase.firestore.FieldValue.arrayUnion({
-      uid: currentUser.uid,
-      username: userData.username,
-      text,
-      timestamp: firebase.firestore.FieldValue.serverTimestamp()
-    })
-  });
-  input.value = "";
-}
-
-function toggleComments(postId) {
-  const section = document.getElementById(`comments-${postId}`);
-  section.classList.toggle("hidden");
-}
-
-async function repost(postId) {
-  const snap = await db.collection("posts").doc(postId).get();
-  const original = snap.data();
-  await db.collection("posts").add({
-    uid: currentUser.uid,
-    username: userData.username,
-    text: original.text,
-    imageUrl: original.imageUrl || "",
-    likes: [],
-    comments: [],
-    reposts: [],
-    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-    originalId: postId
-  });
-  await db.collection("posts").doc(postId).update({
-    reposts: firebase.firestore.FieldValue.arrayUnion(currentUser.uid)
-  });
-}
-
-// ===== PROFILE =====
-async function loadProfile(uid) {
-  const isOwn = uid === currentUser.uid;
-  const profileDiv = document.getElementById("profile");
-  profileDiv.innerHTML = "<p>Loading profile...</p>";
-
-  const userSnap = isOwn ? { id: uid, data: () => userData } : await db.collection("users").doc(uid).get();
-  if (!userSnap.exists && !isOwn) return alert("User not found");
-  const userDoc = isOwn ? userData : userSnap.data();
-
-  const postsSnap = await db.collection("posts").where("uid", "==", uid).orderBy("timestamp", "desc").get();
-  let postsHtml = "";
-  postsSnap.forEach(doc => {
-    const p = doc.data();
-    postsHtml += `<div class="card">
-      <p>${p.text || ""}</p>
-      ${p.imageUrl ? `<img src="${p.imageUrl}" class="post-image">` : ""}
-    </div>`;
-  });
-
-  const followersCount = userDoc.followers?.length || 0;
-  const followingCount = userDoc.following?.length || 0;
-  const verifiedBadge = userDoc.verified ? `<span class="verified"><i class="fas fa-check-circle"></i></span>` : "";
-
-  profileDiv.innerHTML = `
-    <div style="text-align:center; margin-bottom:16px;">
-      <div class="avatar">${userDoc.username[0].toUpperCase()}</div>
-      <h3>${userDoc.username} ${verifiedBadge}</h3>
-      <p>Followers: ${followersCount} | Following: ${followingCount}</p>
-      ${!isOwn ? `<button onclick="toggleFollow('${uid}')">Follow / Unfollow</button>` : ""}
-    </div>
-    <h4>${isOwn ? "Your Posts" : "Posts"}</h4>
-    ${postsHtml}
-  `;
-}
-
-async function viewUserProfile(username) {
-  const snap = await db.collection("users").where("username", "==", username).get();
-  if (snap.empty) return alert("User not found");
-  loadProfile(snap.docs[0].id);
-  route("profile");
-}
-
-async function toggleFollow(targetUid) {
-  if (currentUser.uid === targetUid) return alert("Can't follow yourself");
-
-  const myRef = db.collection("users").doc(currentUser.uid);
-  const targetRef = db.collection("users").doc(targetUid);
-
-  const [mySnap, targetSnap] = await Promise.all([myRef.get(), targetRef.get()]);
-  const myData = mySnap.data();
-  const targetData = targetSnap.data();
-
-  let myFollowing = myData.following || [];
-  let targetFollowers = targetData.followers || [];
-
-  if (myFollowing.includes(targetUid)) {
-    myFollowing = myFollowing.filter(u => u !== targetUid);
-    targetFollowers = targetFollowers.filter(u => u !== currentUser.uid);
-  } else {
-    myFollowing.push(targetUid);
-    targetFollowers.push(currentUser.uid);
-  }
-
-  await Promise.all([myRef.update({ following: myFollowing }), targetRef.update({ followers: targetFollowers })]);
-  loadProfile(targetUid);
-}
-
-// ===== ADMIN =====
-async function verifyUser() {
-  const uid = document.getElementById("verifyUid").value.trim();
-  if (!uid) return alert("Enter UID");
-  await db.collection("users").doc(uid).update({ verified: true });
-  alert("User verified!");
-}
-
-async function loadAdminPanel() {
-  const panel = document
+</script>
+</body>
+</html>
