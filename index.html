@@ -28,82 +28,34 @@ body.dark {
   --border: #333;
 }
 body {
-  margin: 0;
-  font-family: system-ui;
+  margin:0;
+  font-family: system-ui,-apple-system,sans-serif;
   background: var(--bg);
   color: var(--text);
   transition: 0.3s;
 }
 header {
-  position: fixed;
-  top: 0;
-  width: 100%;
-  padding: 14px;
+  position: fixed; top:0; left:0; right:0;
+  padding:14px;
   background: var(--bg);
-  border-bottom: 1px solid var(--border);
-  font-weight: bold;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  border-bottom:1px solid var(--border);
+  font-weight:bold;
+  display:flex; justify-content:space-between; align-items:center;
   z-index: 10;
 }
 nav {
-  position: fixed;
-  bottom: 0;
-  width: 100%;
-  display: flex;
-  justify-content: space-around;
-  padding: 12px 0;
-  background: var(--bg);
-  border-top: 1px solid var(--border);
+  position: fixed; bottom:0; left:0; right:0;
+  display:flex; justify-content:space-around; padding:12px 0;
+  background: var(--bg); border-top:1px solid var(--border);
 }
-nav i {
-  font-size: 20px;
-  cursor: pointer;
-}
-main {
-  padding: 80px 16px 90px;
-  max-width: 600px;
-  margin: auto;
-}
-.card {
-  background: var(--card);
-  padding: 16px;
-  border-radius: 16px;
-  margin-bottom: 12px;
-}
-textarea,input {
-  width: 100%;
-  padding: 10px;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  background: var(--bg);
-  color: var(--text);
-}
-button {
-  background: var(--accent);
-  color: white;
-  border: none;
-  padding: 10px 18px;
-  border-radius: 999px;
-  font-weight: 600;
-  margin-top: 8px;
-  cursor: pointer;
-}
-.hidden { display: none; }
-.avatar {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  background: #666;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 24px;
-  font-weight: 700;
-}
-.verified { color: #1da1f2; margin-left: 6px; }
+nav i { font-size:20px; cursor:pointer; }
+main { padding:80px 16px 90px; max-width:600px; margin:auto; }
+.card { background: var(--card); padding:16px; border-radius:16px; margin-bottom:12px; }
+textarea,input { width:100%; padding:10px; border-radius:10px; border:1px solid var(--border); background: var(--bg); color: var(--text); }
+button { background: var(--accent); color:white; border:none; padding:10px 18px; border-radius:999px; font-weight:600; margin-top:8px; cursor:pointer; }
+.hidden { display:none; }
+.avatar { width:60px; height:60px; border-radius:50%; background:#666; color:white; display:flex; align-items:center; justify-content:center; font-size:24px; font-weight:700; }
+.verified { color:#1da1f2; margin-left:6px; }
 </style>
 </head>
 <body>
@@ -139,6 +91,8 @@ button {
     <h3>Settings</h3>
     <label><input type="checkbox" id="darkToggle" onchange="toggleDark()"> Dark mode</label><br><br>
     <label><input type="checkbox" id="privateToggle" onchange="togglePrivate(this.checked)"> Private account</label>
+    <br><br>
+    <button onclick="logout()">Logout</button>
   </div>
 </div>
 
@@ -161,7 +115,7 @@ button {
 </nav>
 
 <script>
-/* Firebase config */
+// Firebase config
 firebase.initializeApp({
   apiKey: "AIzaSyCmY_zfNcH5XnEaQxlqaTW1D8EUR670-Zo",
   authDomain: "echostream-a102a.firebaseapp.com",
@@ -174,60 +128,43 @@ const db = firebase.firestore();
 const storage = firebase.storage();
 let userData = null;
 
-/* AUTH */
-function login() {
-  auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
-}
+// AUTH
+function login() { auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
 
-auth.onAuthStateChanged(async user => {
+auth.onAuthStateChanged(async user=>{
   if(!user) return;
   document.getElementById("login").style.display="none";
   route("feed");
 
-  const ref = db.collection("users").doc(user.uid);
-  const snap = await ref.get();
+  const ref=db.collection("users").doc(user.uid);
+  const snap=await ref.get();
 
   if(!snap.exists) {
-    await ref.set({
-      username: user.displayName.replace(/\s/g,"").toLowerCase(),
-      verified: false,
-      role: "owner",
-      private: false
-    });
+    await ref.set({ username:user.displayName.replace(/\s/g,"").toLowerCase(), verified:false, role:"owner", private:false });
   }
+
   userData = (await ref.get()).data();
   loadFeed();
   if(localStorage.getItem("darkMode")==="true") toggleDark();
 });
 
-/* ROUTER */
-function route(page) {
-  ["feed","profile","settings","admin"].forEach(p => document.getElementById(p).classList.add("hidden"));
+// ROUTER
+function route(page){
+  ["feed","profile","settings","admin"].forEach(p=>document.getElementById(p).classList.add("hidden"));
   document.getElementById(page).classList.remove("hidden");
-
   if(page==="profile") loadProfile();
-  if(page==="admin" && userData.role!=="owner"){
-    alert("Admins only");
-    route("feed");
-  }
+  if(page==="admin" && userData.role!=="owner"){ alert("Admins only"); route("feed"); }
 }
 
-/* POSTS */
-async function createPost() {
+// POSTS
+async function createPost(){
   if(!postText.value.trim()) return;
-  await db.collection("posts").add({
-    uid: auth.currentUser.uid,
-    username: userData.username,
-    text: postText.value,
-    likes: [],
-    comments: [],
-    timestamp: firebase.firestore.FieldValue.serverTimestamp()
-  });
+  await db.collection("posts").add({ uid: auth.currentUser.uid, username: userData.username, text: postText.value, likes: [], comments: [], timestamp: firebase.firestore.FieldValue.serverTimestamp() });
   postText.value="";
   loadFeed();
 }
 
-async function loadFeed() {
+async function loadFeed(){
   posts.innerHTML="";
   const snap = await db.collection("posts").orderBy("timestamp","desc").get();
   snap.forEach(d=>{
@@ -254,40 +191,33 @@ async function loadFeed() {
   });
 }
 
-/* Likes & Comments */
-async function toggleLike(postId) {
-  const ref = db.collection("posts").doc(postId);
-  const doc = await ref.get();
-  let likes = doc.data().likes || [];
-  if(likes.includes(auth.currentUser.uid)) likes = likes.filter(u=>u!==auth.currentUser.uid);
+// Likes & Comments
+async function toggleLike(postId){
+  const ref=db.collection("posts").doc(postId);
+  const doc=await ref.get();
+  let likes=doc.data().likes||[];
+  if(likes.includes(auth.currentUser.uid)) likes=likes.filter(u=>u!==auth.currentUser.uid);
   else likes.push(auth.currentUser.uid);
   await ref.update({likes});
   loadFeed();
 }
 
-async function toggleComments(postId) {
+async function toggleComments(postId){
   const el=document.getElementById(`comments-${postId}`);
   el.style.display=el.style.display==="block"?"none":"block";
   loadComments(postId);
 }
 
-async function addComment(postId) {
+async function addComment(postId){
   const input=document.getElementById(`commentInput-${postId}`);
   const text=input.value.trim();
   if(!text) return;
-  await db.collection("posts").doc(postId).update({
-    comments: firebase.firestore.FieldValue.arrayUnion({
-      uid: auth.currentUser.uid,
-      username: userData.username,
-      text,
-      timestamp: firebase.firestore.FieldValue.serverTimestamp()
-    })
-  });
+  await db.collection("posts").doc(postId).update({ comments: firebase.firestore.FieldValue.arrayUnion({ uid: auth.currentUser.uid, username: userData.username, text, timestamp: firebase.firestore.FieldValue.serverTimestamp() }) });
   input.value="";
   loadComments(postId);
 }
 
-async function loadComments(postId) {
+async function loadComments(postId){
   const doc=await db.collection("posts").doc(postId).get();
   const listEl=document.getElementById(`commentsList-${postId}`);
   listEl.innerHTML="";
@@ -298,8 +228,8 @@ async function loadComments(postId) {
   });
 }
 
-/* Profile */
-function loadProfile() {
+// PROFILE
+function loadProfile(){
   profile.innerHTML=`
     <div class="card">
       <div class="avatar">${userData.username[0].toUpperCase()}</div>
@@ -309,22 +239,19 @@ function loadProfile() {
   `;
 }
 
-/* Settings */
-function toggleDark() {
-  document.body.classList.toggle("dark");
-  localStorage.setItem("darkMode",document.body.classList.contains("dark"));
-}
-async function togglePrivate(val){
-  await db.collection("users").doc(auth.currentUser.uid).update({private:val});
-}
+// SETTINGS
+function toggleDark(){ document.body.classList.toggle("dark"); localStorage.setItem("darkMode",document.body.classList.contains("dark")); }
+async function togglePrivate(val){ await db.collection("users").doc(auth.currentUser.uid).update({private:val}); }
+function logout(){ auth.signOut(); }
 
-/* Admin */
-async function verifyUser() {
+// ADMIN
+async function verifyUser(){
   const uid=document.getElementById("verifyUid").value.trim();
   if(!uid) return;
   await db.collection("users").doc(uid).update({verified:true});
   alert("User verified");
 }
 </script>
+
 </body>
 </html>
