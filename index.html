@@ -31,17 +31,22 @@
         .post { background:var(--card); margin:12px 20px; padding:16px; border-radius:16px; box-shadow:0 1px 3px rgba(0,0,0,0.1); }
         .post-header { display:flex; align-items:center; gap:12px; margin-bottom:12px; }
         .post-user { display:flex; align-items:center; gap:8px; }
-        .username { font-weight:600; cursor:pointer; color:var(--accent); }
+        .username { font-weight:600; }
         .time { font-size:14px; color:#666; margin-left:auto; }
         .post-text { margin:8px 0 16px; white-space:pre-wrap; font-size:16px; line-height:1.5; }
         .post-actions { display:flex; justify-content:space-around; font-size:20px; color:#666; }
         .action { cursor:pointer; display:flex; align-items:center; gap:6px; }
         .action.liked { color:#e0245e; }
         .action-count { font-size:14px; }
+        .comments-section { margin-top:16px; padding-top:12px; border-top:1px solid var(--border); display:none; }
+        .comment { display:flex; gap:12px; margin-top:12px; }
+        .comment-avatar { width:32px; height:32px; border-radius:50%; background:#666; flex-shrink:0; display:flex; align-items:center; justify-content:center; color:white; font-weight:bold; }
+        .comment-body { flex:1; }
+        .comment-input { width:100%; padding:10px; border:1px solid var(--border); border-radius:12px; background:var(--card); color:var(--text); margin-top:8px; }
         #settings-sidebar { position:fixed; top:0; bottom:0; right:-320px; width:320px; background:var(--card); box-shadow:-4px 0 16px rgba(0,0,0,0.2); transition:right 0.3s ease; z-index:20; padding:20px; overflow-y:auto; }
         #settings-sidebar.open { right:0; }
         .settings-header { font-size:20px; font-weight:bold; margin-bottom:20px; }
-        .settings-item { padding:16px 0; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; }
+        .settings-item { padding:16px 0; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; cursor:pointer; }
         .switch { position:relative; display:inline-block; width:52px; height:32px; }
         .switch input { opacity:0; width:0; height:0; }
         .slider { position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background:#ccc; transition:0.4s; border-radius:34px; }
@@ -50,10 +55,7 @@
         input:checked + .slider:before { transform:translateX(20px); }
         .modal { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.6); align-items:center; justify-content:center; z-index:30; }
         .modal-content { background:var(--card); padding:32px; border-radius:16px; width:90%; max-width:400px; text-align:center; }
-        #profile-view { display:none; padding:20px; margin-top:70px; text-align:center; }
-        .profile-header { margin-bottom:30px; }
-        .profile-avatar { width:100px; height:100px; border-radius:50%; margin:0 auto; font-size:40px; }
-        .profile-stats { display:flex; justify-content:center; gap:30px; margin:20px 0; font-size:14px; color:#666; }
+        #search-view, #messages-view, #profile-view { display:none; padding:20px; margin-top:70px; }
     </style>
 </head>
 <body>
@@ -79,18 +81,22 @@
 
         <div class="feed" id="feed"></div>
 
+        <div id="search-view">
+            <input id="search-input" placeholder="Search EchoStream..." oninput="searchPosts()" style="width:100%; padding:12px; border:1px solid var(--border); border-radius:12px; margin-bottom:20px;"/>
+            <div id="search-results"></div>
+        </div>
+
+        <div id="messages-view">
+            <h2>Messages</h2>
+            <p>Direct messages will appear here when someone messages you.</p>
+        </div>
+
         <div id="profile-view">
-            <div class="profile-header">
-                <div class="profile-avatar" id="profile-avatar">?</div>
+            <div style="text-align:center; margin:20px 0;">
+                <div class="avatar" id="profile-avatar" style="margin:0 auto; width:80px; height:80px; font-size:32px;">?</div>
                 <h2 id="profile-username">Loading...</h2>
-                <p id="profile-bio">No bio yet</p>
-                <div class="profile-stats">
-                    <div><strong id="profile-posts-count">0</strong> Posts</div>
-                    <div><strong id="profile-followers">0</strong> Followers</div>
-                    <div><strong id="profile-following">0</strong> Following</div>
-                </div>
             </div>
-            <div id="profile-posts-list"></div>
+            <div id="profile-posts"></div>
         </div>
 
         <div class="bottom-nav">
@@ -111,6 +117,10 @@
                 <span class="slider"></span>
             </label>
         </div>
+        <div class="settings-item"><span>Privacy & safety</span><span>Public</span></div>
+        <div class="settings-item"><span>Notifications</span><span>All on</span></div>
+        <div class="settings-item"><span>Display</span><span>Standard</span></div>
+        <div class="settings-item"><span>Security</span><span>2FA off</span></div>
         <div class="settings-item"><span>Change profile picture</span><input type="file" accept="image/*" onchange="uploadProfilePic(event)"></div>
         <div class="settings-item"><span>About</span><span>Built with hope and a laptop</span></div>
         <button style="background:#d33; width:100%; padding:14px; margin-top:30px; border-radius:999px;" onclick="logout()">Logout</button>
@@ -139,7 +149,7 @@
 
         let currentUser = null;
         let currentUserData = null;
-        let viewedUser = null;
+        let allPosts = [];
 
         document.getElementById('google-signin').onclick = () => auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
 
@@ -150,7 +160,6 @@
                 document.getElementById('app').style.display = 'block';
                 await loadUserData();
                 loadFeed();
-                handleUrl();
             }
         });
 
@@ -194,7 +203,9 @@
                 text,
                 uid: currentUser.uid,
                 username: currentUserData.username,
-                likes: 0,
+                likes: [],
+                comments: [],
+                reposts: [],
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
             });
             document.getElementById('post-text').value = '';
@@ -203,26 +214,96 @@
 
         async function loadFeed() {
             const snap = await db.collection('posts').orderBy('timestamp', 'desc').get();
+            allPosts = snap.docs.map(doc => ({id: doc.id, ...doc.data()}));
+            renderFeed(allPosts);
+        }
+
+        function renderFeed(posts) {
             const feed = document.getElementById('feed');
             feed.innerHTML = '';
-            snap.forEach(doc => {
-                const d = doc.data();
-                const userName = d.username || 'Anonymous';
-                const firstLetter = userName.charAt(0).toUpperCase() || 'A';
+            posts.forEach(p => {
+                if (!p.username || p.username.length < 3) return; // hide bots
+                const isLiked = p.likes?.includes(currentUser.uid);
                 const div = document.createElement('div');
                 div.className = 'post';
                 div.innerHTML = `
                     <div class="post-header">
-                        <div class="avatar">${firstLetter}</div>
+                        <div class="avatar">${p.username[0].toUpperCase()}</div>
                         <div class="post-user">
-                            <div class="username" onclick="openProfile('\( {userName}')"> \){userName}</div>
-                            <div class="time">${timeAgo(d.timestamp)}</div>
+                            <div class="username">${p.username}</div>
+                            <div class="time">${timeAgo(p.timestamp)}</div>
                         </div>
                     </div>
-                    <div class="post-text">${d.text}</div>
+                    <div class="post-text">${p.text}</div>
+                    <div class="post-actions">
+                        <div class="action \( {isLiked ? 'liked' : ''}" onclick="toggleLike(' \){p.id}')">
+                            <i class="fa${isLiked ? 's' : 'r'} fa-heart"></i>
+                            <span class="action-count">${p.likes?.length || 0}</span>
+                        </div>
+                        <div class="action" onclick="toggleComments('${p.id}')">
+                            <i class="far fa-comment"></i>
+                            <span class="action-count">${p.comments?.length || 0}</span>
+                        </div>
+                        <div class="action" onclick="repost('${p.id}')">
+                            <i class="fas fa-retweet"></i>
+                            <span class="action-count">${p.reposts?.length || 0}</span>
+                        </div>
+                    </div>
+                    <div class="comments-section" id="comments-${p.id}">
+                        <div id="comments-list-${p.id}"></div>
+                        <input class="comment-input" id="comment-input-${p.id}" placeholder="Write a reply...">
+                        <button onclick="addComment('${p.id}')">Send</button>
+                    </div>
                 `;
                 feed.appendChild(div);
             });
+        }
+
+        async function toggleLike(postId) {
+            const ref = db.collection('posts').doc(postId);
+            const doc = await ref.get();
+            let likes = doc.data().likes || [];
+            if (likes.includes(currentUser.uid)) {
+                likes = likes.filter(u => u !== currentUser.uid);
+            } else {
+                likes.push(currentUser.uid);
+            }
+            await ref.update({likes});
+            loadFeed();
+        }
+
+        async function addComment(postId) {
+            const input = document.getElementById(`comment-input-${postId}`);
+            const text = input.value.trim();
+            if (!text) return;
+            const comment = {
+                text,
+                uid: currentUser.uid,
+                username: currentUserData.username,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            };
+            await db.collection('posts').doc(postId).update({comments: firebase.firestore.FieldValue.arrayUnion(comment)});
+            input.value = '';
+            loadFeed();
+        }
+
+        async function repost(postId) {
+            const original = await db.collection('posts').doc(postId).get();
+            const o = original.data();
+            await db.collection('posts').add({
+                text: o.text,
+                uid: currentUser.uid,
+                username: currentUserData.username,
+                originalId: postId,
+                isRepost: true,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            loadFeed();
+        }
+
+        function toggleComments(postId) {
+            const section = document.getElementById(`comments-${postId}`);
+            section.style.display = section.style.display === 'block' ? 'none' : 'block';
         }
 
         function timeAgo(ts) {
@@ -234,69 +315,59 @@
             return Math.floor(seconds / 86400) + 'd';
         }
 
-        function openProfile(username) {
-            window.location.hash = `profile?user=${username}`;
-            handleUrl();
-        }
-
-        async function handleUrl() {
-            const hash = window.location.hash;
-            if (hash.startsWith('#profile?user=')) {
-                const username = hash.split('=')[1];
-                await loadOtherProfile(username);
-                switchTab('profile');
-            } else {
-                switchTab('home');
-            }
-        }
-
-        async function loadOtherProfile(username) {
-            const snap = await db.collection('users').where('username', '==', username).get();
-            if (snap.empty) {
-                document.getElementById('profile-username').textContent = 'User not found';
-                return;
-            }
-            const userDoc = snap.docs[0].data();
-            viewedUser = userDoc;
-            document.getElementById('profile-username').textContent = userDoc.username || 'Anonymous';
-            document.getElementById('profile-bio').textContent = userDoc.bio || 'No bio yet';
-            document.getElementById('profile-avatar').style.backgroundImage = userDoc.photoURL ? `url(${userDoc.photoURL})` : '';
-            document.getElementById('profile-avatar').textContent = (userDoc.username || 'A')[0].toUpperCase();
-
-            const postsSnap = await db.collection('posts').where('uid', '==', snap.docs[0].id).orderBy('timestamp', 'desc').get();
-            const postsList = document.getElementById('profile-posts-list');
-            postsList.innerHTML = '<h3>Posts</h3>';
-            postsSnap.forEach(doc => {
-                const p = doc.data();
-                const div = document.createElement('div');
-                div.className = 'post';
-                div.innerHTML = `<div class="post-text">${p.text}</div>`;
-                postsList.appendChild(div);
-            });
-        }
-
         function toggleSettings() {
-            document.getElementById('settings-sidebar').classList.toggle('open');
+            const sidebar = document.getElementById('settings-sidebar');
+            sidebar.classList.toggle('open');
         }
 
         function switchTab(tab) {
-            document.querySelectorAll('#feed, #profile-view').forEach(el => el.style.display = 'none');
+            document.querySelectorAll('#feed, #search-view, #messages-view, #profile-view').forEach(el => el.style.display = 'none');
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
             if (tab === 'home') {
                 document.getElementById('feed').style.display = 'block';
                 document.querySelector('.fa-home').parentElement.classList.add('active');
+            } else if (tab === 'search') {
+                document.getElementById('search-view').style.display = 'block';
+                document.querySelector('.fa-search').parentElement.classList.add('active');
+            } else if (tab === 'messages') {
+                document.getElementById('messages-view').style.display = 'block';
+                document.querySelector('.fa-envelope').parentElement.classList.add('active');
             } else if (tab === 'profile') {
                 document.getElementById('profile-view').style.display = 'block';
                 document.querySelector('.fa-user').parentElement.classList.add('active');
-                handleUrl();
+                loadProfile();
+            }
+        }
+
+        async function loadProfile() {
+            document.getElementById('profile-username').textContent = currentUserData.username || 'Anonymous';
+            const snap = await db.collection('posts').where('uid', '==', currentUser.uid).orderBy('timestamp', 'desc').get();
+            const postsDiv = document.getElementById('profile-posts');
+            postsDiv.innerHTML = '<h3>Your Posts</h3>';
+            snap.forEach(doc => {
+                const p = doc.data();
+                const div = document.createElement('div');
+                div.className = 'post';
+                div.innerHTML = `<div class="post-text">${p.text}</div>`;
+                postsDiv.appendChild(div);
+            });
+        }
+
+        async function uploadProfilePic(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const ref = storage.ref(`avatars/${currentUser.uid}`);
+                await ref.put(file);
+                const url = await ref.getDownloadURL();
+                await db.collection('users').doc(currentUser.uid).update({photoURL: url});
+                alert('Profile picture updated!');
+                loadFeed();
             }
         }
 
         function logout() {
             auth.signOut();
         }
-
-        window.onhashchange = handleUrl;
     </script>
 </body>
 </html>
