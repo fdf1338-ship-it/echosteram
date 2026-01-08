@@ -218,4 +218,585 @@ async function verifyUser(){
 }
 </script>
 </body>
-</html>
+</html><!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EchoStream Full App</title>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+
+<!-- Font Awesome for icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+<style>
+:root {
+  --bg:#fff; --text:#000; --card:#f3f3f3; --border:#ddd; --accent:#1da1f2; --red:#ff0000;
+}
+body.dark { --bg:#000; --text:#fff; --card:#1a1a1a; --border:#333; }
+body { margin:0; font-family:system-ui,-apple-system,sans-serif; background:var(--bg); color:var(--text); transition:0.3s; }
+header { position:fixed; top:0; left:0; right:0; padding:14px; background:var(--bg); border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; font-weight:bold; z-index:10; }
+nav { position:fixed; bottom:0; left:0; right:0; display:flex; justify-content:space-around; padding:12px 0; background:var(--bg); border-top:1px solid var(--border); }
+nav i{font-size:20px; cursor:pointer;}
+main{padding:80px 16px 90px; max-width:600px; margin:auto;}
+.card{background:var(--card); padding:16px; border-radius:16px; margin-bottom:12px;}
+textarea,input{width:100%; padding:10px; border-radius:10px; border:1px solid var(--border); background:var(--bg); color:var(--text);}
+button{background:var(--accent); color:white; border:none; padding:10px 18px; border-radius:999px; font-weight:600; margin-top:8px; cursor:pointer;}
+.hidden{display:none;}
+.avatar{width:60px; height:60px; border-radius:50%; background:#666; color:white; display:flex; align-items:center; justify-content:center; font-size:24px; font-weight:700;}
+.verified{color:#1da1f2; margin-left:6px;}
+.post-image{max-width:100%; border-radius:12px; margin-top:8px;}
+.comment{display:flex; gap:12px; margin-top:8px;}
+.comment-body{flex:1;}
+.modal{display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.6); justify-content:center; align-items:center; z-index:50;}
+.modal-content{background:var(--card); padding:32px; border-radius:16px; width:90%; max-width:400px; text-align:center;}
+</style>
+</head>
+<body>
+
+<header>
+  EchoStream
+  <i class="fas fa-cog" onclick="route('settings')"></i>
+</header>
+
+<main>
+<!-- LOGIN -->
+<div id="login">
+  <h2>Welcome to EchoStream</h2>
+  <button onclick="login()">Sign in with Google</button>
+</div>
+
+<!-- FEED -->
+<div id="feed" class="hidden">
+  <div class="card">
+    <textarea id="postText" placeholder="What’s happening?"></textarea>
+    <input type="file" id="postImage" accept="image/*" style="margin-top:8px;">
+    <button onclick="createPost()">Post</button>
+  </div>
+  <div id="posts"></div>
+</div>
+
+<!-- PROFILE -->
+<div id="profile" class="hidden"></div>
+
+<!-- SETTINGS -->
+<div id="settings" class="hidden">
+  <div class="card">
+    <h3>Settings</h3>
+    <label><input type="checkbox" id="darkToggle" onchange="toggleDark()"> Dark mode</label><br><br>
+    <label><input type="checkbox" id="privateToggle" onchange="togglePrivate(this.checked)"> Private account</label><br><br>
+    <button onclick="logout()">Logout</button>
+  </div>
+</div>
+
+<!-- ADMIN -->
+<div id="admin" class="hidden">
+  <div class="card">
+    <h3>Admin Panel</h3>
+    <input id="verifyUid" placeholder="User UID to verify">
+    <button onclick="verifyUser()">Verify User</button>
+  </div>
+</div>
+
+<!-- USERNAME MODAL -->
+<div id="usernameModal" class="modal">
+  <div class="modal-content">
+    <h3>Pick a username</h3>
+    <input id="usernameInput" placeholder="username" maxlength="20">
+    <button onclick="saveUsername()">Save</button>
+  </div>
+</div>
+
+</main>
+
+<nav>
+  <i class="fa fa-house" onclick="route('feed')"></i>
+  <i class="fa fa-user" onclick="route('profile')"></i>
+  <i class="fa fa-gear" onclick="route('settings')"></i>
+  <i class="fa fa-shield" onclick="route('admin')"></i>
+</nav>
+
+<script>
+// Firebase config
+firebase.initializeApp({
+  apiKey: "AIzaSyCmY_zfNcH5XnEaQxlqaTW1D8EUR670-Zo",
+  authDomain: "echostream-a102a.firebaseapp.com",
+  projectId: "echostream-a102a",
+  storageBucket: "echostream-a102a.appspot.com"
+});
+
+const auth = firebase.auth();
+const db = firebase.firestore();
+const storage = firebase.storage();
+let userData = null;
+
+// LOGIN
+function login(){ auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
+
+auth.onAuthStateChanged(async user=>{
+  if(!user) return;
+  document.getElementById("login").style.display="none";
+  route("feed");
+
+  const ref = db.collection("users").doc(user.uid);
+  const snap = await ref.get();
+  if(!snap.exists){
+    await ref.set({ username:user.displayName.replace(/\s/g,"").toLowerCase(), verified:false, role:"owner", private:false });
+    document.getElementById("usernameModal").style.display="flex";
+  } else {
+    userData = snap.data();
+  }
+
+  loadFeed();
+  if(localStorage.getItem("darkMode")==="true") toggleDark();
+});
+
+// ROUTING
+function route(page){
+  ["feed","profile","settings","admin"].forEach(p=>document.getElementById(p).classList.add("hidden"));
+  document.getElementById(page).classList.remove("hidden");
+  if(page==="profile") loadProfile();
+  if(page==="admin" && userData.role!=="owner"){ alert("Admins only"); route("feed"); }
+}
+
+// DARK MODE
+function toggleDark(){ document.body.classList.toggle("dark"); localStorage.setItem("darkMode",document.body.classList.contains("dark")); }
+</script>
+</body>
+</html>// POSTS FEED
+async function loadFeed() {
+  const postsDiv = document.getElementById("posts");
+  postsDiv.innerHTML = "";
+
+  // Listen for real-time updates
+  db.collection("posts").orderBy("timestamp", "desc").onSnapshot(snapshot => {
+    postsDiv.innerHTML = "";
+    snapshot.forEach(doc => {
+      const post = { id: doc.id, ...doc.data() };
+      postsDiv.appendChild(createPostElement(post));
+    });
+  });
+}
+
+// CREATE POST
+async function createPost() {
+  const text = document.getElementById("postText").value.trim();
+  const file = document.getElementById("postImage").files[0];
+  if (!text && !file) return alert("Post cannot be empty");
+
+  let imageUrl = "";
+  if (file) {
+    const storageRef = storage.ref(`posts/${auth.currentUser.uid}/${Date.now()}_${file.name}`);
+    await storageRef.put(file);
+    imageUrl = await storageRef.getDownloadURL();
+  }
+
+  await db.collection("posts").add({
+    uid: auth.currentUser.uid,
+    username: userData.username,
+    text,
+    imageUrl,
+    likes: [],
+    comments: [],
+    reposts: [],
+    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+  });
+
+  document.getElementById("postText").value = "";
+  document.getElementById("postImage").value = "";
+}
+
+// CREATE POST ELEMENT
+function createPostElement(post) {
+  const div = document.createElement("div");
+  div.className = "card";
+
+  const liked = post.likes.includes(auth.currentUser.uid);
+  const verifiedBadge = post.verified ? `<span class="verified"><i class="fas fa-check-circle"></i></span>` : "";
+
+  div.innerHTML = `
+    <div style="display:flex; align-items:center; gap:12px;">
+      <div class="avatar">${post.username[0].toUpperCase()}</div>
+      <div>
+        <strong>${post.username}</strong> ${verifiedBadge}<br>
+        <small>${timeAgo(post.timestamp)}</small>
+      </div>
+    </div>
+    <p style="margin:12px 0;">${post.text || ""}</p>
+    ${post.imageUrl ? `<img src="${post.imageUrl}" class="post-image">` : ""}
+    <div style="display:flex; gap:20px; margin-top:8px;">
+      <span style="cursor:pointer;" onclick="toggleLike('${post.id}')">
+        <i class="${liked ? "fas" : "far"} fa-heart"></i> ${post.likes.length || 0}
+      </span>
+      <span style="cursor:pointer;" onclick="toggleComments('${post.id}')">
+        <i class="far fa-comment"></i> ${post.comments.length || 0}
+      </span>
+      <span style="cursor:pointer;" onclick="repost('${post.id}')">
+        <i class="fas fa-retweet"></i> ${post.reposts.length || 0}
+      </span>
+    </div>
+    <div id="comments-${post.id}" class="hidden">
+      <div id="comments-list-${post.id}"></div>
+      <input type="text" placeholder="Write a comment..." id="comment-input-${post.id}">
+      <button onclick="addComment('${post.id}')">Send</button>
+    </div>
+  `;
+  return div;
+}
+
+// TIME AGO
+function timeAgo(timestamp) {
+  if (!timestamp) return "now";
+  const seconds = Math.floor((Date.now() - timestamp.toDate()) / 1000);
+  if (seconds < 60) return seconds + "s";
+  if (seconds < 3600) return Math.floor(seconds/60) + "m";
+  if (seconds < 86400) return Math.floor(seconds/3600) + "h";
+  return Math.floor(seconds/86400) + "d";
+}
+
+// TOGGLE LIKE
+async function toggleLike(postId) {
+  const ref = db.collection("posts").doc(postId);
+  const doc = await ref.get();
+  let likes = doc.data().likes || [];
+  if (likes.includes(auth.currentUser.uid)) likes = likes.filter(u => u !== auth.currentUser.uid);
+  else likes.push(auth.currentUser.uid);
+  await ref.update({ likes });
+}
+
+// ADD COMMENT
+async function addComment(postId) {
+  const input = document.getElementById(`comment-input-${postId}`);
+  const text = input.value.trim();
+  if (!text) return;
+  const comment = {
+    uid: auth.currentUser.uid,
+    username: userData.username,
+    text,
+    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+  };
+  await db.collection("posts").doc(postId).update({
+    comments: firebase.firestore.FieldValue.arrayUnion(comment)
+  });
+  input.value = "";
+}
+
+// TOGGLE COMMENTS SECTION
+function toggleComments(postId) {
+  const section = document.getElementById(`comments-${postId}`);
+  section.classList.toggle("hidden");
+}
+
+// REPOST
+async function repost(postId) {
+  const original = await db.collection("posts").doc(postId).get();
+  const o = original.data();
+  await db.collection("posts").add({
+    uid: auth.currentUser.uid,
+    username: userData.username,
+    text: o.text,
+    imageUrl: o.imageUrl || "",
+    likes: [],
+    comments: [],
+    reposts: [],
+    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+    originalId: postId
+  });
+  // Add user to original reposts
+  await db.collection("posts").doc(postId).update({
+    reposts: firebase.firestore.FieldValue.arrayUnion(auth.currentUser.uid)
+  });
+}// LOAD CURRENT USER PROFILE
+async function loadProfile() {
+  const profileDiv = document.getElementById("profile");
+  profileDiv.innerHTML = "";
+
+  if (!userData) return;
+
+  const userPostsSnap = await db.collection("posts")
+    .where("uid", "==", auth.currentUser.uid)
+    .orderBy("timestamp", "desc")
+    .get();
+
+  let postsHtml = "";
+  userPostsSnap.forEach(doc => {
+    const p = doc.data();
+    postsHtml += `<div class="card">
+      <p>${p.text || ""}</p>
+      ${p.imageUrl ? `<img src="${p.imageUrl}" class="post-image">` : ""}
+    </div>`;
+  });
+
+  profileDiv.innerHTML = `
+    <div style="text-align:center; margin-bottom:16px;">
+      <div class="avatar">${userData.username[0].toUpperCase()}</div>
+      <h3>${userData.username}${userData.verified ? `<span class="verified"><i class="fas fa-check-circle"></i></span>` : ""}</h3>
+      <p>Followers: <span id="followers-count">0</span> | Following: <span id="following-count">0</span></p>
+      <button onclick="toggleFollow(auth.currentUser.uid)">Follow / Unfollow</button>
+    </div>
+    <h4>Your Posts</h4>
+    ${postsHtml}
+  `;
+
+  updateFollowersFollowing();
+}
+
+// VIEW OTHER USER PROFILE
+async function viewUserProfile(username) {
+  const snap = await db.collection("users").where("username", "==", username).get();
+  if (snap.empty) return alert("User not found");
+  const otherUser = snap.docs[0];
+  const userDoc = otherUser.data();
+
+  const profileDiv = document.getElementById("profile");
+  profileDiv.innerHTML = "";
+
+  const postsSnap = await db.collection("posts")
+    .where("uid", "==", otherUser.id)
+    .orderBy("timestamp", "desc")
+    .get();
+
+  let postsHtml = "";
+  postsSnap.forEach(doc => {
+    const p = doc.data();
+    postsHtml += `<div class="card">
+      <p>${p.text || ""}</p>
+      ${p.imageUrl ? `<img src="${p.imageUrl}" class="post-image">` : ""}
+    </div>`;
+  });
+
+  profileDiv.innerHTML = `
+    <div style="text-align:center; margin-bottom:16px;">
+      <div class="avatar">${userDoc.username[0].toUpperCase()}</div>
+      <h3>${userDoc.username}${userDoc.verified ? `<span class="verified"><i class="fas fa-check-circle"></i></span>` : ""}</h3>
+      <p>Followers: <span id="followers-count">${userDoc.followers?.length || 0}</span> | Following: <span id="following-count">${userDoc.following?.length || 0}</span></p>
+      <button onclick="toggleFollow('${otherUser.id}')">Follow / Unfollow</button>
+    </div>
+    <h4>Posts</h4>
+    ${postsHtml}
+  `;
+
+  route("profile");
+}
+
+// FOLLOW / UNFOLLOW FUNCTION
+async function toggleFollow(targetUid) {
+  if (auth.currentUser.uid === targetUid) return alert("You cannot follow yourself");
+
+  const currentRef = db.collection("users").doc(auth.currentUser.uid);
+  const targetRef = db.collection("users").doc(targetUid);
+
+  const [currentSnap, targetSnap] = await Promise.all([currentRef.get(), targetRef.get()]);
+  const currentData = currentSnap.data();
+  const targetData = targetSnap.data();
+
+  let currentFollowing = currentData.following || [];
+  let targetFollowers = targetData.followers || [];
+
+  if (currentFollowing.includes(targetUid)) {
+    currentFollowing = currentFollowing.filter(u => u !== targetUid);
+    targetFollowers = targetFollowers.filter(u => u !== auth.currentUser.uid);
+  } else {
+    currentFollowing.push(targetUid);
+    targetFollowers.push(auth.currentUser.uid);
+  }
+
+  await Promise.all([
+    currentRef.update({ following: currentFollowing }),
+    targetRef.update({ followers: targetFollowers })
+  ]);
+
+  updateFollowersFollowing();
+}
+
+// UPDATE FOLLOWER COUNTS ON PROFILE
+async function updateFollowersFollowing() {
+  const userSnap = await db.collection("users").doc(auth.currentUser.uid).get();
+  const userDoc = userSnap.data();
+  document.getElementById("followers-count").textContent = userDoc.followers?.length || 0;
+  document.getElementById("following-count").textContent = userDoc.following?.length || 0;
+}
+
+// CLICK USERNAME IN POSTS TO VIEW PROFILE
+function attachUsernameLinks() {
+  document.querySelectorAll(".username-link").forEach(el => {
+    el.onclick = () => viewUserProfile(el.textContent);
+  });
+}// TOGGLE DARK MODE
+function toggleDark() {
+    document.body.classList.toggle("dark");
+    localStorage.setItem("darkMode", document.body.classList.contains("dark"));
+}
+
+// LOAD DARK MODE ON START
+if (localStorage.getItem("darkMode") === "true") {
+    document.body.classList.add("dark");
+    document.getElementById("darkToggle").checked = true;
+}
+
+// TOGGLE PRIVATE ACCOUNT
+async function togglePrivate(isPrivate) {
+    if (!auth.currentUser) return;
+    await db.collection("users").doc(auth.currentUser.uid).update({
+        private: isPrivate
+    });
+    userData.private = isPrivate;
+    alert(`Your account is now ${isPrivate ? "Private" : "Public"}`);
+}
+
+// LOGOUT
+function logout() {
+    auth.signOut();
+    location.reload();
+}
+
+// 2FA PLACEHOLDER
+async function enable2FA(enable) {
+    // Placeholder: actual 2FA implementation would require Firebase Auth + phone/email verification
+    alert(enable ? "2FA enabled (placeholder)" : "2FA disabled (placeholder)");
+}
+
+// NOTIFICATIONS SETTINGS
+async function toggleNotifications(type, enable) {
+    // Placeholder for push notification system
+    alert(`${type} notifications ${enable ? "enabled" : "disabled"} (placeholder)`);
+}
+
+// PROFILE PICTURE UPLOAD
+async function uploadProfilePic(fileInput) {
+    const file = fileInput.files[0];
+    if (!file || !auth.currentUser) return;
+    const storageRef = storage.ref(`avatars/${auth.currentUser.uid}`);
+    await storageRef.put(file);
+    const url = await storageRef.getDownloadURL();
+    await db.collection("users").doc(auth.currentUser.uid).update({ photoURL: url });
+    alert("Profile picture updated!");
+}
+
+// SETTINGS UI ATTACHMENTS
+document.getElementById("darkToggle").onchange = () => toggleDark();
+
+// ADMIN: VERIFY USER
+async function verifyUser() {
+    const uid = document.getElementById("verifyUid").value.trim();
+    if (!uid) return alert("Enter UID");
+    await db.collection("users").doc(uid).update({ verified: true });
+    alert("User verified!");
+}
+
+// SECURITY CHECKS
+async function checkSecurity() {
+    if (!auth.currentUser) return;
+    const userDoc = await db.collection("users").doc(auth.currentUser.uid).get();
+    const data = userDoc.data();
+
+    if (!data.username) {
+        document.getElementById("usernameModal").style.display = "flex";
+    }
+
+    // Check for account role
+    if (!["owner", "admin", "user"].includes(data.role)) {
+        alert("Suspicious account role, please contact support.");
+    }
+}
+
+// SAVE USERNAME
+async function saveUsername() {
+    const input = document.getElementById("usernameInput").value.trim();
+    if (input.length < 3) return alert("Username too short");
+    const snap = await db.collection("users").where("username", "==", input).get();
+    if (!snap.empty) return alert("Username taken");
+    await db.collection("users").doc(auth.currentUser.uid).set({ username: input }, { merge: true });
+    userData.username = input;
+    document.getElementById("usernameModal").style.display = "none";
+    loadFeed();
+}// --- ADMIN / OWNER PANEL ---
+
+async function loadAdminPanel() {
+    if (!userData || !["owner", "admin"].includes(userData.role)) return;
+
+    const adminDiv = document.getElementById("adminPanel");
+    adminDiv.innerHTML = `<h2>Admin Panel</h2>`;
+
+    // Load all users
+    const usersSnap = await db.collection("users").get();
+    let usersHtml = "<h3>Users</h3>";
+    usersSnap.forEach(doc => {
+        const u = doc.data();
+        usersHtml += `
+            <div class="card" style="margin-bottom:8px; padding:8px;">
+                <strong>${u.username || "Unknown"}</strong> 
+                ${u.verified ? `<span class="verified"><i class="fas fa-check-circle"></i></span>` : ""}
+                <br>Role: ${u.role || "user"}
+                <button onclick="verifyUser('${doc.id}')">Verify</button>
+                <button onclick="banUser('${doc.id}')">Ban</button>
+                <button onclick="promoteUser('${doc.id}')">Promote</button>
+            </div>
+        `;
+    });
+
+    // Load all posts
+    const postsSnap = await db.collection("posts").orderBy("timestamp", "desc").get();
+    let postsHtml = "<h3>Posts</h3>";
+    postsSnap.forEach(doc => {
+        const p = doc.data();
+        postsHtml += `
+            <div class="card" style="margin-bottom:8px; padding:8px;">
+                <strong>${p.username || "Unknown"}</strong>: ${p.text || ""}
+                <button onclick="deletePost('${doc.id}')">Delete Post</button>
+            </div>
+        `;
+    });
+
+    adminDiv.innerHTML += usersHtml + postsHtml;
+}
+
+// DELETE POST
+async function deletePost(postId) {
+    if (!["owner", "admin"].includes(userData.role)) return alert("Unauthorized");
+    await db.collection("posts").doc(postId).delete();
+    alert("Post deleted!");
+    loadAdminPanel();
+}
+
+// BAN USER
+async function banUser(uid) {
+    if (!["owner", "admin"].includes(userData.role)) return alert("Unauthorized");
+    await db.collection("users").doc(uid).update({ banned: true });
+    alert("User banned!");
+    loadAdminPanel();
+}
+
+// PROMOTE USER
+async function promoteUser(uid) {
+    if (!["owner"].includes(userData.role)) return alert("Only owner can promote");
+    await db.collection("users").doc(uid).update({ role: "admin" });
+    alert("User promoted to admin!");
+    loadAdminPanel();
+}
+
+// VERIFY USER
+async function verifyUser(uid) {
+    if (!["owner", "admin"].includes(userData.role)) return alert("Unauthorized");
+    await db.collection("users").doc(uid).update({ verified: true });
+    alert("User verified!");
+    loadAdminPanel();
+}
+
+// OWNER SETTINGS
+async function toggleGlobalVerification(enable) {
+    if (!["owner"].includes(userData.role)) return alert("Unauthorized");
+    const usersSnap = await db.collection("users").get();
+    usersSnap.forEach(async doc => {
+        await db.collection("users").doc(doc.id).update({ verified: enable });
+    });
+    alert(`All users verification ${enable ? "enabled" : "disabled"}`);
+}
+
+// ACCESS ADMIN PANEL BUTTON
+document.getElementById("adminBtn").onclick = loadAdminPanel;
