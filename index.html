@@ -31,7 +31,7 @@
         .post { background:var(--card); margin:12px 20px; padding:16px; border-radius:16px; box-shadow:0 1px 3px rgba(0,0,0,0.1); }
         .post-header { display:flex; align-items:center; gap:12px; margin-bottom:12px; }
         .post-user { display:flex; align-items:center; gap:8px; }
-        .username { font-weight:600; cursor:pointer; color:var(--accent); text-decoration:underline; }
+        .username { font-weight:600; cursor:pointer; color:var(--accent); }
         .time { font-size:14px; color:#666; margin-left:auto; }
         .post-text { margin:8px 0 16px; white-space:pre-wrap; font-size:16px; line-height:1.5; }
         .post-actions { display:flex; justify-content:space-around; font-size:20px; color:#666; }
@@ -46,7 +46,7 @@
         #settings-sidebar { position:fixed; top:0; bottom:0; right:-320px; width:320px; background:var(--card); box-shadow:-4px 0 16px rgba(0,0,0,0.2); transition:right 0.3s ease; z-index:20; padding:20px; overflow-y:auto; }
         #settings-sidebar.open { right:0; }
         .settings-header { font-size:20px; font-weight:bold; margin-bottom:20px; }
-        .settings-item { padding:16px 0; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; cursor:pointer; }
+        .settings-item { padding:16px 0; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; }
         .switch { position:relative; display:inline-block; width:52px; height:32px; }
         .switch input { opacity:0; width:0; height:0; }
         .slider { position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background:#ccc; transition:0.4s; border-radius:34px; }
@@ -220,11 +220,14 @@
             const snap = await db.collection('posts').orderBy('timestamp', 'desc').get();
             allPosts = snap.docs.map(doc => ({id: doc.id, ...doc.data()}));
             renderFeed(allPosts);
+            searchPosts(); // refresh search if open
         }
 
         function renderFeed(posts) {
             const feed = document.getElementById('feed');
+            const results = document.getElementById('search-results');
             feed.innerHTML = '';
+            results.innerHTML = '';
             posts.forEach(p => {
                 if (!p.username || p.username.length < 3) return;
                 const isLiked = p.likes?.includes(currentUser?.uid);
@@ -234,7 +237,7 @@
                     <div class="post-header">
                         <div class="avatar">${p.username[0].toUpperCase()}</div>
                         <div class="post-user">
-                            <div class="username" onclick="alert('Profile view coming soon')">${p.username}</div>
+                            <div class="username" onclick="openProfile('\( {p.username}')"> \){p.username}</div>
                             <div class="time">${timeAgo(p.timestamp)}</div>
                         </div>
                     </div>
@@ -248,7 +251,7 @@
                             <i class="far fa-comment"></i>
                             <span class="action-count">${p.comments?.length || 0}</span>
                         </div>
-                        <div class="action" onclick="alert('Repost coming soon')">
+                        <div class="action" onclick="repost('${p.id}')">
                             <i class="fas fa-retweet"></i>
                             <span class="action-count">${p.reposts?.length || 0}</span>
                         </div>
@@ -259,7 +262,8 @@
                         <button onclick="addComment('${p.id}')">Send</button>
                     </div>
                 `;
-                feed.appendChild(div);
+                feed.appendChild(div.cloneNode(true));
+                results.appendChild(div.cloneNode(true));
             });
         }
 
@@ -293,9 +297,60 @@
             loadFeed();
         }
 
+        async function repost(postId) {
+            if (!currentUser) return alert('Sign in to repost');
+            const original = await db.collection('posts').doc(postId).get();
+            const o = original.data();
+            await db.collection('posts').add({
+                text: o.text,
+                uid: currentUser.uid,
+                username: currentUserData.username,
+                originalId: postId,
+                isRepost: true,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            loadFeed();
+        }
+
         function toggleComments(postId) {
             const section = document.getElementById(`comments-${postId}`);
             section.style.display = section.style.display === 'block' ? 'none' : 'block';
+        }
+
+        function searchPosts() {
+            const query = document.getElementById('search-input').value.toLowerCase();
+            const filtered = allPosts.filter(p => p.text.toLowerCase().includes(query) || p.username.toLowerCase().includes(query));
+            const results = document.getElementById('search-results');
+            results.innerHTML = '';
+            if (query) {
+                renderFeed(filtered);
+                document.getElementById('feed').style.display = 'none';
+                document.getElementById('search-results').parentElement.style.display = 'block';
+            } else {
+                document.getElementById('feed').style.display = 'block';
+                document.getElementById('search-results').parentElement.style.display = 'none';
+            }
+        }
+
+        async function openProfile(username) {
+            const snap = await db.collection('users').where('username', '==', username).get();
+            if (snap.empty) return alert('User not found');
+            const userDoc = snap.docs[0];
+            const userData = userDoc.data();
+            const postsSnap = await db.collection('posts').where('uid', '==', userDoc.id).orderBy('timestamp', 'desc').get();
+            const profileView = document.getElementById('profile-view');
+            document.getElementById('profile-username').textContent = userData.username;
+            document.getElementById('profile-avatar').textContent = userData.username[0].toUpperCase();
+            const postsDiv = document.getElementById('profile-posts');
+            postsDiv.innerHTML = '<h3>Posts</h3>';
+            postsSnap.forEach(doc => {
+                const p = doc.data();
+                const div = document.createElement('div');
+                div.className = 'post';
+                div.innerHTML = `<div class="post-text">${p.text}</div>`;
+                postsDiv.appendChild(div);
+            });
+            switchTab('profile');
         }
 
         function timeAgo(ts) {
