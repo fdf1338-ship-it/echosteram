@@ -15,47 +15,20 @@
 
 <style>
 :root {
-  --bg: #fff;
-  --text: #000;
-  --card: #f3f3f3;
-  --border: #ddd;
-  --accent: #1da1f2;
+  --bg: #fff; --text: #000; --card: #f3f3f3; --border:#ddd; --accent:#1da1f2; --red:#ff0000;
 }
-body.dark {
-  --bg: #000;
-  --text: #fff;
-  --card: #1a1a1a;
-  --border: #333;
-}
-body {
-  margin:0;
-  font-family: system-ui,-apple-system,sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  transition: 0.3s;
-}
-header {
-  position: fixed; top:0; left:0; right:0;
-  padding:14px;
-  background: var(--bg);
-  border-bottom:1px solid var(--border);
-  font-weight:bold;
-  display:flex; justify-content:space-between; align-items:center;
-  z-index: 10;
-}
-nav {
-  position: fixed; bottom:0; left:0; right:0;
-  display:flex; justify-content:space-around; padding:12px 0;
-  background: var(--bg); border-top:1px solid var(--border);
-}
-nav i { font-size:20px; cursor:pointer; }
-main { padding:80px 16px 90px; max-width:600px; margin:auto; }
-.card { background: var(--card); padding:16px; border-radius:16px; margin-bottom:12px; }
-textarea,input { width:100%; padding:10px; border-radius:10px; border:1px solid var(--border); background: var(--bg); color: var(--text); }
-button { background: var(--accent); color:white; border:none; padding:10px 18px; border-radius:999px; font-weight:600; margin-top:8px; cursor:pointer; }
-.hidden { display:none; }
-.avatar { width:60px; height:60px; border-radius:50%; background:#666; color:white; display:flex; align-items:center; justify-content:center; font-size:24px; font-weight:700; }
-.verified { color:#1da1f2; margin-left:6px; }
+body.dark { --bg:#000; --text:#fff; --card:#1a1a1a; --border:#333; }
+body { margin:0; font-family:system-ui,-apple-system,sans-serif; background:var(--bg); color:var(--text); transition:0.3s; }
+header { position:fixed; top:0; left:0; right:0; padding:14px; background:var(--bg); border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; font-weight:bold; z-index:10; }
+nav { position:fixed; bottom:0; left:0; right:0; display:flex; justify-content:space-around; padding:12px 0; background:var(--bg); border-top:1px solid var(--border); }
+nav i{font-size:20px; cursor:pointer;}
+main{padding:80px 16px 90px; max-width:600px; margin:auto;}
+.card{background:var(--card); padding:16px; border-radius:16px; margin-bottom:12px;}
+textarea,input{width:100%; padding:10px; border-radius:10px; border:1px solid var(--border); background:var(--bg); color:var(--text);}
+button{background:var(--accent); color:white; border:none; padding:10px 18px; border-radius:999px; font-weight:600; margin-top:8px; cursor:pointer;}
+.hidden{display:none;}
+.avatar{width:60px; height:60px; border-radius:50%; background:#666; color:white; display:flex; align-items:center; justify-content:center; font-size:24px; font-weight:700;}
+.verified{color:#1da1f2; margin-left:6px;}
 </style>
 </head>
 <body>
@@ -66,7 +39,6 @@ button { background: var(--accent); color:white; border:none; padding:10px 18px;
 </header>
 
 <main>
-
 <!-- LOGIN -->
 <div id="login">
   <h2>Welcome to EchoStream</h2>
@@ -90,8 +62,7 @@ button { background: var(--accent); color:white; border:none; padding:10px 18px;
   <div class="card">
     <h3>Settings</h3>
     <label><input type="checkbox" id="darkToggle" onchange="toggleDark()"> Dark mode</label><br><br>
-    <label><input type="checkbox" id="privateToggle" onchange="togglePrivate(this.checked)"> Private account</label>
-    <br><br>
+    <label><input type="checkbox" id="privateToggle" onchange="togglePrivate(this.checked)"> Private account</label><br><br>
     <button onclick="logout()">Logout</button>
   </div>
 </div>
@@ -129,8 +100,7 @@ const storage = firebase.storage();
 let userData = null;
 
 // AUTH
-function login() { auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
-
+function login(){ auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
 auth.onAuthStateChanged(async user=>{
   if(!user) return;
   document.getElementById("login").style.display="none";
@@ -138,12 +108,10 @@ auth.onAuthStateChanged(async user=>{
 
   const ref=db.collection("users").doc(user.uid);
   const snap=await ref.get();
-
-  if(!snap.exists) {
+  if(!snap.exists){
     await ref.set({ username:user.displayName.replace(/\s/g,"").toLowerCase(), verified:false, role:"owner", private:false });
   }
-
-  userData = (await ref.get()).data();
+  userData=(await ref.get()).data();
   loadFeed();
   if(localStorage.getItem("darkMode")==="true") toggleDark();
 });
@@ -159,19 +127,19 @@ function route(page){
 // POSTS
 async function createPost(){
   if(!postText.value.trim()) return;
-  await db.collection("posts").add({ uid: auth.currentUser.uid, username: userData.username, text: postText.value, likes: [], comments: [], timestamp: firebase.firestore.FieldValue.serverTimestamp() });
+  await db.collection("posts").add({ uid:auth.currentUser.uid, username:userData.username, text:postText.value, likes:[], comments:[], timestamp:firebase.firestore.FieldValue.serverTimestamp() });
   postText.value="";
   loadFeed();
 }
 
 async function loadFeed(){
   posts.innerHTML="";
-  const snap = await db.collection("posts").orderBy("timestamp","desc").get();
+  const snap=await db.collection("posts").orderBy("timestamp","desc").get();
   snap.forEach(d=>{
     const p=d.data();
     const div=document.createElement("div");
     div.className="card";
-    const liked = p.likes.includes(auth.currentUser?.uid);
+    const liked=p.likes.includes(auth.currentUser?.uid);
     div.innerHTML=`
       <div style="display:flex;align-items:center;gap:12px;">
         <div class="avatar">${p.username[0].toUpperCase()}</div>
@@ -201,22 +169,19 @@ async function toggleLike(postId){
   await ref.update({likes});
   loadFeed();
 }
-
 async function toggleComments(postId){
   const el=document.getElementById(`comments-${postId}`);
   el.style.display=el.style.display==="block"?"none":"block";
   loadComments(postId);
 }
-
 async function addComment(postId){
   const input=document.getElementById(`commentInput-${postId}`);
   const text=input.value.trim();
   if(!text) return;
-  await db.collection("posts").doc(postId).update({ comments: firebase.firestore.FieldValue.arrayUnion({ uid: auth.currentUser.uid, username: userData.username, text, timestamp: firebase.firestore.FieldValue.serverTimestamp() }) });
+  await db.collection("posts").doc(postId).update({ comments:firebase.firestore.FieldValue.arrayUnion({ uid:auth.currentUser.uid, username:userData.username, text, timestamp:firebase.firestore.FieldValue.serverTimestamp() }) });
   input.value="";
   loadComments(postId);
 }
-
 async function loadComments(postId){
   const doc=await db.collection("posts").doc(postId).get();
   const listEl=document.getElementById(`commentsList-${postId}`);
@@ -252,6 +217,5 @@ async function verifyUser(){
   alert("User verified");
 }
 </script>
-
 </body>
 </html>
