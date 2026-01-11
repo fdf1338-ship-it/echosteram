@@ -106,45 +106,24 @@ async function loadFeed() {
             <strong onclick="viewUser('${p.username}')">${p.username}</strong>
             <p>${p.text}</p>
             ${p.imageUrl ? `<img src="${p.imageUrl}" class="post-image">` : ""}
+            <div class="like-container">
+              <i class="fas fa-heart" onclick="likePost('${p.id}')"></i>
+              <span id="likeCount-${p.id}">${p.likes.length}</span>
+            </div>
+            <div class="share-container">
+              <i class="fas fa-share-alt" onclick="sharePost('${p.id}')"></i>
+            </div>
+            <div class="repost-container">
+              <i class="fas fa-retweet" onclick="repostPost('${p.id}')"></i>
+            </div>
           </div>
         `;
       });
     });
 }
 
-async function loadProfile(uid) {
-  const snap = await db.collection("users").doc(uid).get();
-  const u = snap.data();
-  profile.innerHTML = `
-    <div class="card">
-      <div class="avatar">${u.username[0].toUpperCase()}</div>
-      <h3>${u.username}</h3>
-    </div>
-  `;
-}
+async function likePost(postId) {
+  const postRef = db.collection("posts").doc(postId);
+  const postSnapshot = await postRef.get();
+  const post = postSnapshot.data();
 
-async function viewUser(username) {
-  const snap = await db.collection("users").where("username", "==", username).get();
-  if (!snap.empty) {
-    loadProfile(snap.docs[0].id);
-    route("profile");
-  }
-}
-
-async function saveUsername() {
-  const name = usernameInput.value.trim().toLowerCase();
-  await db.collection("users").doc(currentUser.uid)
-    .update({ username: name })
-    .then(() => {
-      userData.username = name;
-      usernameModal.style.display = "none";
-      route("profile");
-    })
-    .catch((error) => {
-      console.error("Error saving username:", error);
-      alert("Error saving username. Please try again later.");
-    });
-}
-
-function route(page) {
-  ["feed", "profile", "settings"].forEach((p) =>
