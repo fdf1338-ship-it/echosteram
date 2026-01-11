@@ -36,7 +36,7 @@
       background:var(--bg);
       border-bottom:1px solid var(--border);
       z-index:20;
-      font-weight:800;
+      font-weight:900;
     }
     header .left{display:flex; align-items:center; gap:10px;}
     header .icon-btn{
@@ -48,7 +48,7 @@
 
     main{
       padding:72px 14px 88px;
-      max-width:640px; margin:0 auto;
+      max-width:680px; margin:0 auto;
     }
 
     nav{
@@ -99,7 +99,7 @@
       color:#fff;
       padding:10px 14px;
       border-radius:999px;
-      font-weight:700;
+      font-weight:800;
       cursor:pointer;
     }
     button.secondary{
@@ -118,7 +118,7 @@
       background:#666;
       display:flex; align-items:center; justify-content:center;
       color:#fff;
-      font-weight:800;
+      font-weight:900;
     }
     .post-image{
       margin-top:10px;
@@ -168,7 +168,6 @@
     }
     .drawer.show{ left:0; }
 
-    .drawer h3{ margin:6px 0 10px; }
     .drawer .item{
       padding:12px 10px;
       border-radius:12px;
@@ -189,11 +188,22 @@
     .modal.show{ display:flex; }
     .modal .box{
       width:100%;
-      max-width:420px;
+      max-width:460px;
       background:var(--bg);
       border:1px solid var(--border);
       border-radius:16px;
       padding:16px;
+      max-height:80vh;
+      overflow:auto;
+    }
+    .modal .box h3{ margin:0 0 10px; }
+    .list-item{
+      display:flex; gap:10px; align-items:center;
+      padding:10px;
+      border-radius:14px;
+      border:1px solid var(--border);
+      margin-bottom:10px;
+      background:var(--card);
     }
   </style>
 </head>
@@ -231,6 +241,7 @@
     <h2 style="margin:0 0 8px;">Welcome to EchoStream</h2>
     <p class="muted" style="margin:0 0 12px;">Sign in to post, follow, message, and search.</p>
     <button onclick="login()">Sign in with Google</button>
+    <div id="loginErr" class="muted" style="margin-top:10px;"></div>
   </div>
 
   <!-- FEED -->
@@ -239,7 +250,7 @@
       <div class="muted" style="margin-bottom:8px;">Post</div>
       <textarea id="postText" placeholder="What’s happening?"></textarea>
 
-      <!-- If you don’t want Storage/images, you can just ignore this input -->
+      <!-- Optional (Storage) -->
       <div style="height:10px;"></div>
       <input id="postImage" type="file" accept="image/*"/>
 
@@ -266,7 +277,7 @@
   <div id="messagesView" class="hidden">
     <div class="card">
       <div class="row">
-        <div style="font-weight:800;">Chat</div>
+        <div style="font-weight:900;">Messages</div>
         <div class="space"></div>
         <button class="secondary" onclick="setChatAI()">EchoBot</button>
       </div>
@@ -324,14 +335,26 @@
 <!-- Username Modal -->
 <div id="usernameModal" class="modal">
   <div class="box">
-    <h3 style="margin:0 0 8px;">Pick a username</h3>
-    <p class="muted" style="margin:0 0 12px;">Unique, lowercase letters/numbers/underscore only.</p>
+    <h3>Pick a username</h3>
+    <p class="muted" style="margin-top:0;">Unique, lowercase letters/numbers/underscore only.</p>
     <input id="usernameInput" placeholder="username" maxlength="20"/>
     <div class="row" style="margin-top:12px;">
       <button onclick="saveUsername()">Save</button>
       <div class="space"></div>
       <span class="muted" id="usernameStatus"></span>
     </div>
+  </div>
+</div>
+
+<!-- Followers/Following Modal -->
+<div id="listModal" class="modal">
+  <div class="box">
+    <div class="row" style="margin-bottom:10px;">
+      <h3 id="listTitle" style="margin:0;">List</h3>
+      <div class="space"></div>
+      <button class="secondary" onclick="closeListModal()">Close</button>
+    </div>
+    <div id="listBody" class="muted">Loading...</div>
   </div>
 </div>
 
@@ -351,18 +374,19 @@
   const auth = firebase.auth();
   const db = firebase.firestore();
 
-  // If you don’t want to pay for Storage: keep it, but we will safely fail and still work without images.
+  // Optional storage (works only if enabled)
   let storage = null;
   try { storage = firebase.storage(); } catch(e) { storage = null; }
 
   let currentUser = null;
   let userData = null;
 
-  // For messaging
+  // Messaging
   let activeChatUid = "AI";
-  let chatUnsub = null; // store onSnapshot unsubscribe
+  let chatUnsub = null;
+  let lastAiReplyAt = 0;
 
-  // For feed
+  // Feed
   let feedUnsub = null;
 
   // =========================
@@ -394,9 +418,7 @@
   function safeString(x, fallback=""){
     return (typeof x === "string" && x.trim().length) ? x : fallback;
   }
-  function safeArray(x){
-    return Array.isArray(x) ? x : [];
-  }
+  function safeArray(x){ return Array.isArray(x) ? x : []; }
   function initialLetter(name){
     const s = safeString(name, "?");
     return (s[0] ? s[0].toUpperCase() : "?");
@@ -411,11 +433,25 @@
     return Math.floor(seconds/86400) + "d";
   }
 
+  function escapeHtml(str){
+    str = String(str ?? "");
+    return str
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+  function escapeAttr(str){ return escapeHtml(str); }
+
   // =========================
   // AUTH
   // =========================
   function login(){
-    auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+    document.getElementById("loginErr").textContent = "";
+    auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e=>{
+      document.getElementById("loginErr").textContent = "Login error: " + (e.message || e);
+    });
   }
   function logout(){
     auth.signOut().then(()=>location.reload());
@@ -442,7 +478,8 @@
       await userRef.set({
         username: auto,
         followers: [],
-        following: []
+        following: [],
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
       userData = { username: auto, followers: [], following: [] };
       document.getElementById("usernameModal").classList.add("show");
@@ -452,6 +489,9 @@
         userData.username = safeString(user.displayName, "user").replace(/\s/g,"").toLowerCase();
         await userRef.update({ username: userData.username });
       }
+      // normalize old docs
+      if (!Array.isArray(userData.followers)) userData.followers = [];
+      if (!Array.isArray(userData.following)) userData.following = [];
     }
 
     // dark mode init
@@ -459,10 +499,10 @@
     document.body.classList.toggle("dark", dark);
     document.getElementById("darkToggle").checked = dark;
 
-    // start feed
+    // start feed listener
     startFeedListener();
 
-    // start chat listener
+    // start chat AI
     setChatAI();
   });
 
@@ -511,7 +551,6 @@
     }
     if (page === "settings"){
       showView("settingsView");
-      // keep bottom tab unchanged
       return;
     }
   }
@@ -522,7 +561,7 @@
   async function saveUsername(){
     const status = document.getElementById("usernameStatus");
     status.textContent = "";
-    const name = safeString(document.getElementById("usernameInput").value, "").toLowerCase();
+    const name = safeString(document.getElementById("usernameInput").value, "").toLowerCase().trim();
 
     if (name.length < 3){
       status.textContent = "Too short (min 3).";
@@ -533,7 +572,6 @@
       return;
     }
 
-    // Must be unique
     const taken = await db.collection("users").where("username","==",name).limit(1).get();
     if (!taken.empty){
       status.textContent = "Username taken.";
@@ -563,7 +601,6 @@
 
     let imageUrl = "";
 
-    // Storage is optional; if you don't have it enabled, this won't crash.
     if (file && storage){
       try{
         const path = `posts/${currentUser.uid}/${Date.now()}_${file.name}`;
@@ -571,7 +608,6 @@
         await ref.put(file);
         imageUrl = await ref.getDownloadURL();
       } catch(e){
-        // If Storage isn't enabled / rules block, continue without image
         console.warn("Storage upload skipped:", e);
       }
     }
@@ -616,7 +652,7 @@
         <div class="comment">
           <div class="avatar">${initialLetter(cu)}</div>
           <div style="flex:1;">
-            <div style="font-weight:800;">${escapeHtml(cu)}</div>
+            <div style="font-weight:900;">${escapeHtml(cu)}</div>
             <div class="muted">${escapeHtml(ct)}</div>
           </div>
         </div>
@@ -665,7 +701,7 @@
   }
 
   function startFeedListener(){
-    if (feedUnsub) return; // already listening
+    if (feedUnsub) return;
     const postsDiv = document.getElementById("posts");
     postsDiv.innerHTML = `<div class="muted">Loading feed...</div>`;
 
@@ -692,7 +728,7 @@
     } else {
       likes.push(currentUser.uid);
     }
-    await ref.update({ likes: likes });
+    await ref.update({ likes });
   }
 
   function toggleComments(postId){
@@ -728,7 +764,7 @@
   }
 
   // =========================
-  // PROFILES + FOLLOWERS
+  // PROFILE + FOLLOWERS LIST
   // =========================
   async function openProfile(uid){
     showView("profileView");
@@ -751,7 +787,7 @@
       const isMe = uid === currentUser.uid;
       const iFollow = followers.includes(currentUser.uid);
 
-      // user posts (this query requires the index you already created if firestore asked)
+      // Posts by user (may require index if Firebase prompts)
       let postsHtml = "";
       const postsSnap = await db.collection("posts")
         .where("uid","==",uid)
@@ -775,11 +811,17 @@
         <div class="card" style="text-align:center;">
           <div class="avatar" style="width:64px;height:64px;margin:0 auto;font-size:24px;">${initialLetter(username)}</div>
           <div style="margin-top:10px; font-size:20px; font-weight:900;">${escapeHtml(username)}</div>
-          <div class="muted">UID: ${escapeHtml(uid)}</div>
 
-          <div class="row" style="justify-content:center; gap:18px; margin-top:12px;">
-            <div><div style="font-weight:900;">${followers.length}</div><div class="muted">Followers</div></div>
-            <div><div style="font-weight:900;">${following.length}</div><div class="muted">Following</div></div>
+          <div class="row" style="justify-content:center; gap:22px; margin-top:12px;">
+            <div class="click" onclick="openListModal('Followers', ${JSON.stringify(uid)}, 'followers')">
+              <div style="font-weight:900;">${followers.length}</div>
+              <div class="muted">Followers</div>
+            </div>
+
+            <div class="click" onclick="openListModal('Following', ${JSON.stringify(uid)}, 'following')">
+              <div style="font-weight:900;">${following.length}</div>
+              <div class="muted">Following</div>
+            </div>
           </div>
 
           ${isMe ? "" : `
@@ -800,10 +842,6 @@
   }
 
   async function toggleFollow(targetUid){
-    // This updates:
-    // - your following[]
-    // - their followers[]
-    // Requires the rules I gave you above.
     const meUid = currentUser.uid;
 
     const myRef = db.collection("users").doc(meUid);
@@ -831,18 +869,67 @@
       targetRef.update({ followers })
     ]);
 
-    // refresh profile view
+    // refresh
     openProfile(targetUid);
   }
 
+  async function openListModal(title, profileUid, field){
+    document.getElementById("listTitle").textContent = title;
+    document.getElementById("listBody").innerHTML = `<div class="muted">Loading...</div>`;
+    document.getElementById("listModal").classList.add("show");
+
+    try{
+      const snap = await db.collection("users").doc(profileUid).get();
+      if (!snap.exists){
+        document.getElementById("listBody").innerHTML = `<div class="muted">User not found.</div>`;
+        return;
+      }
+      const u = snap.data() || {};
+      const ids = safeArray(u[field]);
+
+      if (!ids.length){
+        document.getElementById("listBody").innerHTML = `<div class="muted">Nobody here yet.</div>`;
+        return;
+      }
+
+      // fetch usernames
+      let html = "";
+      for (const uid of ids){
+        const us = await db.collection("users").doc(uid).get();
+        if (!us.exists) continue;
+        const data = us.data() || {};
+        const uname = safeString(data.username, uid);
+
+        html += `
+          <div class="list-item">
+            <div class="avatar">${initialLetter(uname)}</div>
+            <div style="flex:1;">
+              <div style="font-weight:900;" class="click" onclick="openProfile('${uid}'); closeListModal();">${escapeHtml(uname)}</div>
+              <div class="muted">${escapeHtml(uid)}</div>
+            </div>
+            <button class="secondary" onclick="startChatWith('${uid}','${escapeAttr(uname)}'); closeListModal();">Message</button>
+          </div>
+        `;
+      }
+
+      document.getElementById("listBody").innerHTML = html || `<div class="muted">Nothing to show.</div>`;
+    } catch(e){
+      console.error(e);
+      document.getElementById("listBody").innerHTML = `<div class="muted">List error: ${escapeHtml(e.message || String(e))}</div>`;
+    }
+  }
+
+  function closeListModal(){
+    document.getElementById("listModal").classList.remove("show");
+  }
+
   // =========================
-  // SEARCH (real query)
+  // SEARCH (prefix)
   // =========================
   let searchTimer = null;
-
   function doSearch(){
     clearTimeout(searchTimer);
-    searchTimer = setTimeout(runSearch, 200);
+    searchTimer = setTimeout(runSearch, 180);
   }
 
   async function runSearch(){
@@ -857,12 +944,11 @@
     res.innerHTML = `<div class="muted">Searching...</div>`;
 
     try{
-      // prefix search on username
       const snap = await db.collection("users")
         .orderBy("username")
         .startAt(q)
         .endAt(q + "\uf8ff")
-        .limit(20)
+        .limit(25)
         .get();
 
       let html = "";
@@ -877,7 +963,7 @@
               <div class="avatar">${initialLetter(uname)}</div>
               <div style="flex:1;">
                 <div style="font-weight:900;" class="click" onclick="openProfile('${doc.id}')">${escapeHtml(uname)}</div>
-                <div class="muted">${doc.id}</div>
+                <div class="muted">${escapeHtml(doc.id)}</div>
               </div>
               <button class="secondary" onclick="startChatWith('${doc.id}','${escapeAttr(uname)}')">Message</button>
             </div>
@@ -896,7 +982,6 @@
   // MESSAGES
   // =========================
   function chatId(a,b){
-    // stable chat ID (including AI)
     return (a < b) ? `${a}_${b}` : `${b}_${a}`;
   }
 
@@ -916,11 +1001,7 @@
   function ensureChatListener(){
     if (!currentUser) return;
 
-    // stop old listener
-    if (chatUnsub){
-      chatUnsub();
-      chatUnsub = null;
-    }
+    if (chatUnsub){ chatUnsub(); chatUnsub = null; }
 
     const me = currentUser.uid;
     const other = activeChatUid === "AI" ? "AI" : activeChatUid;
@@ -976,13 +1057,12 @@
         .add({
           uid: me,
           username: safeString(userData?.username, "user"),
-          text: text,
+          text,
           timestamp: firebase.firestore.FieldValue.serverTimestamp()
         });
 
       input.value = "";
 
-      // AI reply if chatting with AI
       if (other === "AI"){
         aiReply(cid, text);
       }
@@ -993,11 +1073,16 @@
   }
 
   async function aiReply(cid, userText){
+    // anti-spam: don't reply more than once per ~1 sec
+    const now = Date.now();
+    if (now - lastAiReplyAt < 900) return;
+    lastAiReplyAt = now;
+
     const t = (userText || "").toLowerCase();
     let msg = "Tell me more.";
 
     if (t.includes("hi") || t.includes("hello")) msg = "Hey! What are you up to today?";
-    else if (t.includes("help")) msg = "What do you want help with in EchoStream?";
+    else if (t.includes("help")) msg = "Tell me what you want to build next in EchoStream.";
     else if (t.includes("joke")) msg = "Why did the dev go broke? Because he used up all his cache.";
     else if (t.includes("bye")) msg = "Bye! Come back anytime.";
 
@@ -1016,23 +1101,6 @@
         console.warn("AI reply failed:", e);
       }
     }, 650);
-  }
-
-  // =========================
-  // HTML escaping
-  // =========================
-  function escapeHtml(str){
-    str = String(str ?? "");
-    return str
-      .replaceAll("&","&amp;")
-      .replaceAll("<","&lt;")
-      .replaceAll(">","&gt;")
-      .replaceAll('"',"&quot;")
-      .replaceAll("'","&#039;");
-  }
-  function escapeAttr(str){
-    // for attributes, same escape is fine
-    return escapeHtml(str);
   }
 </script>
 
