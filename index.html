@@ -12,1199 +12,1056 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
 
   <!-- Font Awesome -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
 
   <style>
-    :root {
-      --bg:#ffffff;
-      --text:#111111;
-      --muted:#666;
-      --card:#f3f3f3;
-      --border:#dddddd;
-      --accent:#1da1f2;
-      --danger:#ff3b30;
-      --ok:#34c759;
-      --shadow: 0 8px 22px rgba(0,0,0,.08);
+    :root{
+      --bg:#fff; --text:#000; --card:#f3f3f3; --border:#ddd; --accent:#1da1f2;
+      --muted:#666; --danger:#ff3b30;
+    }
+    body.dark{
+      --bg:#000; --text:#fff; --card:#141414; --border:#2a2a2a; --muted:#aaa;
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+      background:var(--bg); color:var(--text);
     }
 
-    body.dark {
-      --bg:#0b0b0b;
-      --text:#f5f5f5;
-      --muted:#b9b9b9;
-      --card:#171717;
-      --border:#2a2a2a;
-      --shadow: 0 8px 22px rgba(0,0,0,.5);
+    header{
+      position:fixed; top:0; left:0; right:0;
+      padding:14px 14px;
+      background:var(--bg); border-bottom:1px solid var(--border);
+      display:flex; align-items:center; justify-content:space-between;
+      z-index:50; font-weight:800;
     }
+    header .left{ display:flex; align-items:center; gap:10px; }
+    header .btnIcon{ cursor:pointer; font-size:18px; padding:8px; border-radius:10px; }
+    header .btnIcon:hover{ background:rgba(0,0,0,0.06); }
+    body.dark header .btnIcon:hover{ background:rgba(255,255,255,0.08); }
 
-    * { box-sizing:border-box; }
-    body {
-      margin:0;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      transition: background .2s, color .2s;
-      overscroll-behavior: none;
+    main{
+      padding:74px 14px 90px;
+      max-width:680px; margin:0 auto;
     }
-
-    header {
-      position: fixed;
-      top: 0; left: 0; right: 0;
-      padding: 14px 14px;
-      background: var(--bg);
-      border-bottom: 1px solid var(--border);
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      z-index: 50;
-      font-weight: 800;
-      letter-spacing: .2px;
+    nav{
+      position:fixed; bottom:0; left:0; right:0;
+      background:var(--bg); border-top:1px solid var(--border);
+      display:flex; justify-content:space-around; padding:10px 0;
+      z-index:60;
     }
-
-    header .left, header .right {
-      display:flex;
-      align-items:center;
-      gap:12px;
-    }
-
-    header .pill {
-      font-weight:700;
-      font-size:12px;
-      padding:6px 10px;
-      border:1px solid var(--border);
-      border-radius:999px;
+    nav .tab{
+      width:25%; text-align:center; cursor:pointer; padding:8px 0;
       color:var(--muted);
     }
+    nav .tab.active{ color:var(--accent); font-weight:700; }
+    nav i{ font-size:20px; }
 
-    nav.bottom {
-      position: fixed;
-      bottom: 0; left: 0; right: 0;
-      padding: 10px 0;
-      background: var(--bg);
-      border-top: 1px solid var(--border);
-      display:flex;
-      justify-content: space-around;
-      z-index: 50;
+    .hidden{ display:none !important; }
+
+    .card{
+      background:var(--card);
+      border:1px solid var(--border);
+      padding:14px;
+      border-radius:16px;
+      margin-bottom:12px;
     }
 
-    nav.bottom .tab {
-      width: 25%;
-      text-align:center;
-      color: var(--muted);
-      cursor:pointer;
-      user-select:none;
-    }
-    nav.bottom .tab i { font-size: 20px; }
-    nav.bottom .tab .lbl { font-size: 11px; margin-top: 2px; }
-    nav.bottom .tab.active { color: var(--accent); }
-
-    main {
-      padding: 74px 14px 86px;
-      max-width: 720px;
-      margin: 0 auto;
-    }
-
-    .hidden { display:none; }
-
-    .card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 18px;
-      padding: 14px;
-      margin-bottom: 12px;
-      box-shadow: var(--shadow);
-    }
-
-    .row { display:flex; gap:10px; align-items:center; }
-    .col { display:flex; flex-direction:column; gap:10px; }
-    .space { justify-content:space-between; }
-    .muted { color: var(--muted); }
-    .small { font-size: 12px; }
-    .hr { height:1px; background: var(--border); margin: 10px 0; }
-
-    textarea, input {
-      width: 100%;
-      padding: 10px 12px;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      background: var(--bg);
-      color: var(--text);
+    input, textarea{
+      width:100%;
+      padding:10px 12px;
+      border:1px solid var(--border);
+      border-radius:12px;
+      background:var(--bg);
+      color:var(--text);
       outline:none;
     }
+    textarea{ resize:vertical; min-height:70px; }
 
-    textarea { resize: vertical; min-height: 78px; }
+    button{
+      background:var(--accent);
+      color:white;
+      border:none;
+      padding:10px 14px;
+      border-radius:999px;
+      cursor:pointer;
+      font-weight:700;
+    }
+    button.secondary{
+      background:transparent;
+      border:1px solid var(--border);
+      color:var(--text);
+    }
+    button.danger{
+      background:var(--danger);
+    }
+    .row{ display:flex; gap:10px; align-items:center; }
+    .grow{ flex:1; }
+    .muted{ color:var(--muted); }
 
-    button {
-      border: none;
-      padding: 10px 14px;
-      border-radius: 999px;
-      font-weight: 800;
-      cursor: pointer;
+    .avatar{
+      width:46px; height:46px; border-radius:50%;
+      display:flex; align-items:center; justify-content:center;
+      background:#777; color:white; font-weight:900;
+      flex:0 0 auto;
       user-select:none;
     }
-    button.primary { background: var(--accent); color: #fff; }
-    button.ghost { background: transparent; border:1px solid var(--border); color: var(--text); }
-    button.danger { background: var(--danger); color:#fff; }
-    button:disabled { opacity:.6; cursor:not-allowed; }
+    .avatar.sm{ width:34px; height:34px; font-size:14px; }
+    .link{ cursor:pointer; }
+    .link:hover{ text-decoration:underline; }
 
-    .avatar {
-      width: 44px; height: 44px;
-      border-radius: 50%;
-      background: #6b7280;
-      color: #fff;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      font-weight: 900;
-      flex: 0 0 auto;
+    .postActions{
+      display:flex; gap:18px; margin-top:10px; align-items:center;
+      color:var(--muted);
+    }
+    .postActions span{ cursor:pointer; user-select:none; }
+    .postActions span:hover{ text-decoration:underline; }
+    .postImg{
+      width:100%; border-radius:14px; margin-top:10px; border:1px solid var(--border);
     }
 
-    .post-image {
-      width: 100%;
-      border-radius: 14px;
-      margin-top: 10px;
-      border: 1px solid var(--border);
-      background: #000;
+    /* Side menu (settings) */
+    .sheetBackdrop{
+      position:fixed; inset:0; background:rgba(0,0,0,0.45);
+      display:none; z-index:100;
     }
-
-    .click { cursor:pointer; }
-    .click:hover { text-decoration: underline; }
-
-    .actions {
-      display:flex;
-      gap: 18px;
-      margin-top: 10px;
-      align-items:center;
-      flex-wrap: wrap;
-    }
-    .action { cursor:pointer; user-select:none; color: var(--muted); }
-    .action i { margin-right: 6px; }
-    .action.active { color: var(--accent); font-weight: 800; }
-
-    .comment {
-      display:flex;
-      gap: 10px;
-      margin-top: 10px;
-      padding-top: 10px;
-      border-top: 1px solid var(--border);
-    }
-
-    .badge {
-      display:inline-flex;
-      align-items:center;
-      gap:6px;
-      padding: 4px 8px;
-      border-radius: 999px;
-      border:1px solid var(--border);
-      font-size: 12px;
-      color: var(--muted);
-      background: rgba(255,255,255,.06);
-    }
-
-    /* Drawer (side settings) */
-    .drawerOverlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,.5);
-      display:none;
-      z-index: 90;
-    }
-    .drawer {
-      position: fixed;
-      top: 0; bottom: 0; right: -340px;
-      width: 320px;
-      background: var(--bg);
-      border-left: 1px solid var(--border);
-      z-index: 100;
-      transition: right .22s ease;
-      padding: 14px;
+    .sheet{
+      position:fixed; top:0; bottom:0; left:-320px;
+      width:300px; max-width:85vw;
+      background:var(--bg);
+      border-right:1px solid var(--border);
+      transition:0.25s;
+      z-index:101;
+      padding:14px;
       overflow:auto;
     }
-    .drawerOverlay.show { display:block; }
-    .drawer.show { right: 0; }
+    .sheetBackdrop.open{ display:block; }
+    .sheet.open{ left:0; }
 
-    .toast {
-      position: fixed;
-      left: 50%;
-      transform: translateX(-50%);
-      bottom: 90px;
-      background: var(--bg);
-      color: var(--text);
-      border: 1px solid var(--border);
-      border-radius: 999px;
-      padding: 10px 14px;
-      box-shadow: var(--shadow);
-      display:none;
-      z-index: 200;
-      max-width: 92vw;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+    .pill{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:6px 10px; border-radius:999px;
+      border:1px solid var(--border); background:transparent;
+      color:var(--text);
+      font-size:12px; font-weight:700;
     }
-    .toast.show { display:block; }
 
-    /* Chat */
-    #chatBox {
-      height: 340px;
-      overflow-y: auto;
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 10px;
-      background: var(--bg);
+    /* Modal (username) */
+    .modalBackdrop{
+      position:fixed; inset:0; background:rgba(0,0,0,0.55);
+      display:none; align-items:center; justify-content:center;
+      z-index:200;
+      padding:14px;
     }
-    .bubble {
-      max-width: 85%;
-      padding: 10px 12px;
-      border-radius: 14px;
-      border: 1px solid var(--border);
-      margin: 8px 0;
-      background: var(--card);
+    .modal{
+      width:100%; max-width:420px;
+      background:var(--bg);
+      border:1px solid var(--border);
+      border-radius:18px;
+      padding:16px;
     }
-    .bubble.me {
-      margin-left: auto;
-      border-color: rgba(29,161,242,.35);
+
+    /* Messages */
+    #chatBox{
+      height:340px;
+      overflow-y:auto;
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:10px;
+      background:var(--bg);
     }
-    .bubble .meta {
-      font-size: 12px;
-      color: var(--muted);
-      margin-bottom: 4px;
-      font-weight: 700;
+    .bubble{
+      padding:8px 10px;
+      border-radius:14px;
+      border:1px solid var(--border);
+      margin:8px 0;
+      max-width:92%;
     }
+    .bubble.me{ margin-left:auto; }
   </style>
 </head>
 
 <body>
   <header>
     <div class="left">
-      <span>EchoStream</span>
-      <span id="statusPill" class="pill">offline</span>
+      <i class="fa-solid fa-bars btnIcon" onclick="openSettingsSheet()"></i>
+      <div>EchoStream</div>
     </div>
     <div class="right">
-      <i class="fa-solid fa-gear click" title="Settings" onclick="openDrawer()"></i>
+      <span class="pill" id="headerUserPill" style="display:none;"></span>
     </div>
   </header>
 
+  <!-- Side settings sheet -->
+  <div id="sheetBackdrop" class="sheetBackdrop" onclick="closeSettingsSheet()"></div>
+  <div id="sheet" class="sheet">
+    <div class="row" style="justify-content:space-between;">
+      <strong>Settings</strong>
+      <i class="fa-solid fa-xmark btnIcon" onclick="closeSettingsSheet()"></i>
+    </div>
+
+    <div class="card" style="margin-top:12px;">
+      <div class="row" style="justify-content:space-between;">
+        <div>
+          <div style="font-weight:800;">Dark mode</div>
+          <div class="muted" style="font-size:13px;">Toggle theme</div>
+        </div>
+        <input type="checkbox" id="darkToggle" style="width:auto; transform:scale(1.2);" />
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="font-weight:800;">Account</div>
+      <div class="muted" id="accountInfo" style="margin-top:6px;"></div>
+      <div class="row" style="margin-top:10px;">
+        <button class="secondary" onclick="route('profile')">My Profile</button>
+        <button class="danger" onclick="logout()">Logout</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="font-weight:800;">Debug</div>
+      <div class="muted" style="font-size:13px; margin-top:6px;">
+        If you ever see “CORS Listen channel”, it’s usually browser/network/adblock. Try:
+        Chrome, disable adblock, or reload.
+      </div>
+      <button class="secondary" style="margin-top:10px;" onclick="hardReload()">Hard Reload</button>
+    </div>
+
+    <div class="card">
+      <div style="font-weight:800;">Images</div>
+      <div class="muted" style="font-size:13px; margin-top:6px;">
+        Images are OFF by default (no Storage needed).
+      </div>
+    </div>
+  </div>
+
   <main>
     <!-- LOGIN -->
-    <section id="loginView">
-      <div class="card">
-        <h2 style="margin:0 0 6px;">Welcome</h2>
-        <div class="muted">Sign in to continue.</div>
-        <div style="height:12px;"></div>
-        <button class="primary" onclick="login()">Sign in with Google</button>
-      </div>
-    </section>
+    <div id="loginView" class="card">
+      <h2 style="margin:0 0 10px;">Welcome to EchoStream</h2>
+      <div class="muted" style="margin-bottom:12px;">Sign in to post, search, and message.</div>
+      <button onclick="login()">Sign in with Google</button>
+    </div>
 
     <!-- FEED -->
-    <section id="feedView" class="hidden">
+    <div id="feedView" class="hidden">
       <div class="card">
-        <div class="row space">
-          <div class="row" style="gap:10px;">
-            <div id="meAvatar" class="avatar">?</div>
-            <div class="col" style="gap:2px;">
-              <div style="font-weight:900;">Create a post</div>
-              <div class="small muted" id="meUsername">@...</div>
-            </div>
-          </div>
-          <button class="ghost" onclick="refreshFeed()">Refresh</button>
-        </div>
-
-        <div style="height:10px;"></div>
+        <div style="font-weight:800; margin-bottom:10px;">Create Post</div>
         <textarea id="postText" placeholder="What’s happening?"></textarea>
 
-        <div style="height:10px;"></div>
-        <div class="row">
+        <!-- Storage OFF: file input hidden by default -->
+        <div id="imageRow" class="hidden" style="margin-top:10px;">
           <input type="file" id="postImage" accept="image/*" />
         </div>
 
-        <button class="primary" onclick="createPost()">Post</button>
-        <div class="small muted" style="margin-top:10px;">
-          Tip: If you don’t want Storage, just don’t pick an image (text posts work).
+        <div class="row" style="margin-top:10px;">
+          <button onclick="createPost()">Post</button>
+          <button class="secondary" onclick="refreshFeed()">Refresh</button>
         </div>
       </div>
 
       <div id="posts"></div>
-    </section>
+    </div>
 
     <!-- SEARCH -->
-    <section id="searchView" class="hidden">
+    <div id="searchView" class="hidden">
       <div class="card">
-        <div style="font-weight:900; margin-bottom:8px;">Search</div>
-        <input id="searchInput" placeholder="Search usernames..." oninput="doSearch()" />
-        <div class="small muted" style="margin-top:8px;">Type at least 2 letters.</div>
+        <div style="font-weight:800; margin-bottom:10px;">Search Users</div>
+        <input id="searchInput" placeholder="Type a username..." oninput="doSearch()" />
+        <div class="muted" style="margin-top:8px; font-size:13px;">
+          Tip: search is by username.
+        </div>
       </div>
       <div id="searchResults"></div>
-    </section>
+    </div>
 
     <!-- MESSAGES -->
-    <section id="messagesView" class="hidden">
+    <div id="messagesView" class="hidden">
       <div class="card">
-        <div class="row space">
-          <div class="col" style="gap:2px;">
-            <div style="font-weight:900;">Messages</div>
-            <div class="small muted" id="chatWithLabel">Chat: Global</div>
+        <div class="row" style="justify-content:space-between;">
+          <div>
+            <div style="font-weight:800;">Messages</div>
+            <div class="muted" style="font-size:13px;">Default chat: EchoBot</div>
           </div>
-          <button class="ghost" onclick="setChatGlobal()">Global</button>
-        </div>
-        <div style="height:10px;"></div>
-        <div id="chatBox"></div>
-        <div style="height:10px;"></div>
-        <input id="chatInput" placeholder="Type a message..." />
-        <div class="row" style="margin-top:8px;">
-          <button class="primary" onclick="sendMessage()">Send</button>
-          <button class="ghost" onclick="aiAssist()">AI Assist</button>
-        </div>
-        <div class="small muted" style="margin-top:8px;">
-          Tip: Open a user profile and tap “Message” to DM.
+          <button class="secondary" onclick="setActiveChat('AI')">EchoBot</button>
         </div>
       </div>
-    </section>
+
+      <div class="card">
+        <div id="chatBox"></div>
+        <div class="row" style="margin-top:10px;">
+          <input id="chatInput" class="grow" placeholder="Type a message..." />
+          <button onclick="sendMessage()">Send</button>
+        </div>
+      </div>
+    </div>
 
     <!-- PROFILE -->
-    <section id="profileView" class="hidden"></section>
+    <div id="profileView" class="hidden"></div>
+
+    <!-- USERNAME MODAL -->
+    <div id="usernameModalBackdrop" class="modalBackdrop">
+      <div class="modal">
+        <h3 style="margin:0 0 10px;">Pick a username</h3>
+        <div class="muted" style="margin-bottom:10px; font-size:13px;">
+          Usernames are unique (no duplicates). Use letters, numbers, underscore.
+        </div>
+        <input id="usernameInput" placeholder="username" maxlength="20" />
+        <div class="row" style="margin-top:12px;">
+          <button onclick="saveUsername()">Save</button>
+          <button class="secondary" onclick="suggestUsername()">Suggest</button>
+        </div>
+        <div class="muted" id="usernameHint" style="margin-top:10px; font-size:13px;"></div>
+      </div>
+    </div>
   </main>
 
-  <!-- Bottom nav -->
-  <nav class="bottom">
-    <div class="tab active" id="tabFeed" onclick="route('feed')">
-      <i class="fa-solid fa-house"></i>
-      <div class="lbl">Feed</div>
-    </div>
-    <div class="tab" id="tabSearch" onclick="route('search')">
-      <i class="fa-solid fa-magnifying-glass"></i>
-      <div class="lbl">Search</div>
-    </div>
-    <div class="tab" id="tabMessages" onclick="route('messages')">
-      <i class="fa-solid fa-message"></i>
-      <div class="lbl">Messages</div>
-    </div>
-    <div class="tab" id="tabProfile" onclick="openProfile(currentUser?.uid)">
-      <i class="fa-solid fa-user"></i>
-      <div class="lbl">Profile</div>
-    </div>
+  <nav>
+    <div id="tabFeed" class="tab" onclick="route('feed')"><i class="fa-solid fa-house"></i></div>
+    <div id="tabSearch" class="tab" onclick="route('search')"><i class="fa-solid fa-magnifying-glass"></i></div>
+    <div id="tabMessages" class="tab" onclick="route('messages')"><i class="fa-solid fa-message"></i></div>
+    <div id="tabProfile" class="tab" onclick="route('profile')"><i class="fa-solid fa-user"></i></div>
   </nav>
 
-  <!-- Drawer -->
-  <div id="drawerOverlay" class="drawerOverlay" onclick="closeDrawer()"></div>
-  <aside id="drawer" class="drawer">
-    <div class="row space">
-      <div style="font-weight:900;">Settings</div>
-      <i class="fa-solid fa-xmark click" onclick="closeDrawer()"></i>
-    </div>
+<script>
+/** =========================
+ *  CONFIG
+ *  ========================= */
+// Turn ON later when you pay/enable Storage.
+// For now: false -> no Storage required.
+const USE_STORAGE = false;
 
-    <div class="hr"></div>
+/** =========================
+ *  FIREBASE INIT
+ *  ========================= */
+firebase.initializeApp({
+  apiKey: "AIzaSyCmY_zfNcH5XnEaQxlqaTW1D8EUR670-Zo",
+  authDomain: "echostream-a102a.firebaseapp.com",
+  projectId: "echostream-a102a",
+  storageBucket: "echostream-a102a.appspot.com",
+  messagingSenderId: "789062222400",
+  appId: "1:789062222400:web:73d478269135a77d7d55a5"
+});
 
-    <div class="card" style="box-shadow:none; margin-bottom:10px;">
-      <div style="font-weight:900;">Appearance</div>
-      <div style="height:8px;"></div>
-      <label class="row" style="gap:10px;">
-        <input type="checkbox" id="darkToggle" />
-        <span>Dark mode</span>
-      </label>
-    </div>
+const auth = firebase.auth();
+const db = firebase.firestore();
+const storage = firebase.storage();
 
-    <div class="card" style="box-shadow:none; margin-bottom:10px;">
-      <div style="font-weight:900;">Account</div>
-      <div style="height:8px;"></div>
-      <div class="small muted">Signed in as</div>
-      <div id="acctEmail" style="font-weight:800;">-</div>
-      <div class="small muted" style="margin-top:6px;">UID</div>
-      <div id="acctUid" class="small" style="word-break:break-all;">-</div>
+let currentUser = null;
+let userData = null;
 
-      <div class="hr"></div>
+// navigation state
+let currentView = "feed";
+let viewingProfileUid = null;
 
-      <button class="ghost" onclick="openUsernameChange()">Change username</button>
-      <button class="danger" style="margin-top:8px;" onclick="logout()">Logout</button>
-    </div>
+// chat state
+let activeChatUid = "AI";
+let unsubscribeChat = null;
 
-    <div class="card" style="box-shadow:none;">
-      <div style="font-weight:900;">Debug</div>
-      <div class="small muted" style="margin-top:6px;">
-        If you see “CORS Listen channel failed”, that’s usually network/adblock/browser privacy blocking Firestore realtime.
-        Try: disable strict tracking, disable adblock for your site, or test in Chrome.
-      </div>
-    </div>
-  </aside>
+/** =========================
+ *  HELPERS
+ *  ========================= */
+function $(id){ return document.getElementById(id); }
 
-  <!-- Username modal -->
-  <div id="usernameModal" class="drawerOverlay" style="display:none; z-index:300;">
-    <div class="card" style="max-width:420px; margin:80px auto 0; position:relative;">
-      <div class="row space">
-        <div style="font-weight:900;">Pick a username</div>
-        <i class="fa-solid fa-xmark click" onclick="closeUsernameModal()"></i>
-      </div>
-      <div class="small muted" style="margin-top:6px;">Unique. Lowercase letters, numbers, underscore.</div>
-      <div style="height:10px;"></div>
-      <input id="usernameInput" placeholder="username" maxlength="20" />
-      <button class="primary" style="margin-top:10px;" onclick="saveUsername()">Save</button>
-    </div>
-  </div>
+function safeStr(v, fallback=""){
+  return (typeof v === "string" && v.trim().length) ? v : fallback;
+}
+function safeArr(v){
+  return Array.isArray(v) ? v : [];
+}
+function firstLetter(name){
+  const s = safeStr(name, "?");
+  return s[0] ? s[0].toUpperCase() : "?";
+}
+function normalizePost(p){
+  // Fix old/broken post shapes so UI never crashes.
+  const out = Object.assign({}, p);
+  out.username = safeStr(out.username, "unknown");
+  out.text = safeStr(out.text, "");
+  out.imageUrl = safeStr(out.imageUrl, "");
+  out.likes = safeArr(out.likes);
+  out.comments = safeArr(out.comments).map(c => ({
+    uid: safeStr(c?.uid, ""),
+    username: safeStr(c?.username, "unknown"),
+    text: safeStr(c?.text, "")
+  }));
+  out.shares = safeArr(out.shares);
+  return out;
+}
+function setTabsActive(view){
+  ["feed","search","messages","profile"].forEach(v=>{
+    $("tab"+cap(v)).classList.toggle("active", v===view);
+  });
+}
+function cap(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
 
-  <div id="toast" class="toast"></div>
+function toast(msg){
+  alert(msg);
+}
 
-  <script>
-    /***********************
-     * 1) Firebase config
-     ***********************/
-    firebase.initializeApp({
-      apiKey:"AIzaSyCmY_zfNcH5XnEaQxlqaTW1D8EUR670-Zo",
-      authDomain:"echostream-a102a.firebaseapp.com",
-      projectId:"echostream-a102a",
-      storageBucket:"echostream-a102a.appspot.com",
-      messagingSenderId:"789062222400",
-      appId:"1:789062222400:web:73d478269135a77d7d55a5"
-    });
+function timeAgo(ts){
+  if(!ts || !ts.toDate) return "now";
+  const seconds = Math.floor((Date.now() - ts.toDate()) / 1000);
+  if (seconds < 60) return seconds + "s";
+  if (seconds < 3600) return Math.floor(seconds/60) + "m";
+  if (seconds < 86400) return Math.floor(seconds/3600) + "h";
+  return Math.floor(seconds/86400) + "d";
+}
 
-    const auth = firebase.auth();
-    const db = firebase.firestore();
-    const storage = firebase.storage();
+function hardReload(){
+  location.reload(true);
+}
 
-    /***********************
-     * 2) Helpers (fix your crashes)
-     ***********************/
-    const $ = (id) => document.getElementById(id);
+/** =========================
+ *  SETTINGS SHEET
+ *  ========================= */
+function openSettingsSheet(){
+  $("sheetBackdrop").classList.add("open");
+  $("sheet").classList.add("open");
+}
+function closeSettingsSheet(){
+  $("sheetBackdrop").classList.remove("open");
+  $("sheet").classList.remove("open");
+}
 
-    function safeStr(v) {
-      return (typeof v === "string") ? v : "";
-    }
-    function safeArray(v) {
-      return Array.isArray(v) ? v : [];
-    }
-    function initialFrom(name) {
-      const s = safeStr(name).trim();
-      return (s[0] ? s[0].toUpperCase() : "?");
-    }
-    function toast(msg, ms=2200) {
-      const t = $("toast");
-      t.textContent = msg;
-      t.classList.add("show");
-      clearTimeout(window.__toastTimer);
-      window.__toastTimer = setTimeout(() => t.classList.remove("show"), ms);
-    }
-    function timeAgo(ts) {
-      if (!ts || !ts.toDate) return "now";
-      const seconds = Math.floor((Date.now() - ts.toDate()) / 1000);
-      if (seconds < 60) return seconds + "s";
-      if (seconds < 3600) return Math.floor(seconds/60) + "m";
-      if (seconds < 86400) return Math.floor(seconds/3600) + "h";
-      return Math.floor(seconds/86400) + "d";
-    }
+/** =========================
+ *  AUTH
+ *  ========================= */
+function login(){
+  auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+}
+function logout(){
+  auth.signOut().then(()=>location.reload());
+}
 
-    /***********************
-     * 3) App state
-     ***********************/
-    let currentUser = null;
-    let userData = null;
+auth.onAuthStateChanged(async (user)=>{
+  if(!user){
+    currentUser = null;
+    userData = null;
+    $("loginView").classList.remove("hidden");
+    ["feedView","searchView","messagesView","profileView"].forEach(id=>$(id).classList.add("hidden"));
+    $("headerUserPill").style.display = "none";
+    return;
+  }
 
-    let currentRoute = "feed";
+  currentUser = user;
+  $("loginView").classList.add("hidden");
+  $("headerUserPill").style.display = "inline-flex";
 
-    // Messaging
-    let activeChat = { type: "global", peerUid: null, peerUsername: null };
-    let unsubscribeChat = null;
+  // dark mode from local storage
+  const dark = localStorage.getItem("darkMode")==="true";
+  $("darkToggle").checked = dark;
+  document.body.classList.toggle("dark", dark);
 
-    // Feed listener
-    let unsubscribeFeed = null;
+  // Storage toggle in UI
+  $("imageRow").classList.toggle("hidden", !USE_STORAGE);
 
-    /***********************
-     * 4) Auth
-     ***********************/
-    function login() {
-      auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(err => {
-        console.error(err);
-        toast("Login failed: " + (err?.message || err));
-      });
-    }
+  await ensureUserDoc();
+  updateHeaderAccountInfo();
 
-    function logout() {
-      auth.signOut().then(() => location.reload());
-    }
+  route("feed");
+  startFeedListener();
+  setActiveChat("AI");
+});
 
-    auth.onAuthStateChanged(async (user) => {
-      currentUser = user || null;
+async function ensureUserDoc(){
+  const userRef = db.collection("users").doc(currentUser.uid);
+  const snap = await userRef.get();
 
-      if (!currentUser) {
-        $("statusPill").textContent = "offline";
-        showView("login");
-        return;
+  if(!snap.exists){
+    // Create minimal user doc (username will be picked in modal)
+    await userRef.set({
+      username: "",
+      usernameLower: "",
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      followers: [],
+      following: []
+    }, { merge:true });
+
+    userData = (await userRef.get()).data();
+    openUsernameModal();
+    return;
+  }
+
+  userData = snap.data() || {};
+
+  // If missing username, force modal
+  if(!safeStr(userData.username)){
+    openUsernameModal();
+  }
+}
+
+/** =========================
+ *  DARK MODE
+ *  ========================= */
+$("darkToggle").addEventListener("change", ()=>{
+  document.body.classList.toggle("dark", $("darkToggle").checked);
+  localStorage.setItem("darkMode", $("darkToggle").checked ? "true" : "false");
+});
+
+/** =========================
+ *  ROUTING
+ *  ========================= */
+function route(view){
+  currentView = view;
+  setTabsActive(view);
+
+  $("feedView").classList.toggle("hidden", view!=="feed");
+  $("searchView").classList.toggle("hidden", view!=="search");
+  $("messagesView").classList.toggle("hidden", view!=="messages");
+  $("profileView").classList.toggle("hidden", view!=="profile");
+
+  if(view==="profile"){
+    // If user clicked another profile earlier, show that; else show my profile.
+    loadProfile(viewingProfileUid || currentUser.uid);
+  }
+  if(view==="messages"){
+    loadMessages();
+  }
+}
+
+/** =========================
+ *  USERNAME MODAL + UNIQUE USERNAMES
+ *  Uses /usernames/{usernameLower} claim doc
+ *  ========================= */
+function openUsernameModal(){
+  $("usernameModalBackdrop").style.display = "flex";
+  $("usernameHint").textContent = "";
+  suggestUsername();
+}
+function closeUsernameModal(){
+  $("usernameModalBackdrop").style.display = "none";
+}
+
+function suggestUsername(){
+  const base = safeStr(currentUser.displayName, "user")
+    .toLowerCase()
+    .replace(/\s+/g,"")
+    .replace(/[^a-z0-9_]/g,"")
+    .slice(0,14);
+
+  const rand = Math.floor(Math.random()*9000)+1000;
+  const suggestion = (base || "user") + "_" + rand;
+  $("usernameInput").value = suggestion;
+  $("usernameHint").textContent = "Suggestion generated. You can edit it.";
+}
+
+async function saveUsername(){
+  const raw = $("usernameInput").value.trim().toLowerCase();
+  if(raw.length < 3) return toast("Username must be at least 3 characters.");
+  if(raw.length > 20) return toast("Username must be 20 characters or less.");
+  if(!/^[a-z0-9_]+$/.test(raw)) return toast("Only lowercase letters, numbers, underscore.");
+
+  // 1) Create username claim doc
+  // doc id is raw (usernameLower)
+  const claimRef = db.collection("usernames").doc(raw);
+
+  try{
+    await db.runTransaction(async (tx)=>{
+      const claimSnap = await tx.get(claimRef);
+      if(claimSnap.exists){
+        throw new Error("taken");
       }
-
-      $("statusPill").textContent = "online";
-      $("acctEmail").textContent = currentUser.email || "(no email)";
-      $("acctUid").textContent = currentUser.uid;
-
-      // Load (or create) user doc
-      const userRef = db.collection("users").doc(currentUser.uid);
-      const snap = await userRef.get();
-
-      if (!snap.exists) {
-        // Create a basic doc first (username set later via modal)
-        await userRef.set({
-          uid: currentUser.uid,
-          username: "",
-          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-          followers: [],
-          following: []
-        });
-        userData = (await userRef.get()).data();
-        openUsernameModal();
-      } else {
-        userData = snap.data();
-        if (!safeStr(userData.username)) openUsernameModal();
-      }
-
-      // Dark mode load
-      const dark = localStorage.getItem("darkMode") === "true";
-      $("darkToggle").checked = dark;
-      document.body.classList.toggle("dark", dark);
-
-      // Update top UI
-      $("meAvatar").textContent = initialFrom(userData.username || currentUser.displayName || "?");
-      $("meUsername").textContent = "@" + (userData.username || "set-username");
-
-      // Start on feed
-      showView("feed");
-      route("feed");
-      startFeedListener();
-      setChatGlobal();
-    });
-
-    /***********************
-     * 5) Views / routing
-     ***********************/
-    function showView(which) {
-      $("loginView").classList.toggle("hidden", which !== "login");
-      $("feedView").classList.toggle("hidden", which !== "feed");
-      $("searchView").classList.toggle("hidden", which !== "search");
-      $("messagesView").classList.toggle("hidden", which !== "messages");
-      $("profileView").classList.toggle("hidden", which !== "profile");
-    }
-
-    function setActiveTab(name) {
-      const tabs = [
-        ["feed","tabFeed"],
-        ["search","tabSearch"],
-        ["messages","tabMessages"],
-        ["profile","tabProfile"],
-      ];
-      tabs.forEach(([routeName, tabId]) => {
-        $(tabId).classList.toggle("active", routeName === name);
-      });
-    }
-
-    function route(name) {
-      currentRoute = name;
-      setActiveTab(name);
-
-      if (name === "feed") showView("feed");
-      if (name === "search") showView("search");
-      if (name === "messages") showView("messages");
-      if (name === "profile") showView("profile");
-
-      if (name === "messages") loadChat();
-      if (name === "feed") refreshFeed();
-    }
-
-    /***********************
-     * 6) Drawer
-     ***********************/
-    function openDrawer() {
-      $("drawerOverlay").classList.add("show");
-      $("drawer").classList.add("show");
-    }
-    function closeDrawer() {
-      $("drawerOverlay").classList.remove("show");
-      $("drawer").classList.remove("show");
-    }
-
-    // Simple swipe to open (right edge swipe)
-    let touchStartX = null;
-    document.addEventListener("touchstart", (e) => {
-      if (!e.touches?.length) return;
-      touchStartX = e.touches[0].clientX;
-    }, { passive:true });
-
-    document.addEventListener("touchend", (e) => {
-      if (touchStartX == null) return;
-      const endX = e.changedTouches?.[0]?.clientX ?? touchStartX;
-      const dx = endX - touchStartX;
-      // Swipe from right edge to left = close; from mid to right edge = ignore
-      // Swipe from near right edge towards left = open
-      if (touchStartX > (window.innerWidth - 40) && dx < -40) openDrawer();
-      touchStartX = null;
-    }, { passive:true });
-
-    /***********************
-     * 7) Dark mode toggle
-     ***********************/
-    $("darkToggle").addEventListener("change", (e) => {
-      const on = !!e.target.checked;
-      document.body.classList.toggle("dark", on);
-      localStorage.setItem("darkMode", String(on));
-    });
-
-    /***********************
-     * 8) Username uniqueness (real fix)
-     *    Uses: users/{uid} and usernames/{username} -> {uid}
-     ***********************/
-    function openUsernameModal() {
-      $("usernameModal").style.display = "block";
-    }
-    function closeUsernameModal() {
-      $("usernameModal").style.display = "none";
-    }
-    function openUsernameChange() {
-      closeDrawer();
-      openUsernameModal();
-      $("usernameInput").value = userData?.username || "";
-      $("usernameInput").focus();
-    }
-
-    async function saveUsername() {
-      if (!currentUser) return;
-      const name = safeStr($("usernameInput").value).trim().toLowerCase();
-
-      if (name.length < 3) return toast("Username too short (min 3).");
-      if (name.length > 20) return toast("Username too long (max 20).");
-      if (!/^[a-z0-9_]+$/.test(name)) return toast("Use only lowercase, numbers, underscore.");
-
-      const userRef = db.collection("users").doc(currentUser.uid);
-      const unameRef = db.collection("usernames").doc(name);
-
-      try {
-        await db.runTransaction(async (tx) => {
-          const unameSnap = await tx.get(unameRef);
-          if (unameSnap.exists) {
-            const existingUid = unameSnap.data()?.uid;
-            if (existingUid !== currentUser.uid) {
-              throw new Error("USERNAME_TAKEN");
-            }
-          }
-
-          // If user had an old username, release it
-          const meSnap = await tx.get(userRef);
-          const old = safeStr(meSnap.data()?.username).toLowerCase();
-          if (old && old !== name) {
-            tx.delete(db.collection("usernames").doc(old));
-          }
-
-          tx.set(unameRef, { uid: currentUser.uid }, { merge: true });
-          tx.set(userRef, {
-            uid: currentUser.uid,
-            username: name,
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-          }, { merge: true });
-        });
-
-        // refresh local
-        userData = (await userRef.get()).data();
-        $("meAvatar").textContent = initialFrom(userData.username || currentUser.displayName || "?");
-        $("meUsername").textContent = "@" + userData.username;
-        closeUsernameModal();
-        toast("Username saved!");
-      } catch (e) {
-        console.error(e);
-        if (String(e?.message || "").includes("USERNAME_TAKEN")) return toast("That username is taken.");
-        toast("Could not save username. Check Firestore rules.");
-      }
-    }
-
-    /***********************
-     * 9) Posts (fix likes/comments/shares types)
-     ***********************/
-    async function createPost() {
-      if (!currentUser) return;
-
-      const text = safeStr($("postText").value).trim();
-      const file = $("postImage").files?.[0] || null;
-
-      if (!text && !file) return toast("Post can’t be empty.");
-
-      // If user didn't pick username yet, force it
-      if (!safeStr(userData?.username)) {
-        openUsernameModal();
-        return toast("Set a username first.");
-      }
-
-      let imageUrl = "";
-
-      // Image is optional. If Storage fails, still allow text post.
-      if (file) {
-        try {
-          const path = `posts/${currentUser.uid}/${Date.now()}_${file.name}`;
-          const ref = storage.ref(path);
-          await ref.put(file);
-          imageUrl = await ref.getDownloadURL();
-        } catch (e) {
-          console.warn("Storage upload failed:", e);
-          toast("Image upload failed (Storage). Posting text only.");
-          imageUrl = "";
-        }
-      }
-
-      await db.collection("posts").add({
-        uid: currentUser.uid,
-        username: userData.username,
-        text,
-        imageUrl,
-        likes: [],
-        comments: [],
-        shares: [],
+      tx.set(claimRef, {
+        ownerUid: currentUser.uid,
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
+      const userRef = db.collection("users").doc(currentUser.uid);
+      tx.set(userRef, {
+        username: raw,
+        usernameLower: raw
+      }, { merge:true });
+    });
+  }catch(e){
+    if(String(e?.message).includes("taken")) return toast("That username is taken. Try another.");
+    console.error(e);
+    return toast("Could not save username. Check Rules and try again.");
+  }
 
-      $("postText").value = "";
-      $("postImage").value = "";
-      toast("Posted!");
+  // refresh userData
+  userData = (await db.collection("users").doc(currentUser.uid).get()).data();
+  closeUsernameModal();
+  updateHeaderAccountInfo();
+  toast("Username saved!");
+}
+
+/** =========================
+ *  HEADER ACCOUNT INFO
+ *  ========================= */
+function updateHeaderAccountInfo(){
+  const uname = safeStr(userData?.username, "no-username");
+  $("headerUserPill").textContent = "@" + uname;
+  $("accountInfo").innerHTML =
+    `<div><strong>@${uname}</strong></div>
+     <div class="muted" style="font-size:13px;">UID: ${currentUser.uid}</div>
+     <div class="muted" style="font-size:13px;">Email: ${safeStr(currentUser.email,"")}</div>`;
+}
+
+/** =========================
+ *  POSTS
+ *  ========================= */
+async function createPost(){
+  if(!safeStr(userData?.username)){
+    openUsernameModal();
+    return;
+  }
+
+  const text = $("postText").value.trim();
+  if(!text) return toast("Write something first.");
+
+  let imageUrl = "";
+  if(USE_STORAGE){
+    const file = $("postImage").files[0];
+    if(file){
+      const path = `posts/${currentUser.uid}/${Date.now()}_${file.name}`;
+      const ref = storage.ref(path);
+      await ref.put(file);
+      imageUrl = await ref.getDownloadURL();
+    }
+  }
+
+  await db.collection("posts").add({
+    uid: currentUser.uid,
+    username: userData.username,
+    text,
+    imageUrl,
+    likes: [],
+    comments: [],
+    shares: [],
+    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+  });
+
+  $("postText").value = "";
+  if(USE_STORAGE) $("postImage").value = "";
+}
+
+let unsubscribeFeed = null;
+
+function startFeedListener(){
+  if(unsubscribeFeed) unsubscribeFeed();
+
+  unsubscribeFeed = db.collection("posts")
+    .orderBy("timestamp","desc")
+    .onSnapshot((snapshot)=>{
+      const postsDiv = $("posts");
+      postsDiv.innerHTML = "";
+
+      snapshot.forEach(doc=>{
+        const post = normalizePost(doc.data());
+        postsDiv.insertAdjacentHTML("beforeend", renderPost(post, doc.id));
+      });
+
+      // attach dynamic handlers (safer than inline for big apps, but we keep it simple)
+    }, (err)=>{
+      console.error("Feed listen error:", err);
+      // If you see "Missing or insufficient permissions", it’s rules.
+      // If you see "CORS Listen", try another browser or disable adblock.
+    });
+}
+
+function refreshFeed(){
+  // quick manual refresh
+  startFeedListener();
+}
+
+function renderPost(post, postId){
+  const liked = safeArr(post.likes).includes(currentUser.uid);
+  const likeCount = safeArr(post.likes).length;
+  const commentCount = safeArr(post.comments).length;
+  const shareCount = safeArr(post.shares).length;
+
+  const commentsHtml = safeArr(post.comments).slice(0, 10).map(c=>{
+    const cu = safeStr(c.username, "unknown");
+    return `
+      <div class="row" style="gap:10px; margin-top:10px;">
+        <div class="avatar sm">${firstLetter(cu)}</div>
+        <div class="grow">
+          <div style="font-weight:800; font-size:14px;">@${cu}</div>
+          <div style="font-size:14px;">${escapeHtml(safeStr(c.text,""))}</div>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  return `
+    <div class="card" id="post-${postId}">
+      <div class="row" style="gap:10px;">
+        <div class="avatar">${firstLetter(post.username)}</div>
+        <div class="grow">
+          <div style="font-weight:900;">
+            <span class="link" onclick="openProfileFromPost('${post.uid}')">@${escapeHtml(post.username)}</span>
+          </div>
+          <div class="muted" style="font-size:13px;">${timeAgo(post.timestamp)}</div>
+        </div>
+      </div>
+
+      <div style="margin-top:10px; font-size:15px;">${escapeHtml(post.text)}</div>
+
+      ${post.imageUrl ? `<img class="postImg" src="${post.imageUrl}" />` : ""}
+
+      <div class="postActions">
+        <span onclick="toggleLike('${postId}')">
+          <i class="${liked ? "fa-solid" : "fa-regular"} fa-heart"></i> ${likeCount}
+        </span>
+        <span onclick="toggleComments('${postId}')">
+          <i class="fa-regular fa-comment"></i> ${commentCount}
+        </span>
+        <span onclick="sharePost('${postId}')">
+          <i class="fa-solid fa-retweet"></i> ${shareCount}
+        </span>
+      </div>
+
+      <div id="comments-${postId}" class="hidden" style="margin-top:10px;">
+        <div style="font-weight:800; margin-bottom:8px;">Comments</div>
+        ${commentsHtml || `<div class="muted">No comments yet.</div>`}
+
+        <div class="row" style="margin-top:10px;">
+          <input class="grow" id="commentInput-${postId}" placeholder="Write a comment..." />
+          <button onclick="addComment('${postId}')">Send</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function escapeHtml(s){
+  return String(s)
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
+
+async function toggleLike(postId){
+  const ref = db.collection("posts").doc(postId);
+  const snap = await ref.get();
+
+  // normalize in case old data was wrong
+  const post = normalizePost(snap.data() || {});
+  let likes = safeArr(post.likes);
+
+  if(likes.includes(currentUser.uid)){
+    likes = likes.filter(x => x !== currentUser.uid);
+  }else{
+    likes = likes.concat([currentUser.uid]);
+  }
+  await ref.update({ likes });
+}
+
+function toggleComments(postId){
+  $("comments-"+postId).classList.toggle("hidden");
+}
+
+async function addComment(postId){
+  if(!safeStr(userData?.username)){
+    openUsernameModal();
+    return;
+  }
+  const input = $("commentInput-"+postId);
+  const text = input.value.trim();
+  if(!text) return;
+
+  const ref = db.collection("posts").doc(postId);
+  // store a simple comment object
+  await ref.update({
+    comments: firebase.firestore.FieldValue.arrayUnion({
+      uid: currentUser.uid,
+      username: userData.username,
+      text: text
+    })
+  });
+
+  input.value = "";
+}
+
+async function sharePost(postId){
+  const ref = db.collection("posts").doc(postId);
+  await ref.update({
+    shares: firebase.firestore.FieldValue.arrayUnion(currentUser.uid)
+  });
+}
+
+/** =========================
+ *  PROFILE
+ *  ========================= */
+function openProfileFromPost(uid){
+  viewingProfileUid = uid;
+  route("profile");
+}
+
+async function loadProfile(uid){
+  viewingProfileUid = uid;
+
+  const profileDiv = $("profileView");
+  profileDiv.innerHTML = `<div class="card">Loading profile...</div>`;
+
+  const userSnap = await db.collection("users").doc(uid).get();
+  if(!userSnap.exists){
+    profileDiv.innerHTML = `<div class="card">User not found.</div>`;
+    return;
+  }
+
+  const u = userSnap.data() || {};
+  const username = safeStr(u.username, "unknown");
+  const followers = safeArr(u.followers);
+  const following = safeArr(u.following);
+
+  const isMe = uid === currentUser.uid;
+  const iFollow = followers.includes(currentUser.uid); // since followers are on target doc
+
+  // Posts for this user
+  // (If Firestore asks for an index, it will give you a link to create it.)
+  let postsHtml = "";
+  try{
+    const postsSnap = await db.collection("posts")
+      .where("uid","==",uid)
+      .orderBy("timestamp","desc")
+      .get();
+
+    postsSnap.forEach(doc=>{
+      const p = normalizePost(doc.data());
+      postsHtml += `
+        <div class="card">
+          <div class="muted" style="font-size:13px; margin-bottom:6px;">${timeAgo(p.timestamp)}</div>
+          <div style="font-size:15px;">${escapeHtml(p.text)}</div>
+          ${p.imageUrl ? `<img class="postImg" src="${p.imageUrl}">` : ""}
+        </div>
+      `;
+    });
+  }catch(e){
+    console.error("Profile posts query error:", e);
+    postsHtml = `
+      <div class="card">
+        <div style="font-weight:800;">Posts</div>
+        <div class="muted" style="margin-top:6px;">
+          Firestore needs an index for this query. If you saw an “index required” link in console, click it and create the index.
+        </div>
+      </div>
+    `;
+  }
+
+  profileDiv.innerHTML = `
+    <div class="card" style="text-align:center;">
+      <div class="avatar" style="margin:0 auto;">${firstLetter(username)}</div>
+      <div style="font-weight:900; font-size:18px; margin-top:8px;">@${escapeHtml(username)}</div>
+
+      <div class="row" style="justify-content:center; gap:16px; margin-top:10px;">
+        <span class="pill">${followers.length} followers</span>
+        <span class="pill">${following.length} following</span>
+      </div>
+
+      ${!isMe ? `
+        <div style="margin-top:12px;">
+          <button onclick="toggleFollow('${uid}')">${iFollow ? "Unfollow" : "Follow"}</button>
+          <button class="secondary" style="margin-left:8px;" onclick="setActiveChat('${uid}')">Message</button>
+        </div>
+      ` : `
+        <div style="margin-top:12px;">
+          <button class="secondary" onclick="openSettingsSheet()">Open Settings</button>
+        </div>
+      `}
+    </div>
+
+    <div style="font-weight:900; margin:8px 2px;">Posts</div>
+    ${postsHtml || `<div class="card" class="muted">No posts yet.</div>`}
+  `;
+}
+
+async function toggleFollow(targetUid){
+  if(targetUid === currentUser.uid) return toast("You can’t follow yourself.");
+
+  const myRef = db.collection("users").doc(currentUser.uid);
+  const targetRef = db.collection("users").doc(targetUid);
+
+  await db.runTransaction(async (tx)=>{
+    const mySnap = await tx.get(myRef);
+    const tSnap = await tx.get(targetRef);
+
+    const my = mySnap.data() || {};
+    const t = tSnap.data() || {};
+
+    let myFollowing = safeArr(my.following);
+    let tFollowers = safeArr(t.followers);
+
+    const already = myFollowing.includes(targetUid);
+
+    if(already){
+      myFollowing = myFollowing.filter(x=>x!==targetUid);
+      tFollowers = tFollowers.filter(x=>x!==currentUser.uid);
+    }else{
+      myFollowing = myFollowing.concat([targetUid]);
+      tFollowers = tFollowers.concat([currentUser.uid]);
     }
 
-    function renderPost(post, postId) {
-      const username = safeStr(post.username) || "unknown";
-      const likesArr = safeArray(post.likes);
-      const commentsArr = safeArray(post.comments);
-      const sharesArr = safeArray(post.shares);
+    tx.set(myRef, { following: myFollowing }, { merge:true });
+    tx.set(targetRef, { followers: tFollowers }, { merge:true });
+  });
 
-      const liked = likesArr.includes(currentUser.uid);
+  // refresh profile view
+  await loadProfile(targetUid);
+}
 
-      const commentsHtml = commentsArr.map(c => {
-        const cu = safeStr(c?.username) || "unknown";
-        const ct = safeStr(c?.text) || "";
-        return `
-          <div class="comment">
-            <div class="avatar">${initialFrom(cu)}</div>
-            <div class="col" style="gap:2px; flex:1;">
-              <div style="font-weight:900;">${escapeHtml(cu)}</div>
-              <div>${escapeHtml(ct)}</div>
-            </div>
-          </div>
-        `;
-      }).join("");
+/** =========================
+ *  SEARCH (prefix search)
+ *  Requires users.usernameLower set.
+ *  ========================= */
+let searchTimer = null;
 
-      return `
+function doSearch(){
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(runSearch, 200);
+}
+
+async function runSearch(){
+  const q = $("searchInput").value.trim().toLowerCase();
+  const res = $("searchResults");
+
+  if(q.length < 1){
+    res.innerHTML = "";
+    return;
+  }
+
+  res.innerHTML = `<div class="card">Searching...</div>`;
+
+  try{
+    // prefix search on usernameLower
+    const snap = await db.collection("users")
+      .where("usernameLower", ">=", q)
+      .where("usernameLower", "<=", q + "\uf8ff")
+      .limit(20)
+      .get();
+
+    let html = "";
+    snap.forEach(doc=>{
+      const u = doc.data() || {};
+      const uname = safeStr(u.username, "");
+      if(!uname) return;
+
+      html += `
         <div class="card">
-          <div class="row space">
-            <div class="row" style="gap:10px;">
-              <div class="avatar">${initialFrom(username)}</div>
-              <div class="col" style="gap:2px;">
-                <div style="font-weight:900;">
-                  <span class="click" onclick="openProfile('${escapeAttr(post.uid)}')">${escapeHtml(username)}</span>
-                  <span class="badge">@${escapeHtml(username)}</span>
-                </div>
-                <div class="small muted">${timeAgo(post.createdAt)}</div>
+          <div class="row" style="gap:10px;">
+            <div class="avatar sm">${firstLetter(uname)}</div>
+            <div class="grow">
+              <div style="font-weight:900;">
+                <span class="link" onclick="openProfileFromSearch('${doc.id}')">@${escapeHtml(uname)}</span>
               </div>
-            </div>
-            <div class="small muted">${post.uid === currentUser.uid ? "You" : ""}</div>
-          </div>
-
-          ${safeStr(post.text) ? `<div style="margin-top:10px;">${escapeHtml(post.text)}</div>` : ""}
-
-          ${safeStr(post.imageUrl) ? `<img src="${escapeAttr(post.imageUrl)}" class="post-image" />` : ""}
-
-          <div class="actions">
-            <span class="action ${liked ? "active" : ""}" onclick="toggleLike('${escapeAttr(postId)}')">
-              <i class="${liked ? "fa-solid" : "fa-regular"} fa-heart"></i>${likesArr.length}
-            </span>
-
-            <span class="action" onclick="toggleComments('${escapeAttr(postId)}')">
-              <i class="fa-regular fa-comment"></i>${commentsArr.length}
-            </span>
-
-            <span class="action" onclick="sharePost('${escapeAttr(postId)}')">
-              <i class="fa-solid fa-retweet"></i>${sharesArr.length}
-            </span>
-          </div>
-
-          <div id="comments-${escapeAttr(postId)}" class="hidden">
-            ${commentsHtml || `<div class="small muted" style="margin-top:10px;">No comments yet.</div>`}
-
-            <div class="row" style="margin-top:10px;">
-              <input id="commentInput-${escapeAttr(postId)}" placeholder="Write a comment..." />
-              <button class="primary" onclick="addComment('${escapeAttr(postId)}')">Send</button>
+              <div class="muted" style="font-size:13px;">
+                ${safeArr(u.followers).length} followers
+              </div>
             </div>
           </div>
         </div>
       `;
-    }
+    });
 
-    function startFeedListener() {
-      if (unsubscribeFeed) unsubscribeFeed();
+    res.innerHTML = html || `<div class="card">No users found.</div>`;
+  }catch(e){
+    console.error(e);
+    res.innerHTML = `<div class="card">Search error. Check Rules + Console.</div>`;
+  }
+}
 
-      unsubscribeFeed = db.collection("posts")
-        .orderBy("createdAt", "desc")
-        .limit(50)
-        .onSnapshot((snap) => {
-          const postsDiv = $("posts");
-          postsDiv.innerHTML = "";
-          snap.forEach(doc => {
-            const data = doc.data() || {};
-            postsDiv.innerHTML += renderPost(data, doc.id);
-          });
-        }, (err) => {
-          console.error(err);
-          toast("Feed error: " + (err?.message || err));
-        });
-    }
+function openProfileFromSearch(uid){
+  viewingProfileUid = uid;
+  route("profile");
+}
 
-    function refreshFeed() {
-      // feed is realtime already; this just gives user feedback
-      toast("Refreshing…");
-    }
+/** =========================
+ *  MESSAGES + SIMPLE AI
+ *  ========================= */
+function chatId(a,b){
+  return (a < b) ? (a + "_" + b) : (b + "_" + a);
+}
 
-    async function toggleLike(postId) {
-      if (!currentUser) return;
+function setActiveChat(uid){
+  activeChatUid = uid || "AI";
+  route("messages");
+  loadMessages();
+}
 
-      const ref = db.collection("posts").doc(postId);
-      const snap = await ref.get();
-      const data = snap.data() || {};
-      const likes = safeArray(data.likes);
+function loadMessages(){
+  if(unsubscribeChat) unsubscribeChat();
 
-      const next = likes.includes(currentUser.uid)
-        ? likes.filter(x => x !== currentUser.uid)
-        : [...likes, currentUser.uid];
+  const box = $("chatBox");
+  box.innerHTML = "";
 
-      await ref.update({ likes: next });
-    }
+  const cid = chatId(currentUser.uid, activeChatUid);
+  const ref = db.collection("chats").doc(cid).collection("messages").orderBy("timestamp","asc");
 
-    function toggleComments(postId) {
-      const el = document.getElementById(`comments-${postId}`);
-      if (el) el.classList.toggle("hidden");
-    }
+  unsubscribeChat = ref.onSnapshot((snap)=>{
+    box.innerHTML = "";
+    snap.forEach(doc=>{
+      const m = doc.data() || {};
+      const who = safeStr(m.username, "unknown");
+      const text = safeStr(m.text, "");
+      const mine = (m.uid === currentUser.uid);
 
-    async function addComment(postId) {
-      const input = document.getElementById(`commentInput-${postId}`);
-      const text = safeStr(input?.value).trim();
-      if (!text) return;
-
-      const ref = db.collection("posts").doc(postId);
-      const snap = await ref.get();
-      const data = snap.data() || {};
-      const comments = safeArray(data.comments);
-
-      comments.push({
-        uid: currentUser.uid,
-        username: userData.username || "unknown",
-        text,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-
-      await ref.update({ comments });
-      input.value = "";
-    }
-
-    async function sharePost(postId) {
-      const ref = db.collection("posts").doc(postId);
-      const snap = await ref.get();
-      const data = snap.data() || {};
-      const shares = safeArray(data.shares);
-
-      if (!shares.includes(currentUser.uid)) shares.push(currentUser.uid);
-      await ref.update({ shares });
-      toast("Shared!");
-    }
-
-    /***********************
-     * 10) Profile (clickable + followers)
-     ***********************/
-    async function openProfile(uid) {
-      if (!uid) return;
-      route("profile");
-      await loadProfile(uid);
-    }
-
-    async function loadProfile(uid) {
-      if (!uid) return;
-
-      const uSnap = await db.collection("users").doc(uid).get();
-      const u = uSnap.data() || {};
-      const uname = safeStr(u.username) || "unknown";
-
-      // Get posts without composite index requirement:
-      const pSnap = await db.collection("posts").where("uid", "==", uid).get();
-      const posts = [];
-      pSnap.forEach(d => posts.push({ id: d.id, ... (d.data() || {}) }));
-
-      // Sort in JS
-      posts.sort((a,b) => {
-        const at = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0;
-        const bt = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0;
-        return bt - at;
-      });
-
-      const followers = safeArray(u.followers);
-      const following = safeArray(u.following);
-
-      const isMe = uid === currentUser.uid;
-      const iFollow = safeArray(userData?.following).includes(uid);
-
-      const postsHtml = posts.length
-        ? posts.map(p => `
-            <div class="card">
-              <div class="small muted">${timeAgo(p.createdAt)}</div>
-              ${safeStr(p.text) ? `<div style="margin-top:8px;">${escapeHtml(p.text)}</div>` : ""}
-              ${safeStr(p.imageUrl) ? `<img class="post-image" src="${escapeAttr(p.imageUrl)}" />` : ""}
-            </div>
-          `).join("")
-        : `<div class="card"><div class="muted">No posts yet.</div></div>`;
-
-      $("profileView").innerHTML = `
-        <div class="card">
-          <div class="row space">
-            <div class="row" style="gap:10px;">
-              <div class="avatar" style="width:54px;height:54px;font-size:22px;">${initialFrom(uname)}</div>
-              <div class="col" style="gap:2px;">
-                <div style="font-weight:900; font-size:18px;">@${escapeHtml(uname)}</div>
-                <div class="small muted">${escapeHtml(currentUser.displayName || "")}</div>
-              </div>
-            </div>
-            <div class="col" style="gap:8px; align-items:flex-end;">
-              ${!isMe ? `<button class="primary" onclick="toggleFollow('${escapeAttr(uid)}')">${iFollow ? "Following" : "Follow"}</button>` : ""}
-              ${!isMe ? `<button class="ghost" onclick="startDM('${escapeAttr(uid)}','${escapeAttr(uname)}')">Message</button>` : ""}
-            </div>
-          </div>
-
-          <div class="hr"></div>
-
-          <div class="row" style="gap:10px; flex-wrap:wrap;">
-            <span class="badge"><b>${followers.length}</b>&nbsp;Followers</span>
-            <span class="badge"><b>${following.length}</b>&nbsp;Following</span>
-            <span class="badge"><b>${posts.length}</b>&nbsp;Posts</span>
-          </div>
-
-          <div class="small muted" style="margin-top:10px;">
-            (Prototype) Follower list UI can be added next.
-          </div>
+      box.insertAdjacentHTML("beforeend", `
+        <div class="bubble ${mine ? "me" : ""}">
+          <div style="font-weight:900; font-size:13px;">@${escapeHtml(who)}</div>
+          <div style="font-size:14px;">${escapeHtml(text)}</div>
         </div>
+      `);
+    });
+    box.scrollTop = box.scrollHeight;
+  }, (err)=>{
+    console.error("Chat listen error:", err);
+  });
+}
 
-        <div style="font-weight:900; margin:10px 2px;">Posts</div>
-        ${postsHtml}
-      `;
-    }
+async function sendMessage(){
+  if(!safeStr(userData?.username)){
+    openUsernameModal();
+    return;
+  }
 
-    async function toggleFollow(targetUid) {
-      if (!currentUser || !targetUid) return;
-      if (targetUid === currentUser.uid) return toast("You can't follow yourself.");
+  const input = $("chatInput");
+  const text = input.value.trim();
+  if(!text) return;
 
-      const myRef = db.collection("users").doc(currentUser.uid);
-      const tRef = db.collection("users").doc(targetUid);
+  const cid = chatId(currentUser.uid, activeChatUid);
+  const ref = db.collection("chats").doc(cid).collection("messages");
 
-      await db.runTransaction(async (tx) => {
-        const mySnap = await tx.get(myRef);
-        const tSnap = await tx.get(tRef);
+  await ref.add({
+    uid: currentUser.uid,
+    username: userData.username,
+    text,
+    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+  });
 
-        const my = mySnap.data() || {};
-        const t = tSnap.data() || {};
+  input.value = "";
 
-        let myFollowing = safeArray(my.following);
-        let tFollowers = safeArray(t.followers);
+  // If talking to AI, reply
+  if(activeChatUid === "AI"){
+    aiReply(text);
+  }
+}
 
-        const already = myFollowing.includes(targetUid);
+async function aiReply(userText){
+  const cid = chatId(currentUser.uid, "AI");
+  const ref = db.collection("chats").doc(cid).collection("messages");
 
-        if (already) {
-          myFollowing = myFollowing.filter(x => x !== targetUid);
-          tFollowers = tFollowers.filter(x => x !== currentUser.uid);
-        } else {
-          myFollowing.push(targetUid);
-          tFollowers.push(currentUser.uid);
-        }
+  const t = userText.toLowerCase();
+  let msg = "Tell me more 👀";
 
-        tx.update(myRef, { following: myFollowing });
-        tx.update(tRef, { followers: tFollowers });
-      });
+  if(t.includes("hi") || t.includes("hello")) msg = "Hey! 👋 What are you building today?";
+  else if(t.includes("help")) msg = "Tell me what’s broken and what you expect to happen, and I’ll guide you.";
+  else if(t.includes("joke")) msg = "Why do programmers hate nature? Too many bugs 🐛";
+  else if(t.includes("profile")) msg = "Profiles work best when every user doc has username, followers[], following[].";
+  else if(t.includes("search")) msg = "Search works off usernameLower prefix. Make sure usernameLower is saved.";
+  else if(t.includes("bye")) msg = "Later! 👋";
 
-      // Refresh local userData
-      userData = (await db.collection("users").doc(currentUser.uid).get()).data();
-
-      toast("Updated follow!");
-      await loadProfile(targetUid);
-    }
-
-    /***********************
-     * 11) Search (fix undefined username crash)
-     ***********************/
-    async function doSearch() {
-      const q = safeStr($("searchInput").value).trim().toLowerCase();
-      const res = $("searchResults");
-
-      if (q.length < 2) {
-        res.innerHTML = "";
-        return;
-      }
-
-      try {
-        const snap = await db.collection("users").limit(200).get();
-        let html = "";
-
-        snap.forEach(doc => {
-          const u = doc.data() || {};
-          const uname = safeStr(u.username).toLowerCase();
-          if (!uname) return;
-
-          if (uname.includes(q)) {
-            html += `
-              <div class="card">
-                <div class="row space">
-                  <div class="row" style="gap:10px;">
-                    <div class="avatar">${initialFrom(uname)}</div>
-                    <div class="col" style="gap:2px;">
-                      <div style="font-weight:900;" class="click" onclick="openProfile('${escapeAttr(doc.id)}')">@${escapeHtml(uname)}</div>
-                      <div class="small muted">${escapeHtml(doc.id)}</div>
-                    </div>
-                  </div>
-                  <button class="ghost" onclick="startDM('${escapeAttr(doc.id)}','${escapeAttr(uname)}')">Message</button>
-                </div>
-              </div>
-            `;
-          }
-        });
-
-        res.innerHTML = html || `<div class="card"><div class="muted">No results.</div></div>`;
-      } catch (e) {
-        console.error(e);
-        toast("Search error: " + (e?.message || e));
-      }
-    }
-
-    /***********************
-     * 12) Messages (Global + DM)
-     ***********************/
-    function chatDocIdForGlobal() {
-      return "global";
-    }
-    function chatDocIdForDM(aUid, bUid) {
-      return (aUid < bUid) ? (aUid + "_" + bUid) : (bUid + "_" + aUid);
-    }
-
-    function setChatGlobal() {
-      activeChat = { type: "global", peerUid: null, peerUsername: null };
-      $("chatWithLabel").textContent = "Chat: Global";
-      route("messages");
-      loadChat();
-    }
-
-    function startDM(uid, username) {
-      activeChat = { type: "dm", peerUid: uid, peerUsername: username };
-      $("chatWithLabel").textContent = "Chat: @" + (username || "user");
-      route("messages");
-      loadChat();
-      toast("Opened DM with @" + (username || "user"));
-    }
-
-    function loadChat() {
-      if (!currentUser) return;
-
-      if (unsubscribeChat) unsubscribeChat();
-
-      const box = $("chatBox");
-      box.innerHTML = `<div class="muted small">Loading…</div>`;
-
-      const chatId = (activeChat.type === "global")
-        ? chatDocIdForGlobal()
-        : chatDocIdForDM(currentUser.uid, activeChat.peerUid);
-
-      const ref = db.collection("chats").doc(chatId).collection("messages")
-        .orderBy("createdAt", "asc")
-        .limit(200);
-
-      unsubscribeChat = ref.onSnapshot((snap) => {
-        box.innerHTML = "";
-        snap.forEach(doc => {
-          const m = doc.data() || {};
-          const who = safeStr(m.username) || "unknown";
-          const text = safeStr(m.text) || "";
-          const mine = m.uid === currentUser.uid;
-
-          box.innerHTML += `
-            <div class="bubble ${mine ? "me" : ""}">
-              <div class="meta">${escapeHtml(who)} • ${timeAgo(m.createdAt)}</div>
-              <div>${escapeHtml(text)}</div>
-            </div>
-          `;
-        });
-        box.scrollTop = box.scrollHeight;
-      }, (err) => {
-        console.error(err);
-        toast("Chat listen error: " + (err?.message || err));
-        box.innerHTML = `<div class="muted small">Chat error. Check rules/network.</div>`;
-      });
-    }
-
-    async function sendMessage() {
-      const text = safeStr($("chatInput").value).trim();
-      if (!text) return;
-
-      $("chatInput").value = "";
-
-      const chatId = (activeChat.type === "global")
-        ? chatDocIdForGlobal()
-        : chatDocIdForDM(currentUser.uid, activeChat.peerUid);
-
-      try {
-        await db.collection("chats").doc(chatId).set({
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-          type: activeChat.type,
-          members: activeChat.type === "global" ? ["*"] : [currentUser.uid, activeChat.peerUid]
-        }, { merge: true });
-
-        await db.collection("chats").doc(chatId).collection("messages").add({
-          uid: currentUser.uid,
-          username: userData.username || "unknown",
-          text,
-          createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-      } catch (e) {
-        console.error(e);
-        toast("Send failed: " + (e?.message || e));
-      }
-    }
-
-    // Very simple “AI Assist” (no paid API)
-    async function aiAssist() {
-      const prompt = safeStr($("chatInput").value).trim();
-      if (!prompt) return toast("Type something first.");
-
-      // This is a local “fake AI helper” (no server). You can replace later with a real AI API.
-      const reply = localAi(prompt);
-
-      const chatId = (activeChat.type === "global")
-        ? chatDocIdForGlobal()
-        : chatDocIdForDM(currentUser.uid, activeChat.peerUid);
-
-      try {
-        await db.collection("chats").doc(chatId).collection("messages").add({
-          uid: "AI",
-          username: "EchoBot",
-          text: reply,
-          createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        toast("EchoBot replied.");
-      } catch (e) {
-        console.error(e);
-        toast("AI message failed (rules?)");
-      }
-    }
-
-    function localAi(text) {
-      const t = text.toLowerCase();
-      if (t.includes("hi") || t.includes("hello")) return "Hey! 👋 What are you working on in EchoStream?";
-      if (t.includes("fix") || t.includes("error")) return "Tell me the exact error text and where it happens. I’ll help you patch it.";
-      if (t.includes("idea")) return "Feature idea: add a 'following feed' toggle and show only posts from people you follow.";
-      if (t.includes("rules")) return "Rules tip: allow users to like/comment but block changing post.uid/username.";
-      return "Got it. Want help with feed, search, profiles, or chat next?";
-    }
-
-    /***********************
-     * 13) HTML escaping (security)
-     ***********************/
-    function escapeHtml(s) {
-      return String(s)
-        .replaceAll("&","&amp;")
-        .replaceAll("<","&lt;")
-        .replaceAll(">","&gt;")
-        .replaceAll('"',"&quot;")
-        .replaceAll("'","&#039;");
-    }
-    function escapeAttr(s) {
-      // ok for putting inside "..."
-      return escapeHtml(s).replaceAll("`","&#096;");
-    }
-  </script>
+  setTimeout(async ()=>{
+    await ref.add({
+      uid: "AI",
+      username: "EchoBot",
+      text: msg,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  }, 700);
+}
+</script>
 </body>
 </html>
