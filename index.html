@@ -6,92 +6,10 @@
   <title>EchoStream</title>
 
   <!-- Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
-
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-
-  <style>
-    /* CSS styles omitted for brevity */
-  </style>
-</head>
-<body>
-  <header>
-    EchoStream
-    <i class="fas fa-cog" onclick="route('settings')"></i>
-  </header>
-  <main>
-    <div id="login" class="hidden">
-      <h2>Welcome to EchoStream</h2>
-      <button onclick="signUp()">Sign up</button>
-    </div>
-    <div id="feed" class="hidden">
-      <div class="card">
-        <textarea id="postText" placeholder="What’s happening?"></textarea>
-        <input type="file" id="postImage" accept="image/*">
-        <button onclick="createPost()">Post</button>
-      </div>
-      <div id="posts"></div>
-    </div>
-    <div id="profile" class="hidden"></div>
-    <div id="settings" class="hidden">
-      <div class="card">
-        <label>
-          <input type="checkbox" id="darkToggle"> Dark mode
-        </label><br><br>
-        <button onclick="logout()">Logout</button>
-      </div>
-    </div>
-    <div id="usernameModal" class="modal hidden">
-      <div class="modal-content">
-        <h3>Pick a username</h3>
-        <input id="usernameInput">
-        <button onclick="saveUsername()">Save</button>
-      </div>
-    </div>
-  </main>
-  <nav>
-    <i class="fa fa-house" onclick="route('feed')"></i>
-    <i class="fa fa-user" onclick="route('profile')"></i>
-    <i class="fa fa-gear" onclick="route('settings')"></i>
-  </nav>
-
-  <script src="firebase.js"></script>
-  <script src="app.js"></script>
-</body>
-</html>
-In this code, I assumed that you have separate JavaScript files named firebase.js and app.js for the Firebase configuration and the application logic, respectively. Make sure to replace the URLs with the correct ones for your Firebase project and other dependencies.
-
-
-
-
-
-
-CB
-
-You
-4:04 am, Jan 11, 2026
-i am using HTML file for it and I provided you with my Firebase make the profile and fix any errors and make sure the whole code is there
-
-Windsurf
-4:04 am, Jan 11, 2026
-Apologies for the confusion. Here's the complete code for the HTML file with the profile section and the necessary corrections:
-
-html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>EchoStream</title>
-
-  <!-- Firebase SDKs -->
-  <script src="[https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>](https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>)
-  <script src="[https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>](https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>)
-  <script src="[https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>](https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>)
-  <script src="[https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>](https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>)
+  <script src="[https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js"></script>](https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js"></script>)
+  <script src="[https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js"></script>](https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js"></script>)
+  <script src="[https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js"></script>](https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js"></script>)
+  <script src="[https://www.gstatic.com/firebasejs/9.22.0/firebase-storage.js"></script>](https://www.gstatic.com/firebasejs/9.22.0/firebase-storage.js"></script>)
 
   <link rel="stylesheet" href="[https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">](https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">)
 
@@ -145,12 +63,12 @@ html
   <script>
     // Firebase configuration
     const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
-      authDomain: "YOUR_AUTH_DOMAIN",
-      projectId: "YOUR_PROJECT_ID",
-      storageBucket: "YOUR_STORAGE_BUCKET",
-      messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-      appId: "YOUR_APP_ID"
+      apiKey: "AIzaSyCmY_zfNcH5XnEaQxlqaTW1D8EUR670-Zo",
+      authDomain: "echostream-a102a.firebaseapp.com",
+      projectId: "echostream-a102a",
+      storageBucket: "echostream-a102a.firebasestorage.app",
+      messagingSenderId: "789062222400",
+      appId: "1:789062222400:web:73d478269135a77d7d55a5"
     };
 
     firebase.initializeApp(firebaseConfig);
@@ -169,14 +87,3 @@ html
       }
       auth
         .createUserWithEmailAndPassword(email, password)
-        .then(async (userCredential) => {
-          currentUser = userCredential.user;
-          await db.collection("users").doc(currentUser.uid)
-            .set({
-              username: "",
-              following: [],
-              followers: []
-            })
-            .then(() => {
-              usernameModal.style.display = "flex";
-              usernameInput.focus();
