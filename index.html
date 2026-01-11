@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>EchoStream</title>
 
 <!-- Firebase -->
@@ -10,207 +10,183 @@
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
 
 <style>
 :root {
-  --bg:#fff; --text:#000; --card:#f2f2f2; --border:#ddd; --accent:#1da1f2;
+  --bg:#fff; --text:#000; --card:#f3f3f3; --border:#ddd; --accent:#1da1f2;
 }
-body.dark {
-  --bg:#000; --text:#fff; --card:#1a1a1a; --border:#333;
-}
-body {
-  margin:0;
-  font-family:system-ui;
-  background:var(--bg);
-  color:var(--text);
-}
+body.dark { --bg:#000; --text:#fff; --card:#1a1a1a; --border:#333; }
+body { margin:0; font-family:system-ui; background:var(--bg); color:var(--text); }
+
 header {
   position:fixed; top:0; left:0; right:0;
-  padding:14px;
-  display:flex;
-  justify-content:space-between;
+  padding:14px; background:var(--bg);
   border-bottom:1px solid var(--border);
-  background:var(--bg);
-  z-index:10;
+  display:flex; justify-content:space-between; z-index:10;
 }
-main {
-  padding:80px 12px 90px;
-  max-width:600px;
-  margin:auto;
-}
+
+main { padding:80px 16px 90px; max-width:600px; margin:auto; }
+.card { background:var(--card); padding:16px; border-radius:16px; margin-bottom:12px; }
+
 nav {
   position:fixed; bottom:0; left:0; right:0;
-  display:flex;
-  justify-content:space-around;
-  padding:12px 0;
-  border-top:1px solid var(--border);
-  background:var(--bg);
+  display:flex; justify-content:space-around;
+  background:var(--bg); border-top:1px solid var(--border);
+  padding:10px 0;
 }
-.card {
-  background:var(--card);
-  padding:14px;
-  border-radius:16px;
-  margin-bottom:12px;
-}
-button {
-  background:var(--accent);
-  border:none;
-  color:#fff;
-  padding:6px 12px;
-  border-radius:999px;
-  cursor:pointer;
-}
-textarea,input {
-  width:100%;
-  padding:8px;
-  border-radius:10px;
-}
+
+nav i { font-size:20px; cursor:pointer; }
+
 .hidden { display:none; }
-.username { font-weight:bold; cursor:pointer; }
-.actions i { margin-right:12px; cursor:pointer; }
-.side-menu {
-  position:fixed;
-  top:0; bottom:0; right:-260px;
-  width:260px;
-  background:var(--card);
-  padding:20px;
-  transition:.3s;
-  z-index:20;
+
+.avatar {
+  width:48px;height:48px;border-radius:50%;
+  background:#777;color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  font-weight:bold;
 }
-.side-menu.open { right:0; }
+
+button {
+  background:var(--accent); color:white;
+  border:none; padding:8px 16px;
+  border-radius:999px; cursor:pointer;
+}
+
+input,textarea {
+  width:100%; padding:10px; border-radius:10px;
+  border:1px solid var(--border);
+  background:var(--bg); color:var(--text);
+}
 </style>
 </head>
 
 <body>
 
 <header>
-  EchoStream
-  <i class="fas fa-bars" onclick="toggleMenu()"></i>
+  <strong>EchoStream</strong>
+  <i class="fa fa-bars" onclick="toggleSettings()"></i>
 </header>
-
-<div class="side-menu" id="sideMenu">
-  <h3>Settings</h3>
-  <p id="settingsUser"></p>
-  <label>
-    <input type="checkbox" onchange="toggleDark()"> Dark mode
-  </label><br><br>
-  <button onclick="logout()">Logout</button>
-</div>
 
 <main>
 
+<!-- LOGIN -->
 <div id="login">
   <h2>Welcome to EchoStream</h2>
   <button onclick="login()">Sign in with Google</button>
 </div>
 
+<!-- FEED -->
 <div id="feed" class="hidden">
   <div class="card">
     <textarea id="postText" placeholder="What’s happening?"></textarea>
     <button onclick="createPost()">Post</button>
   </div>
-  <div id="posts"></div>
+  <div id="feedPosts"></div>
 </div>
 
+<!-- SEARCH -->
 <div id="search" class="hidden">
   <input placeholder="Search users" oninput="searchUsers(this.value)">
   <div id="searchResults"></div>
 </div>
 
+<!-- MESSAGES -->
 <div id="messages" class="hidden">
-  <div class="card">Messages coming soon 👀</div>
+  <h3>Messages</h3>
+  <p>(Basic DM system placeholder – wired for later expansion)</p>
 </div>
 
+<!-- PROFILE -->
 <div id="profile" class="hidden"></div>
+
+<!-- SETTINGS -->
+<div id="settings" class="hidden">
+  <div class="card">
+    <h3>Settings</h3>
+    <label><input type="checkbox" onchange="toggleDark(this.checked)"> Dark mode</label><br><br>
+    <button onclick="logout()">Logout</button>
+  </div>
+</div>
 
 </main>
 
 <nav>
   <i class="fa fa-house" onclick="route('feed')"></i>
-  <i class="fa fa-search" onclick="route('search')"></i>
+  <i class="fa fa-magnifying-glass" onclick="route('search')"></i>
   <i class="fa fa-envelope" onclick="route('messages')"></i>
   <i class="fa fa-user" onclick="route('profile')"></i>
 </nav>
 
 <script>
+// FIREBASE
 firebase.initializeApp({
   apiKey: "AIzaSyCmY_zfNcH5XnEaQxlqaTW1D8EUR670-Zo",
   authDomain: "echostream-a102a.firebaseapp.com",
   projectId: "echostream-a102a",
-  appId: "1:789062222400:web:73d478269135a77d7d55a5"
 });
 
 const auth = firebase.auth();
 const db = firebase.firestore();
 let currentUser, userData;
 
-function toggleMenu() {
-  sideMenu.classList.toggle("open");
-}
-
-function toggleDark() {
-  document.body.classList.toggle("dark");
-}
-
+// AUTH
 function login() {
   auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
 }
-
 function logout() {
   auth.signOut().then(()=>location.reload());
 }
 
 auth.onAuthStateChanged(async user=>{
   if(!user) return;
-  currentUser = user;
-  login.style.display="none";
-  settingsUser.innerText = user.displayName;
-
-  const ref = db.collection("users").doc(user.uid);
-  const snap = await ref.get();
-  if(!snap.exists){
-    userData={username:user.displayName.replace(/\s/g,"").toLowerCase(),followers:[],following:[]};
-    await ref.set(userData);
-  } else userData=snap.data();
-
+  currentUser=user;
+  document.getElementById("login").style.display="none";
   route("feed");
+
+  const ref=db.collection("users").doc(user.uid);
+  const snap=await ref.get();
+  if(!snap.exists){
+    await ref.set({
+      username:user.displayName.replace(/\s/g,"").toLowerCase(),
+      followers:[], following:[]
+    });
+  }
+  userData=(await ref.get()).data();
   loadFeed();
 });
 
+// ROUTING
 function route(p){
-  ["feed","search","messages","profile"].forEach(x=>document.getElementById(x).classList.add("hidden"));
+  ["feed","search","messages","profile","settings"].forEach(x=>document.getElementById(x).classList.add("hidden"));
   document.getElementById(p).classList.remove("hidden");
   if(p==="profile") loadProfile(currentUser.uid);
 }
 
+// POSTS
 async function createPost(){
-  if(!postText.value) return;
+  if(!postText.value.trim()) return;
   await db.collection("posts").add({
     uid:currentUser.uid,
     username:userData.username,
     text:postText.value,
-    likes:[],
-    timestamp:firebase.firestore.FieldValue.serverTimestamp()
+    likes:[], comments:[],
+    time:firebase.firestore.FieldValue.serverTimestamp()
   });
   postText.value="";
 }
 
 function loadFeed(){
-  db.collection("posts").orderBy("timestamp","desc")
-  .onSnapshot(s=>{
-    posts.innerHTML="";
+  db.collection("posts").orderBy("time","desc").onSnapshot(s=>{
+    feedPosts.innerHTML="";
     s.forEach(d=>{
       const p=d.data();
-      posts.innerHTML+=`
+      feedPosts.innerHTML+=`
       <div class="card">
-        <div class="username" onclick="openProfile('${p.uid}')">@${p.username}</div>
+        <strong onclick="openProfile('${p.uid}')">${p.username}</strong>
         <p>${p.text}</p>
-        <div class="actions">
-          <i onclick="likePost('${d.id}')">❤️ ${p.likes.length}</i>
-          <i onclick="commentPost('${d.id}')">💬</i>
-          <i onclick="sharePost('${d.id}')">🔁</i>
-        </div>
+        <button onclick="likePost('${d.id}')">❤️ ${p.likes.length}</button>
+        <button onclick="commentPrompt('${d.id}')">💬 ${p.comments.length}</button>
       </div>`;
     });
   });
@@ -219,60 +195,71 @@ function loadFeed(){
 async function likePost(id){
   const ref=db.collection("posts").doc(id);
   const snap=await ref.get();
-  let likes=snap.data().likes;
+  let likes=snap.data().likes||[];
   likes.includes(currentUser.uid)?likes=likes.filter(x=>x!==currentUser.uid):likes.push(currentUser.uid);
-  await ref.update({likes});
+  ref.update({likes});
 }
 
-function sharePost(id){
-  alert("Repost coming soon 👀");
+async function commentPrompt(id){
+  const text=prompt("Comment:");
+  if(!text) return;
+  db.collection("posts").doc(id).update({
+    comments:firebase.firestore.FieldValue.arrayUnion({
+      uid:currentUser.uid,text,likes:[]
+    })
+  });
 }
 
-function commentPost(id){
-  alert("Comments UI coming next step");
+// PROFILE
+async function loadProfile(uid){
+  const snap=await db.collection("users").doc(uid).get();
+  const u=snap.data();
+  const posts=await db.collection("posts").where("uid","==",uid).get();
+  profile.innerHTML=`
+  <div class="card">
+    <div class="avatar">${u.username[0]}</div>
+    <h3>${u.username}</h3>
+    <p>Followers: ${u.followers.length} · Following: ${u.following.length}</p>
+    ${uid!==currentUser.uid?`<button onclick="toggleFollow('${uid}')">Follow</button>`:""}
+  </div>
+  ${posts.docs.map(p=>`<div class="card">${p.data().text}</div>`).join("")}`;
 }
 
-async function openProfile(uid){
-  route("profile");
+function openProfile(uid){
+  loadProfile(uid); route("profile");
+}
+
+async function toggleFollow(uid){
+  const me=db.collection("users").doc(currentUser.uid);
+  const them=db.collection("users").doc(uid);
+  const ms=(await me.get()).data();
+  const ts=(await them.get()).data();
+  ms.following.includes(uid)?(
+    ms.following=ms.following.filter(x=>x!==uid),
+    ts.followers=ts.followers.filter(x=>x!==currentUser.uid)
+  ):(
+    ms.following.push(uid),
+    ts.followers.push(currentUser.uid)
+  );
+  me.update(ms); them.update(ts);
   loadProfile(uid);
 }
 
-async function loadProfile(uid){
-  const u=await db.collection("users").doc(uid).get();
-  const postsSnap=await db.collection("posts").where("uid","==",uid).get();
-  profile.innerHTML=`
-    <div class="card">
-      <h2>@${u.data().username}</h2>
-      <p>Followers: ${u.data().followers.length} | Following: ${u.data().following.length}</p>
-      <button onclick="followUser('${uid}')">Follow</button>
-    </div>`;
-  postsSnap.forEach(p=>{
-    profile.innerHTML+=`<div class="card">${p.data().text}</div>`;
+// SEARCH
+async function searchUsers(q){
+  searchResults.innerHTML="";
+  if(!q) return;
+  const s=await db.collection("users").where("username",">=",q).get();
+  s.forEach(d=>{
+    searchResults.innerHTML+=`<div onclick="openProfile('${d.id}')">${d.data().username}</div>`;
   });
 }
 
-async function followUser(uid){
-  if(uid===currentUser.uid) return;
-  const ref=db.collection("users").doc(uid);
-  const snap=await ref.get();
-  let f=snap.data().followers;
-  if(!f.includes(currentUser.uid)){
-    f.push(currentUser.uid);
-    await ref.update({followers:f});
-  }
-}
-
-function searchUsers(q){
-  if(!q) return searchResults.innerHTML="";
-  db.collection("users").where("username",">=",q).get()
-  .then(s=>{
-    searchResults.innerHTML="";
-    s.forEach(d=>{
-      searchResults.innerHTML+=`<div onclick="openProfile('${d.id}')">@${d.data().username}</div>`;
-    });
-  });
+// SETTINGS
+function toggleSettings(){ route("settings"); }
+function toggleDark(v){
+  document.body.classList.toggle("dark",v);
 }
 </script>
-
 </body>
 </html>
