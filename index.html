@@ -11,6 +11,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
 
+  <!-- Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
 
   <style>
@@ -18,6 +19,7 @@
       --bg:#ffffff; --text:#111; --muted:#666;
       --card:#f3f3f3; --border:#ddd;
       --accent:#1da1f2; --danger:#ff3b30;
+      --good:#22c55e;
     }
     body.dark{
       --bg:#0b0b0b; --text:#fff; --muted:#aaa;
@@ -27,6 +29,7 @@
       margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
       background:var(--bg); color:var(--text);
     }
+
     header{
       position:fixed; top:0; left:0; right:0;
       display:flex; align-items:center; justify-content:space-between;
@@ -43,10 +46,12 @@
       cursor:pointer;
     }
     header .icon-btn:hover{ background:rgba(127,127,127,.12); }
+
     main{
       padding:72px 14px 88px;
       max-width:640px; margin:0 auto;
     }
+
     nav{
       position:fixed; bottom:0; left:0; right:0;
       display:flex; justify-content:space-around; align-items:center;
@@ -68,6 +73,7 @@
     nav i{ font-size:20px; }
 
     .hidden{ display:none !important; }
+
     .card{
       background:var(--card);
       border:1px solid var(--border);
@@ -75,6 +81,7 @@
       padding:14px;
       margin-bottom:12px;
     }
+
     textarea, input{
       width:100%;
       box-sizing:border-box;
@@ -102,10 +109,10 @@
       border:1px solid var(--border);
     }
     button.danger{ background:var(--danger); }
+    button.good{ background:var(--good); }
 
     .row{ display:flex; gap:10px; align-items:center; }
     .space{ flex:1; }
-    .muted{ color:var(--muted); font-size:13px; }
 
     .avatar{
       width:42px; height:42px;
@@ -122,6 +129,7 @@
       border:1px solid var(--border);
     }
 
+    .muted{ color:var(--muted); font-size:13px; }
     .click{ cursor:pointer; }
     .click:hover{ text-decoration:underline; }
 
@@ -134,6 +142,14 @@
     .post-actions span{ cursor:pointer; }
     .post-actions span:hover{ color:var(--text); }
 
+    .comment{
+      display:flex; gap:10px;
+      margin-top:10px;
+      padding-top:10px;
+      border-top:1px solid var(--border);
+    }
+    .comment .avatar{ width:34px; height:34px; font-size:14px; }
+
     /* Drawer */
     .drawer-backdrop{
       position:fixed; inset:0;
@@ -142,6 +158,7 @@
       display:none;
     }
     .drawer-backdrop.show{ display:block; }
+
     .drawer{
       position:fixed; top:0; left:-320px;
       width:300px; height:100%;
@@ -152,6 +169,8 @@
       transition:left .2s ease;
     }
     .drawer.show{ left:0; }
+
+    .drawer h3{ margin:6px 0 10px; }
     .drawer .item{
       padding:12px 10px;
       border-radius:12px;
@@ -172,21 +191,53 @@
     .modal.show{ display:flex; }
     .modal .box{
       width:100%;
-      max-width:520px;
+      max-width:420px;
       background:var(--bg);
       border:1px solid var(--border);
       border-radius:16px;
       padding:16px;
     }
 
-    .listRow{
-      display:flex; align-items:center; gap:12px;
+    /* List modal */
+    .list-item{
       padding:12px;
-      border-radius:14px;
+      border-radius:12px;
+      cursor:pointer;
       border:1px solid var(--border);
-      background:rgba(127,127,127,.06);
+      background:var(--bg);
       margin-bottom:10px;
     }
+    .list-item:hover{ background:rgba(127,127,127,.12); }
+
+    /* Settings pages */
+    .settings-title{
+      font-size:18px; font-weight:900;
+      margin:0 0 10px;
+    }
+    .settings-row{
+      display:flex; align-items:center; gap:10px;
+      padding:14px 12px;
+      border-radius:14px;
+      border:1px solid var(--border);
+      background:var(--bg);
+      cursor:pointer;
+      margin-bottom:10px;
+    }
+    .settings-row:hover{ background:rgba(127,127,127,.12); }
+    .settings-row i{ width:20px; text-align:center; color:var(--muted); }
+    .settings-row .right{ margin-left:auto; color:var(--muted); }
+
+    .top-back{
+      display:flex; align-items:center; gap:10px;
+      margin-bottom:10px;
+    }
+    .top-back .backbtn{
+      width:40px; height:40px; border-radius:999px;
+      display:flex; align-items:center; justify-content:center;
+      cursor:pointer;
+    }
+    .top-back .backbtn:hover{ background:rgba(127,127,127,.12); }
+
   </style>
 </head>
 
@@ -195,7 +246,7 @@
 <header>
   <div class="left">
     <div class="icon-btn" onclick="openDrawer()"><i class="fa-solid fa-bars"></i></div>
-    <div id="topTitle">EchoStream</div>
+    <div id="headerTitle">EchoStream</div>
   </div>
   <div class="icon-btn" onclick="route('settings')"><i class="fa-solid fa-gear"></i></div>
 </header>
@@ -214,7 +265,6 @@
   <div class="item" onclick="route('messages'); closeDrawer();"><i class="fa-solid fa-message"></i> Messages</div>
   <div class="item" onclick="route('profile'); closeDrawer();"><i class="fa-solid fa-user"></i> Profile</div>
   <div class="item" onclick="route('settings'); closeDrawer();"><i class="fa-solid fa-gear"></i> Settings</div>
-  <div id="adminDrawerItem" class="item hidden" onclick="route('admin'); closeDrawer();"><i class="fa-solid fa-shield"></i> Admin</div>
 </div>
 
 <main>
@@ -282,173 +332,8 @@
   <!-- PROFILE -->
   <div id="profileView" class="hidden"></div>
 
-  <!-- FOLLOW LIST VIEW -->
-  <div id="followListView" class="hidden"></div>
-
-  <!-- SETTINGS HOME -->
-  <div id="settingsView" class="hidden">
-    <div class="card">
-      <h3 style="margin:0 0 10px;">Settings</h3>
-
-      <div class="listRow click" onclick="route('settings_account')">
-        <i class="fa-solid fa-user"></i>
-        <div style="flex:1;">
-          <div style="font-weight:900;">Your account</div>
-          <div class="muted">View username, UID, and change username</div>
-        </div>
-        <i class="fa-solid fa-chevron-right"></i>
-      </div>
-
-      <div class="listRow click" onclick="route('settings_security')">
-        <i class="fa-solid fa-lock"></i>
-        <div style="flex:1;">
-          <div style="font-weight:900;">Security</div>
-          <div class="muted">Sign-in info</div>
-        </div>
-        <i class="fa-solid fa-chevron-right"></i>
-      </div>
-
-      <div class="listRow click" onclick="route('settings_privacy')">
-        <i class="fa-solid fa-shield-halved"></i>
-        <div style="flex:1;">
-          <div style="font-weight:900;">Privacy & safety</div>
-          <div class="muted">Basic privacy page</div>
-        </div>
-        <i class="fa-solid fa-chevron-right"></i>
-      </div>
-
-      <div class="listRow click" onclick="route('settings_data')">
-        <i class="fa-solid fa-download"></i>
-        <div style="flex:1;">
-          <div style="font-weight:900;">Download your data</div>
-          <div class="muted">Simple export helper</div>
-        </div>
-        <i class="fa-solid fa-chevron-right"></i>
-      </div>
-
-      <div id="adminSettingsRow" class="listRow click hidden" onclick="route('admin')">
-        <i class="fa-solid fa-shield"></i>
-        <div style="flex:1;">
-          <div style="font-weight:900;">Admin Panel</div>
-          <div class="muted">Moderation tools</div>
-        </div>
-        <i class="fa-solid fa-chevron-right"></i>
-      </div>
-
-      <div class="card" style="margin-top:12px;">
-        <label class="row" style="gap:10px;">
-          <input type="checkbox" id="darkToggle" style="width:auto;" />
-          <span>Dark mode</span>
-        </label>
-        <div style="height:12px;"></div>
-        <button class="danger" onclick="logout()">Logout</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- SETTINGS: ACCOUNT -->
-  <div id="settingsAccountView" class="hidden">
-    <div class="card">
-      <div class="row">
-        <div style="font-weight:900;font-size:18px;">Your account</div>
-        <div class="space"></div>
-        <button class="secondary" onclick="route('settings')">Back</button>
-      </div>
-
-      <div style="height:12px;"></div>
-
-      <div class="muted">Username</div>
-      <input id="accountUsername" placeholder="username" />
-      <div class="muted" style="margin-top:10px;">UID</div>
-      <div id="accountUid" class="card" style="margin-top:6px; font-family:monospace;"></div>
-
-      <div class="row" style="margin-top:12px;">
-        <button onclick="updateMyUsername()">Save Username</button>
-        <div class="space"></div>
-        <span class="muted" id="accountStatus"></span>
-      </div>
-
-      <div class="muted" style="margin-top:10px;">
-        Username rules: lowercase letters/numbers/underscore. Must be unique.
-      </div>
-    </div>
-  </div>
-
-  <!-- SETTINGS: SECURITY -->
-  <div id="settingsSecurityView" class="hidden">
-    <div class="card">
-      <div class="row">
-        <div style="font-weight:900;font-size:18px;">Security</div>
-        <div class="space"></div>
-        <button class="secondary" onclick="route('settings')">Back</button>
-      </div>
-      <div style="height:12px;"></div>
-      <div class="muted">Signed in as</div>
-      <div id="securityEmail" class="card" style="margin-top:6px;"></div>
-      <div class="muted">Provider</div>
-      <div id="securityProvider" class="card" style="margin-top:6px;"></div>
-    </div>
-  </div>
-
-  <!-- SETTINGS: PRIVACY -->
-  <div id="settingsPrivacyView" class="hidden">
-    <div class="card">
-      <div class="row">
-        <div style="font-weight:900;font-size:18px;">Privacy & safety</div>
-        <div class="space"></div>
-        <button class="secondary" onclick="route('settings')">Back</button>
-      </div>
-      <div style="height:12px;"></div>
-      <div class="muted">
-        This is a starter page. Later you can add: private account, block list, report tools, etc.
-      </div>
-    </div>
-  </div>
-
-  <!-- SETTINGS: DATA -->
-  <div id="settingsDataView" class="hidden">
-    <div class="card">
-      <div class="row">
-        <div style="font-weight:900;font-size:18px;">Download your data</div>
-        <div class="space"></div>
-        <button class="secondary" onclick="route('settings')">Back</button>
-      </div>
-      <div style="height:12px;"></div>
-      <button onclick="exportMyData()">Export My Data (JSON)</button>
-      <div class="muted" id="dataStatus" style="margin-top:10px;"></div>
-    </div>
-  </div>
-
-  <!-- ADMIN -->
-  <div id="adminView" class="hidden">
-    <div class="card">
-      <div class="row">
-        <div style="font-weight:900;font-size:18px;">Admin Panel</div>
-        <div class="space"></div>
-        <button class="secondary" onclick="route('settings')">Back</button>
-      </div>
-
-      <div style="height:12px;"></div>
-      <div class="muted">Tools</div>
-
-      <div class="listRow">
-        <i class="fa-solid fa-trash"></i>
-        <div style="flex:1;">
-          <div style="font-weight:900;">Delete a post by ID</div>
-          <div class="muted">Paste Firestore postId</div>
-        </div>
-      </div>
-      <input id="adminDeletePostId" placeholder="postId" />
-      <div class="row" style="margin-top:10px;">
-        <button class="danger" onclick="adminDeletePost()">Delete Post</button>
-        <div class="space"></div>
-        <span class="muted" id="adminStatus"></span>
-      </div>
-
-      <div style="height:14px;"></div>
-      <div class="muted">You only see this if your UID exists in /admins/{uid}</div>
-    </div>
-  </div>
+  <!-- SETTINGS ROOT -->
+  <div id="settingsView" class="hidden"></div>
 
 </main>
 
@@ -468,17 +353,30 @@
   </div>
 </nav>
 
-<!-- Username Modal (first time) -->
+<!-- Username Modal -->
 <div id="usernameModal" class="modal">
   <div class="box">
     <h3 style="margin:0 0 8px;">Pick a username</h3>
     <p class="muted" style="margin:0 0 12px;">Unique, lowercase letters/numbers/underscore only.</p>
     <input id="usernameInput" placeholder="username" maxlength="20"/>
     <div class="row" style="margin-top:12px;">
-      <button onclick="saveUsername()">Save</button>
+      <button onclick="saveUsernameFromModal()">Save</button>
       <div class="space"></div>
       <span class="muted" id="usernameStatus"></span>
     </div>
+  </div>
+</div>
+
+<!-- Followers/Following Modal -->
+<div id="listModal" class="modal">
+  <div class="box">
+    <div class="row" style="align-items:center;">
+      <div style="font-weight:900;" id="listTitle">List</div>
+      <div class="space"></div>
+      <div class="icon-btn" onclick="closeListModal()"><i class="fa-solid fa-xmark"></i></div>
+    </div>
+    <div style="height:8px;"></div>
+    <div id="listBody" class="muted">Loading...</div>
   </div>
 </div>
 
@@ -497,21 +395,23 @@
 
   const auth = firebase.auth();
   const db = firebase.firestore();
+
   let storage = null;
   try { storage = firebase.storage(); } catch(e) { storage = null; }
 
-  // app state
   let currentUser = null;
   let userData = null;
-  let isAdmin = false;
+  let isAdminUser = false;
 
-  // listeners
-  let feedUnsub = null;
+  // messaging
+  let activeChatUid = "AI";
   let chatUnsub = null;
-  let activeChatUid = "AI"; // "AI" or a real uid
+
+  // feed
+  let feedUnsub = null;
 
   // =========================
-  // UI helpers
+  // helpers
   // =========================
   function openDrawer(){
     document.getElementById("drawerBackdrop").classList.add("show");
@@ -522,6 +422,10 @@
     document.getElementById("drawer").classList.remove("show");
   }
 
+  function setHeader(title){
+    document.getElementById("headerTitle").textContent = title || "EchoStream";
+  }
+
   function setActiveTab(page){
     ["feed","search","messages","profile"].forEach(p=>{
       const el = document.getElementById("tab-"+p);
@@ -530,21 +434,9 @@
     });
   }
 
-  function setTopTitle(text){
-    document.getElementById("topTitle").textContent = text || "EchoStream";
-  }
-
-  function hideAllViews(){
-    const views = [
-      "loginView","feedView","searchView","messagesView","profileView",
-      "settingsView","settingsAccountView","settingsSecurityView","settingsPrivacyView","settingsDataView",
-      "adminView","followListView"
-    ];
-    views.forEach(v => document.getElementById(v).classList.add("hidden"));
-  }
-
   function showView(id){
-    hideAllViews();
+    const views = ["loginView","feedView","searchView","messagesView","profileView","settingsView"];
+    views.forEach(v => document.getElementById(v).classList.add("hidden"));
     document.getElementById(id).classList.remove("hidden");
   }
 
@@ -558,7 +450,6 @@
     const s = safeString(name, "?");
     return (s[0] ? s[0].toUpperCase() : "?");
   }
-
   function timeAgo(ts){
     if (!ts || !ts.toDate) return "now";
     const seconds = Math.floor((Date.now() - ts.toDate()) / 1000);
@@ -567,17 +458,6 @@
     if (seconds < 86400) return Math.floor(seconds/3600) + "h";
     return Math.floor(seconds/86400) + "d";
   }
-
-  function escapeHtml(str){
-    str = String(str ?? "");
-    return str
-      .replaceAll("&","&amp;")
-      .replaceAll("<","&lt;")
-      .replaceAll(">","&gt;")
-      .replaceAll('"',"&quot;")
-      .replaceAll("'","&#039;");
-  }
-  function escapeAttr(str){ return escapeHtml(str); }
 
   // =========================
   // AUTH
@@ -589,28 +469,46 @@
     auth.signOut().then(()=>location.reload());
   }
 
+  async function checkAdmin(uid){
+    try{
+      const snap = await db.collection("admins").doc(uid).get();
+      return snap.exists;
+    } catch(e){
+      return false;
+    }
+  }
+
   auth.onAuthStateChanged(async (user) => {
     if (!user){
       currentUser = null;
       userData = null;
-      isAdmin = false;
-      if (feedUnsub) { feedUnsub(); feedUnsub = null; }
-      if (chatUnsub) { chatUnsub(); chatUnsub = null; }
+      isAdminUser = false;
       showView("loginView");
-      setTopTitle("EchoStream");
+      setHeader("EchoStream");
       return;
     }
 
     currentUser = user;
+    showView("feedView");
+    setActiveTab("feed");
+    setHeader("EchoStream");
 
-    // Load/create user doc
+    // Check admin (safe)
+    isAdminUser = await checkAdmin(user.uid);
+
+    // Load or create user doc
     const userRef = db.collection("users").doc(user.uid);
     const snap = await userRef.get();
 
     if (!snap.exists){
       const auto = safeString(user.displayName, "user").replace(/\s/g,"").toLowerCase();
-      await userRef.set({ username: auto, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
-      userData = { username: auto };
+      await userRef.set({
+        username: auto,
+        followers: [],
+        following: []
+      });
+      userData = { username: auto, followers: [], following: [] };
+      document.getElementById("usernameInput").value = auto;
       document.getElementById("usernameModal").classList.add("show");
     } else {
       userData = snap.data() || {};
@@ -620,187 +518,91 @@
       }
     }
 
-    // admin check
-    const adminSnap = await db.collection("admins").doc(user.uid).get();
-    isAdmin = adminSnap.exists;
-
-    // show admin UI
-    document.getElementById("adminSettingsRow").classList.toggle("hidden", !isAdmin);
-    document.getElementById("adminDrawerItem").classList.toggle("hidden", !isAdmin);
-
     // dark mode init
     const dark = localStorage.getItem("darkMode") === "true";
     document.body.classList.toggle("dark", dark);
-    document.getElementById("darkToggle").checked = dark;
 
-    route("feed");
+    // start feed + chat
     startFeedListener();
     setChatAI();
   });
 
-  // Dark mode
-  document.getElementById("darkToggle").addEventListener("change", (e)=>{
-    const v = !!e.target.checked;
-    document.body.classList.toggle("dark", v);
-    localStorage.setItem("darkMode", String(v));
-  });
-
   // =========================
-  // ROUTES (ALL OF THEM)
+  // ROUTING
   // =========================
-  function route(page, param){
+  function route(page){
     if (!currentUser){
       showView("loginView");
-      setTopTitle("EchoStream");
       return;
     }
 
     closeDrawer();
 
-    // bottom tabs only for main pages
-    const mainTabs = ["feed","search","messages","profile"];
-    if (mainTabs.includes(page)) setActiveTab(page);
-
     if (page === "feed"){
-      setTopTitle("Feed");
+      setHeader("EchoStream");
       showView("feedView");
+      setActiveTab("feed");
       startFeedListener();
       return;
     }
-
     if (page === "search"){
-      setTopTitle("Search");
+      setHeader("Search");
       showView("searchView");
+      setActiveTab("search");
       document.getElementById("searchInput").value = "";
       document.getElementById("searchResults").innerHTML = "";
       return;
     }
-
     if (page === "messages"){
-      setTopTitle("Messages");
+      setHeader("Messages");
       showView("messagesView");
+      setActiveTab("messages");
       ensureChatListener();
       return;
     }
-
     if (page === "profile"){
-      setTopTitle("Profile");
+      setHeader("Profile");
       showView("profileView");
+      setActiveTab("profile");
       openProfile(currentUser.uid);
       return;
     }
-
     if (page === "settings"){
-      setTopTitle("Settings");
+      setHeader("Settings");
       showView("settingsView");
-      // populate some settings info quickly
-      return;
-    }
-
-    if (page === "settings_account"){
-      setTopTitle("Your account");
-      showView("settingsAccountView");
-      document.getElementById("accountUid").textContent = currentUser.uid;
-      document.getElementById("accountUsername").value = safeString(userData?.username, "");
-      document.getElementById("accountStatus").textContent = "";
-      return;
-    }
-
-    if (page === "settings_security"){
-      setTopTitle("Security");
-      showView("settingsSecurityView");
-      document.getElementById("securityEmail").textContent = safeString(currentUser.email, "(no email)");
-      const provider = (currentUser.providerData && currentUser.providerData[0] && currentUser.providerData[0].providerId) || "unknown";
-      document.getElementById("securityProvider").textContent = provider;
-      return;
-    }
-
-    if (page === "settings_privacy"){
-      setTopTitle("Privacy & safety");
-      showView("settingsPrivacyView");
-      return;
-    }
-
-    if (page === "settings_data"){
-      setTopTitle("Download your data");
-      showView("settingsDataView");
-      document.getElementById("dataStatus").textContent = "";
-      return;
-    }
-
-    if (page === "follow_list"){
-      // param: { uid, mode: "followers" | "following", username }
-      setTopTitle(param?.mode === "followers" ? "Followers" : "Following");
-      showView("followListView");
-      renderFollowList(param?.uid, param?.mode, param?.username);
-      return;
-    }
-
-    if (page === "admin"){
-      if (!isAdmin){
-        setTopTitle("Settings");
-        showView("settingsView");
-        return;
-      }
-      setTopTitle("Admin");
-      showView("adminView");
-      document.getElementById("adminStatus").textContent = "";
+      renderSettingsHome();
       return;
     }
   }
 
   // =========================
-  // USERNAME (first time modal)
+  // USERNAME (unique)
   // =========================
-  async function saveUsername(){
-    const status = document.getElementById("usernameStatus");
-    status.textContent = "";
-    const name = safeString(document.getElementById("usernameInput").value, "").toLowerCase().trim();
+  async function saveUsername(name){
+    name = safeString(name, "").toLowerCase().trim();
 
-    if (name.length < 3){
-      status.textContent = "Too short (min 3).";
-      return;
-    }
-    if (!/^[a-z0-9_]+$/.test(name)){
-      status.textContent = "Only a-z 0-9 _";
-      return;
-    }
+    if (name.length < 3) throw new Error("Too short (min 3).");
+    if (!/^[a-z0-9_]+$/.test(name)) throw new Error("Only a-z 0-9 _");
 
-    const taken = await db.collection("users").where("username","==",name).limit(1).get();
-    if (!taken.empty){
-      status.textContent = "Username taken.";
-      return;
-    }
-
-    await db.collection("users").doc(currentUser.uid).update({ username: name });
-    userData.username = name;
-    document.getElementById("usernameModal").classList.remove("show");
-  }
-
-  async function updateMyUsername(){
-    const status = document.getElementById("accountStatus");
-    status.textContent = "";
-    const name = safeString(document.getElementById("accountUsername").value, "").toLowerCase().trim();
-
-    if (name.length < 3){
-      status.textContent = "Too short (min 3).";
-      return;
-    }
-    if (!/^[a-z0-9_]+$/.test(name)){
-      status.textContent = "Only a-z 0-9 _";
-      return;
-    }
-
+    // unique
     const taken = await db.collection("users").where("username","==",name).limit(1).get();
     if (!taken.empty && taken.docs[0].id !== currentUser.uid){
-      status.textContent = "Username taken.";
-      return;
+      throw new Error("Username taken.");
     }
 
     await db.collection("users").doc(currentUser.uid).update({ username: name });
     userData.username = name;
-    status.textContent = "Saved.";
-    setTimeout(()=>status.textContent="", 1200);
+  }
+
+  async function saveUsernameFromModal(){
+    const status = document.getElementById("usernameStatus");
+    status.textContent = "";
+    try{
+      await saveUsername(document.getElementById("usernameInput").value);
+      document.getElementById("usernameModal").classList.remove("show");
+    } catch(e){
+      status.textContent = e.message || String(e);
+    }
   }
 
   // =========================
@@ -819,6 +621,7 @@
     }
 
     let imageUrl = "";
+
     if (file && storage){
       try{
         const path = `posts/${currentUser.uid}/${Date.now()}_${file.name}`;
@@ -830,11 +633,13 @@
       }
     }
 
+    const uname = safeString(userData?.username, "user");
+
     await db.collection("posts").add({
       uid: currentUser.uid,
-      username: safeString(userData?.username, "user"),
-      text,
-      imageUrl,
+      username: uname,
+      text: text,
+      imageUrl: imageUrl,
       likes: [],
       comments: [],
       shares: [],
@@ -865,13 +670,11 @@
       const cu = safeString(c.username, "user");
       const ct = safeString(c.text, "");
       commentsHtml += `
-        <div style="border-top:1px solid var(--border); margin-top:10px; padding-top:10px;">
-          <div class="row">
-            <div class="avatar" style="width:34px;height:34px;font-size:14px;">${initialLetter(cu)}</div>
-            <div style="flex:1;">
-              <div style="font-weight:900;">${escapeHtml(cu)}</div>
-              <div class="muted">${escapeHtml(ct)}</div>
-            </div>
+        <div class="comment">
+          <div class="avatar">${initialLetter(cu)}</div>
+          <div style="flex:1;">
+            <div style="font-weight:800;">${escapeHtml(cu)}</div>
+            <div class="muted">${escapeHtml(ct)}</div>
           </div>
         </div>
       `;
@@ -927,11 +730,11 @@
       .orderBy("timestamp","desc")
       .onSnapshot((snap)=>{
         let html = "";
-        snap.forEach(doc => html += renderPost(doc));
+        snap.forEach(doc => { html += renderPost(doc); });
         postsDiv.innerHTML = html || `<div class="muted">No posts yet.</div>`;
       }, (err)=>{
         console.error("Feed listen error:", err);
-        postsDiv.innerHTML = `<div class="card">Feed error: ${escapeHtml(err.message || String(err))}</div>`;
+        postsDiv.innerHTML = `<div class="muted">Feed error: ${escapeHtml(err.message || String(err))}</div>`;
       });
   }
 
@@ -941,10 +744,12 @@
     const data = snap.data() || {};
     let likes = safeArray(data.likes);
 
-    if (likes.includes(currentUser.uid)) likes = likes.filter(x => x !== currentUser.uid);
-    else likes.push(currentUser.uid);
-
-    await ref.update({ likes });
+    if (likes.includes(currentUser.uid)){
+      likes = likes.filter(x => x !== currentUser.uid);
+    } else {
+      likes.push(currentUser.uid);
+    }
+    await ref.update({ likes: likes });
   }
 
   function toggleComments(postId){
@@ -959,13 +764,15 @@
     const text = safeString(input.value, "").trim();
     if (!text) return;
 
+    const comment = {
+      uid: currentUser.uid,
+      username: safeString(userData?.username, "user"),
+      text: text,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    };
+
     await db.collection("posts").doc(postId).update({
-      comments: firebase.firestore.FieldValue.arrayUnion({
-        uid: currentUser.uid,
-        username: safeString(userData?.username, "user"),
-        text,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-      })
+      comments: firebase.firestore.FieldValue.arrayUnion(comment)
     });
 
     input.value = "";
@@ -978,22 +785,61 @@
   }
 
   // =========================
-  // PROFILES + FOLLOW SYSTEM (subcollections)
+  // PROFILES + FOLLOWERS LIST
   // =========================
-  async function countSub(uid, sub){
-    const snap = await db.collection("users").doc(uid).collection(sub).get();
-    return snap.size;
+  function openListModal(title){
+    document.getElementById("listTitle").textContent = title;
+    document.getElementById("listBody").innerHTML = `<div class="muted">Loading...</div>`;
+    document.getElementById("listModal").classList.add("show");
+  }
+  function closeListModal(){
+    document.getElementById("listModal").classList.remove("show");
   }
 
-  async function iFollowUser(meUid, targetUid){
-    const doc = await db.collection("users").doc(meUid).collection("following").doc(targetUid).get();
-    return doc.exists;
+  async function showUserIdList(title, uidList){
+    openListModal(title);
+    const body = document.getElementById("listBody");
+
+    const ids = safeArray(uidList);
+    if (!ids.length){
+      body.innerHTML = `<div class="muted">No users.</div>`;
+      return;
+    }
+
+    // Firestore "in" supports up to 10
+    const chunks = [];
+    for (let i=0;i<ids.length;i+=10) chunks.push(ids.slice(i,i+10));
+
+    let users = [];
+    for (const chunk of chunks){
+      const snap = await db.collection("users").where(firebase.firestore.FieldPath.documentId(), "in", chunk).get();
+      snap.forEach(d=>{
+        const u = d.data() || {};
+        users.push({ uid: d.id, username: safeString(u.username, d.id) });
+      });
+    }
+
+    // Keep original order
+    const map = new Map(users.map(u => [u.uid, u]));
+    const ordered = ids.map(id => map.get(id)).filter(Boolean);
+
+    body.innerHTML = ordered.map(u => `
+      <div class="list-item" onclick="closeListModal(); openProfile('${u.uid}')">
+        <div class="row">
+          <div class="avatar">${initialLetter(u.username)}</div>
+          <div style="flex:1;">
+            <div style="font-weight:900;">${escapeHtml(u.username)}</div>
+            <div class="muted">${escapeHtml(u.uid)}</div>
+          </div>
+        </div>
+      </div>
+    `).join("");
   }
 
   async function openProfile(uid){
+    setHeader("Profile");
     showView("profileView");
     setActiveTab("profile");
-    setTopTitle("Profile");
 
     const profile = document.getElementById("profileView");
     profile.innerHTML = `<div class="muted">Loading profile...</div>`;
@@ -1007,13 +853,12 @@
 
       const u = userSnap.data() || {};
       const username = safeString(u.username, "user");
+      const followers = safeArray(u.followers);
+      const following = safeArray(u.following);
+
       const isMe = uid === currentUser.uid;
+      const iFollow = followers.includes(currentUser.uid);
 
-      const followersCount = await countSub(uid, "followers");
-      const followingCount = await countSub(uid, "following");
-      const iFollow = isMe ? false : await iFollowUser(currentUser.uid, uid);
-
-      // posts
       let postsHtml = "";
       const postsSnap = await db.collection("posts")
         .where("uid","==",uid)
@@ -1037,24 +882,23 @@
         <div class="card" style="text-align:center;">
           <div class="avatar" style="width:64px;height:64px;margin:0 auto;font-size:24px;">${initialLetter(username)}</div>
           <div style="margin-top:10px; font-size:20px; font-weight:900;">${escapeHtml(username)}</div>
-          <div class="muted" style="font-family:monospace;">UID: ${escapeHtml(uid)}</div>
+          <div class="muted">UID: ${escapeHtml(uid)}</div>
 
           <div class="row" style="justify-content:center; gap:18px; margin-top:12px;">
-            <div class="click" onclick="route('follow_list', {uid:'${escapeAttr(uid)}', mode:'followers', username:'${escapeAttr(username)}'})">
-              <div style="font-weight:900;">${followersCount}</div>
+            <div class="click" onclick="showUserIdList('Followers', ${escapeAttr(JSON.stringify(followers))})">
+              <div style="font-weight:900;">${followers.length}</div>
               <div class="muted">Followers</div>
             </div>
-
-            <div class="click" onclick="route('follow_list', {uid:'${escapeAttr(uid)}', mode:'following', username:'${escapeAttr(username)}'})">
-              <div style="font-weight:900;">${followingCount}</div>
+            <div class="click" onclick="showUserIdList('Following', ${escapeAttr(JSON.stringify(following))})">
+              <div style="font-weight:900;">${following.length}</div>
               <div class="muted">Following</div>
             </div>
           </div>
 
           ${isMe ? "" : `
             <div style="margin-top:12px;">
-              <button onclick="toggleFollow('${escapeAttr(uid)}')">${iFollow ? "Unfollow" : "Follow"}</button>
-              <button class="secondary" style="margin-left:8px;" onclick="startChatWith('${escapeAttr(uid)}','${escapeAttr(username)}')">Message</button>
+              <button onclick="toggleFollow('${uid}')">${iFollow ? "Unfollow" : "Follow"}</button>
+              <button class="secondary" style="margin-left:8px;" onclick="startChatWith('${uid}','${escapeAttr(username)}')">Message</button>
             </div>
           `}
         </div>
@@ -1071,81 +915,36 @@
   async function toggleFollow(targetUid){
     const meUid = currentUser.uid;
 
-    const followingRef = db.collection("users").doc(meUid).collection("following").doc(targetUid);
-    const followerRef  = db.collection("users").doc(targetUid).collection("followers").doc(meUid);
+    const myRef = db.collection("users").doc(meUid);
+    const targetRef = db.collection("users").doc(targetUid);
 
-    const snap = await followingRef.get();
-    const already = snap.exists;
+    const [mySnap, targetSnap] = await Promise.all([myRef.get(), targetRef.get()]);
+    const my = mySnap.data() || {};
+    const t = targetSnap.data() || {};
 
-    if (already){
-      await Promise.all([ followingRef.delete(), followerRef.delete() ]);
+    let following = safeArray(my.following);
+    let followers = safeArray(t.followers);
+
+    const iAlreadyFollow = following.includes(targetUid);
+
+    if (iAlreadyFollow){
+      following = following.filter(x => x !== targetUid);
+      followers = followers.filter(x => x !== meUid);
     } else {
-      await Promise.all([
-        followingRef.set({ createdAt: firebase.firestore.FieldValue.serverTimestamp() }),
-        followerRef.set({ createdAt: firebase.firestore.FieldValue.serverTimestamp() })
-      ]);
+      following.push(targetUid);
+      followers.push(meUid);
     }
 
-    // refresh profile
+    await Promise.all([
+      myRef.update({ following }),
+      targetRef.update({ followers })
+    ]);
+
     openProfile(targetUid);
   }
 
-  async function renderFollowList(uid, mode, username){
-    const view = document.getElementById("followListView");
-    const title = (mode === "followers") ? "Followers" : "Following";
-
-    view.innerHTML = `
-      <div class="card">
-        <div class="row">
-          <div style="font-weight:900;font-size:18px;">${escapeHtml(title)} • ${escapeHtml(username || "")}</div>
-          <div class="space"></div>
-          <button class="secondary" onclick="openProfile('${escapeAttr(uid)}')">Back</button>
-        </div>
-      </div>
-      <div id="followListItems" class="muted">Loading...</div>
-    `;
-
-    const box = document.getElementById("followListItems");
-
-    try{
-      const sub = (mode === "followers") ? "followers" : "following";
-      const snap = await db.collection("users").doc(uid).collection(sub).get();
-
-      if (snap.empty){
-        box.innerHTML = `<div class="muted">No one here yet.</div>`;
-        return;
-      }
-
-      let html = "";
-      for (const doc of snap.docs){
-        const otherUid = doc.id;
-        const uSnap = await db.collection("users").doc(otherUid).get();
-        const u = uSnap.data() || {};
-        const uname = safeString(u.username, otherUid);
-
-        html += `
-          <div class="card">
-            <div class="row">
-              <div class="avatar">${initialLetter(uname)}</div>
-              <div style="flex:1;">
-                <div style="font-weight:900;" class="click" onclick="openProfile('${escapeAttr(otherUid)}')">${escapeHtml(uname)}</div>
-                <div class="muted" style="font-family:monospace;">${escapeHtml(otherUid)}</div>
-              </div>
-              <button class="secondary" onclick="startChatWith('${escapeAttr(otherUid)}','${escapeAttr(uname)}')">Message</button>
-            </div>
-          </div>
-        `;
-      }
-
-      box.innerHTML = html;
-    } catch(e){
-      console.error(e);
-      box.innerHTML = `<div class="card">Error: ${escapeHtml(e.message || String(e))}</div>`;
-    }
-  }
-
   // =========================
-  // SEARCH (prefix query)
+  // SEARCH (prefix on username)
   // =========================
   let searchTimer = null;
   function doSearch(){
@@ -1183,10 +982,10 @@
             <div class="row">
               <div class="avatar">${initialLetter(uname)}</div>
               <div style="flex:1;">
-                <div style="font-weight:900;" class="click" onclick="openProfile('${escapeAttr(doc.id)}')">${escapeHtml(uname)}</div>
-                <div class="muted" style="font-family:monospace;">${escapeHtml(doc.id)}</div>
+                <div style="font-weight:900;" class="click" onclick="openProfile('${doc.id}')">${escapeHtml(uname)}</div>
+                <div class="muted">${escapeHtml(doc.id)}</div>
               </div>
-              <button class="secondary" onclick="startChatWith('${escapeAttr(doc.id)}','${escapeAttr(uname)}')">Message</button>
+              <button class="secondary" onclick="startChatWith('${doc.id}','${escapeAttr(uname)}')">Message</button>
             </div>
           </div>
         `;
@@ -1200,9 +999,9 @@
   }
 
   // =========================
-  // MESSAGES (CHATS collection)
+  // MESSAGES
   // =========================
-  function stableChatId(a,b){
+  function chatId(a,b){
     return (a < b) ? `${a}_${b}` : `${b}_${a}`;
   }
 
@@ -1219,34 +1018,24 @@
     ensureChatListener();
   }
 
-  async function ensureChatDoc(meUid, otherUid){
-    const cid = stableChatId(meUid, otherUid);
-    const ref = db.collection("chats").doc(cid);
-    const snap = await ref.get();
-    if (!snap.exists){
-      await ref.set({
-        members: [meUid, otherUid],
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-    }
-    return cid;
-  }
-
-  async function ensureChatListener(){
+  function ensureChatListener(){
     if (!currentUser) return;
 
-    // stop old
-    if (chatUnsub){ chatUnsub(); chatUnsub = null; }
+    if (chatUnsub){
+      chatUnsub();
+      chatUnsub = null;
+    }
+
+    const me = currentUser.uid;
+    const other = activeChatUid === "AI" ? "AI" : activeChatUid;
+    const cid = chatId(me, other);
 
     const box = document.getElementById("chatBox");
     box.innerHTML = `<div class="muted">Loading chat...</div>`;
-    document.getElementById("msgStatus").textContent = "";
 
-    const me = currentUser.uid;
-    const other = (activeChatUid === "AI") ? "AI" : activeChatUid;
-    const cid = await ensureChatDoc(me, other);
-
-    chatUnsub = db.collection("chats").doc(cid).collection("messages")
+    chatUnsub = db.collection("messages")
+      .doc(cid)
+      .collection("messages")
       .orderBy("timestamp","asc")
       .limit(200)
       .onSnapshot((snap)=>{
@@ -1255,7 +1044,7 @@
           const m = doc.data() || {};
           const uname = safeString(m.username, m.uid === "AI" ? "EchoBot" : "user");
           const text = safeString(m.text, "");
-          const mine = m.uid === me;
+          const mine = m.uid === currentUser.uid;
 
           html += `
             <div class="card" style="margin:8px 0; padding:10px; border-radius:14px; ${mine ? "border-color: rgba(29,161,242,.6);" : ""}">
@@ -1264,7 +1053,6 @@
             </div>
           `;
         });
-
         box.innerHTML = html || `<div class="muted">No messages yet.</div>`;
         box.scrollTop = box.scrollHeight;
       }, (err)=>{
@@ -1272,6 +1060,17 @@
         box.innerHTML = `<div class="card">Chat error: ${escapeHtml(err.message || String(err))}</div>`;
       });
   }
+
+  // Send on Enter
+  document.addEventListener("keydown", (e)=>{
+    const active = document.activeElement;
+    if (active && active.id === "chatInput" && e.key === "Enter"){
+      e.preventDefault();
+      sendMessage();
+    }
+  });
+
+  let aiCooldown = 0;
 
   async function sendMessage(){
     const status = document.getElementById("msgStatus");
@@ -1282,27 +1081,28 @@
     if (!text) return;
 
     const me = currentUser.uid;
-    const other = (activeChatUid === "AI") ? "AI" : activeChatUid;
-    const cid = await ensureChatDoc(me, other);
-
-    // IMPORTANT FIX: read input BEFORE clearing it
-    input.value = "";
+    const other = activeChatUid === "AI" ? "AI" : activeChatUid;
+    const cid = chatId(me, other);
 
     try{
-      await db.collection("chats").doc(cid).collection("messages").add({
-        uid: me,
-        username: safeString(userData?.username, "user"),
-        text,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-      });
+      await db.collection("messages")
+        .doc(cid)
+        .collection("messages")
+        .add({
+          uid: me,
+          username: safeString(userData?.username, "user"),
+          text: text,
+          timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
 
-      await db.collection("chats").doc(cid).update({
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
+      input.value = "";
 
-      // AI reply only if chatting with AI
       if (other === "AI"){
-        aiReply(cid, text);
+        const now = Date.now();
+        if (now > aiCooldown){
+          aiCooldown = now + 800; // avoid duplicates
+          aiReply(cid, text);
+        }
       }
     } catch(e){
       console.error(e);
@@ -1310,89 +1110,233 @@
     }
   }
 
-  // better bot: replies based on your last sent message, not empty string
   async function aiReply(cid, userText){
     const t = (userText || "").toLowerCase();
     let msg = "Tell me more.";
 
-    if (t.includes("hi") || t.includes("hello")) msg = "Hey! What’s up?";
+    if (t.includes("hi") || t.includes("hello")) msg = "Hey! What are you up to today?";
     else if (t.includes("help")) msg = "What do you want help with in EchoStream?";
-    else if (t.includes("joke")) msg = "Why do programmers hate nature? Too many bugs.";
+    else if (t.includes("joke")) msg = "Why did the dev go broke? Because he used up all his cache.";
     else if (t.includes("bye")) msg = "Bye! Come back anytime.";
 
     setTimeout(async ()=>{
       try{
-        await db.collection("chats").doc(cid).collection("messages").add({
-          uid: "AI",
-          username: "EchoBot",
-          text: msg,
-          timestamp: firebase.firestore.FieldValue.serverTimestamp()
-        });
-
-        await db.collection("chats").doc(cid).update({
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
+        await db.collection("messages")
+          .doc(cid)
+          .collection("messages")
+          .add({
+            uid: "AI",
+            username: "EchoBot",
+            text: msg,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+          });
       } catch(e){
         console.warn("AI reply failed:", e);
       }
-    }, 650);
+    }, 450);
   }
 
   // =========================
-  // ADMIN
+  // SETTINGS (like X)
   // =========================
-  async function adminDeletePost(){
-    const status = document.getElementById("adminStatus");
+  function renderSettingsHome(){
+    const root = document.getElementById("settingsView");
+
+    const uname = safeString(userData?.username, "user");
+    const uid = safeString(currentUser?.uid, "");
+    const email = safeString(currentUser?.email, "");
+
+    const dark = localStorage.getItem("darkMode") === "true";
+
+    root.innerHTML = `
+      <div class="card">
+        <div class="row">
+          <div class="avatar">${initialLetter(uname)}</div>
+          <div style="flex:1;">
+            <div style="font-weight:900; font-size:16px;">${escapeHtml(uname)}</div>
+            <div class="muted">${escapeHtml(email || uid)}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-row" onclick="renderAccountInfo()">
+        <i class="fa-regular fa-user"></i>
+        <div>
+          <div style="font-weight:900;">Your account</div>
+          <div class="muted">Account information, username, admin</div>
+        </div>
+        <div class="right"><i class="fa-solid fa-chevron-right"></i></div>
+      </div>
+
+      <div class="settings-row" onclick="renderPrivacy()">
+        <i class="fa-solid fa-shield-halved"></i>
+        <div>
+          <div style="font-weight:900;">Privacy & safety</div>
+          <div class="muted">Basic privacy options</div>
+        </div>
+        <div class="right"><i class="fa-solid fa-chevron-right"></i></div>
+      </div>
+
+      <div class="card">
+        <div class="row" style="align-items:center;">
+          <div style="font-weight:900;">Dark mode</div>
+          <div class="space"></div>
+          <input type="checkbox" id="darkToggle" style="width:auto;" ${dark ? "checked" : ""}/>
+        </div>
+        <div class="muted" style="margin-top:8px;">Toggle theme for this device.</div>
+      </div>
+
+      <div class="card">
+        <button class="danger" onclick="logout()">Logout</button>
+      </div>
+    `;
+
+    document.getElementById("darkToggle").addEventListener("change", (e)=>{
+      const v = !!e.target.checked;
+      document.body.classList.toggle("dark", v);
+      localStorage.setItem("darkMode", String(v));
+    });
+  }
+
+  function settingsBack(){
+    renderSettingsHome();
+  }
+
+  function renderAccountInfo(){
+    const root = document.getElementById("settingsView");
+
+    const uname = safeString(userData?.username, "user");
+    const uid = safeString(currentUser?.uid, "");
+    const email = safeString(currentUser?.email, "");
+
+    root.innerHTML = `
+      <div class="top-back">
+        <div class="backbtn" onclick="settingsBack()"><i class="fa-solid fa-arrow-left"></i></div>
+        <div class="settings-title">Your account</div>
+      </div>
+
+      <div class="card">
+        <div style="font-weight:900; margin-bottom:6px;">Account information</div>
+        <div class="muted">Username</div>
+        <div style="font-weight:900; margin-bottom:10px;">@${escapeHtml(uname)}</div>
+
+        <div class="muted">Email</div>
+        <div style="font-weight:900; margin-bottom:10px;">${escapeHtml(email || "—")}</div>
+
+        <div class="muted">UID</div>
+        <div style="font-weight:900; word-break:break-all;">${escapeHtml(uid)}</div>
+      </div>
+
+      <div class="settings-row" onclick="renderChangeUsername()">
+        <i class="fa-solid fa-at"></i>
+        <div>
+          <div style="font-weight:900;">Change username</div>
+          <div class="muted">Pick a new unique username</div>
+        </div>
+        <div class="right"><i class="fa-solid fa-chevron-right"></i></div>
+      </div>
+
+      ${isAdminUser ? `
+        <div class="settings-row" onclick="renderAdminPanel()">
+          <i class="fa-solid fa-user-shield"></i>
+          <div>
+            <div style="font-weight:900;">Admin settings</div>
+            <div class="muted">Admin-only tools</div>
+          </div>
+          <div class="right"><i class="fa-solid fa-chevron-right"></i></div>
+        </div>
+      ` : `
+        <div class="card">
+          <div class="muted">Admin settings will appear here after you create <b>/admins/${escapeHtml(uid)}</b> in Firestore.</div>
+        </div>
+      `}
+    `;
+  }
+
+  function renderChangeUsername(){
+    const root = document.getElementById("settingsView");
+    const current = safeString(userData?.username, "user");
+
+    root.innerHTML = `
+      <div class="top-back">
+        <div class="backbtn" onclick="renderAccountInfo()"><i class="fa-solid fa-arrow-left"></i></div>
+        <div class="settings-title">Change username</div>
+      </div>
+
+      <div class="card">
+        <div class="muted" style="margin-bottom:8px;">New username</div>
+        <input id="newUsername" maxlength="20" value="${escapeAttr(current)}" />
+        <div class="muted" style="margin-top:10px;">Use lowercase letters, numbers, underscore.</div>
+        <div class="row" style="margin-top:12px;">
+          <button class="good" onclick="saveUsernameFromSettings()">Save</button>
+          <div class="space"></div>
+          <span class="muted" id="unameSaveStatus"></span>
+        </div>
+      </div>
+    `;
+  }
+
+  async function saveUsernameFromSettings(){
+    const status = document.getElementById("unameSaveStatus");
     status.textContent = "";
-    const postId = safeString(document.getElementById("adminDeletePostId").value, "").trim();
-    if (!postId){
-      status.textContent = "Enter a postId.";
-      return;
-    }
     try{
-      await db.collection("posts").doc(postId).delete();
-      status.textContent = "Deleted.";
-      setTimeout(()=>status.textContent="", 1200);
+      await saveUsername(document.getElementById("newUsername").value);
+      status.textContent = "Saved!";
+      setTimeout(()=>renderAccountInfo(), 650);
     } catch(e){
-      console.error(e);
-      status.textContent = "Failed: " + (e.message || String(e));
+      status.textContent = e.message || String(e);
     }
   }
 
+  function renderPrivacy(){
+    const root = document.getElementById("settingsView");
+    root.innerHTML = `
+      <div class="top-back">
+        <div class="backbtn" onclick="renderSettingsHome()"><i class="fa-solid fa-arrow-left"></i></div>
+        <div class="settings-title">Privacy & safety</div>
+      </div>
+
+      <div class="card">
+        <div style="font-weight:900; margin-bottom:6px;">Basic privacy</div>
+        <div class="muted">This is a simple demo page. We can add blocks/mutes later.</div>
+      </div>
+    `;
+  }
+
+  function renderAdminPanel(){
+    const root = document.getElementById("settingsView");
+    root.innerHTML = `
+      <div class="top-back">
+        <div class="backbtn" onclick="renderAccountInfo()"><i class="fa-solid fa-arrow-left"></i></div>
+        <div class="settings-title">Admin settings</div>
+      </div>
+
+      <div class="card">
+        <div style="font-weight:900; margin-bottom:8px;">Admin tools</div>
+        <div class="muted">You are marked as admin because /admins/${escapeHtml(currentUser.uid)} exists.</div>
+      </div>
+
+      <div class="card">
+        <div style="font-weight:900; margin-bottom:8px;">Quick checks</div>
+        <button class="secondary" onclick="alert('Admin ok ✅')">Test admin</button>
+      </div>
+    `;
+  }
+
   // =========================
-  // EXPORT DATA (simple)
+  // HTML escaping
   // =========================
-  async function exportMyData(){
-    const out = { uid: currentUser.uid, username: userData?.username || null, posts: [], followers: [], following: [] };
-
-    const status = document.getElementById("dataStatus");
-    status.textContent = "Exporting...";
-
-    try{
-      const postsSnap = await db.collection("posts").where("uid","==",currentUser.uid).get();
-      postsSnap.forEach(d => out.posts.push({ id: d.id, ...d.data() }));
-
-      const folSnap = await db.collection("users").doc(currentUser.uid).collection("followers").get();
-      folSnap.forEach(d => out.followers.push(d.id));
-
-      const ingSnap = await db.collection("users").doc(currentUser.uid).collection("following").get();
-      ingSnap.forEach(d => out.following.push(d.id));
-
-      const blob = new Blob([JSON.stringify(out, null, 2)], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "echostream_export.json";
-      a.click();
-      URL.revokeObjectURL(url);
-
-      status.textContent = "Downloaded.";
-      setTimeout(()=>status.textContent="", 1200);
-    } catch(e){
-      console.error(e);
-      status.textContent = "Failed: " + (e.message || String(e));
-    }
+  function escapeHtml(str){
+    str = String(str ?? "");
+    return str
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+  function escapeAttr(str){
+    return escapeHtml(str);
   }
 </script>
 
