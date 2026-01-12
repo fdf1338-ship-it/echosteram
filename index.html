@@ -148,6 +148,25 @@
     }
     .comment .avatar{ width:34px; height:34px; font-size:14px; }
 
+    /* Prevent Android text-select / dictionary popups on tappable UI */
+    .noselect, .noselect *{
+      -webkit-user-select:none;
+      user-select:none;
+      -webkit-touch-callout:none;
+    }
+
+    .stat-btn{
+      background: transparent;
+      border: 0;
+      padding: 10px 12px;
+      border-radius: 12px;
+      color: var(--text);
+      cursor: pointer;
+    }
+    .stat-btn:active{ background: rgba(127,127,127,.12); }
+    .stat-num{ font-weight: 900; font-size: 18px; }
+    .stat-label{ color: var(--muted); font-size: 13px; margin-top: 2px; }
+
     /* Drawer */
     .drawer-backdrop{
       position:fixed; inset:0;
@@ -168,7 +187,6 @@
     }
     .drawer.show{ left:0; }
 
-    .drawer h3{ margin:6px 0 10px; }
     .drawer .item{
       padding:12px 10px;
       border-radius:12px;
@@ -189,64 +207,40 @@
     .modal.show{ display:flex; }
     .modal .box{
       width:100%;
-      max-width:420px;
+      max-width:460px;
       background:var(--bg);
       border:1px solid var(--border);
       border-radius:16px;
       padding:16px;
     }
 
-    /* Settings list (X-like) */
-    .settings-title{
-      font-weight:900;
-      font-size:20px;
-      margin:0 0 10px;
+    /* Settings "pages" */
+    .settings-page-title{
+      font-weight:900; font-size:18px;
+      display:flex; align-items:center; gap:10px;
+      margin:0 0 12px;
     }
-    .settings-search{
-      border-radius:999px;
-      padding:12px 14px;
-    }
-    .settings-list .s-item{
-      display:flex; gap:12px; align-items:flex-start;
-      padding:14px 12px;
+    .settings-item{
+      padding:14px;
       border-radius:14px;
+      border:1px solid var(--border);
+      background:var(--card);
       cursor:pointer;
+      display:flex;
+      align-items:center;
+      gap:12px;
+      margin-bottom:10px;
     }
-    .settings-list .s-item:hover{ background:rgba(127,127,127,.10); }
-    .settings-list .s-icon{
-      width:34px; height:34px;
-      border-radius:999px;
-      display:flex; align-items:center; justify-content:center;
-      color:var(--muted);
-      margin-top:2px;
-    }
-    .settings-list .s-main{ flex:1; }
-    .settings-list .s-h{
-      font-weight:900;
-      margin:0 0 2px;
-    }
-    .settings-list .s-p{
-      margin:0;
-      color:var(--muted);
-      font-size:13px;
-      line-height:1.25;
-    }
-    .settings-row{
-      display:flex; justify-content:space-between; align-items:center;
-      padding:12px 10px;
-      border-radius:12px;
-      cursor:pointer;
-    }
-    .settings-row:hover{ background:rgba(127,127,127,.10); }
+    .settings-item:active{ background:rgba(127,127,127,.12); }
+    .settings-item .right{ margin-left:auto; color:var(--muted); }
     .pill{
-      display:inline-flex;
-      padding:4px 10px;
+      display:inline-block;
+      padding:6px 10px;
       border-radius:999px;
       border:1px solid var(--border);
-      color:var(--muted);
+      background:transparent;
       font-size:12px;
-      gap:6px;
-      align-items:center;
+      color:var(--muted);
     }
   </style>
 </head>
@@ -255,16 +249,10 @@
 
 <header>
   <div class="left">
-    <!-- Back button (hidden until needed) -->
-    <div id="backBtn" class="icon-btn hidden" onclick="goBack()"><i class="fa-solid fa-arrow-left"></i></div>
-
-    <!-- Burger button (hidden on subpages) -->
-    <div id="burgerBtn" class="icon-btn" onclick="openDrawer()"><i class="fa-solid fa-bars"></i></div>
-
+    <div class="icon-btn" onclick="openDrawer()"><i class="fa-solid fa-bars"></i></div>
     <div id="headerTitle">EchoStream</div>
   </div>
-
-  <div id="headerRight" class="icon-btn" onclick="route('settings')"><i class="fa-solid fa-gear"></i></div>
+  <div class="icon-btn" onclick="route('settings')"><i class="fa-solid fa-gear"></i></div>
 </header>
 
 <!-- Drawer -->
@@ -297,11 +285,8 @@
     <div class="card">
       <div class="muted" style="margin-bottom:8px;">Post</div>
       <textarea id="postText" placeholder="What’s happening?"></textarea>
-
-      <!-- If you don’t want Storage/images, you can just ignore this input -->
       <div style="height:10px;"></div>
       <input id="postImage" type="file" accept="image/*"/>
-
       <div class="row" style="margin-top:10px;">
         <button onclick="createPost()">Post</button>
         <div class="space"></div>
@@ -349,263 +334,189 @@
   <!-- PROFILE -->
   <div id="profileView" class="hidden"></div>
 
-  <!-- SETTINGS (Home) -->
-  <div id="settingsHomeView" class="hidden">
-    <div class="card">
-      <div class="settings-title">Settings</div>
-      <input id="settingsSearch" class="settings-search" placeholder="Search settings..." oninput="filterSettings()"/>
-      <div style="height:10px;"></div>
+  <!-- SETTINGS -->
+  <div id="settingsView" class="hidden">
+    <!-- page: home -->
+    <div id="settingsHome" class="hidden">
+      <div class="settings-page-title">
+        <span>Settings</span>
+      </div>
 
-      <div id="settingsList" class="settings-list">
-        <div class="s-item" data-keywords="your account account info password download archive deactivate" onclick="openSettingsPage('account')">
-          <div class="s-icon"><i class="fa-regular fa-user"></i></div>
-          <div class="s-main">
-            <div class="s-h">Your account</div>
-            <p class="s-p">See info about your account, download an archive of your data, or learn about deactivation options.</p>
-          </div>
-          <div class="s-icon"><i class="fa-solid fa-chevron-right"></i></div>
+      <div class="settings-item" onclick="openSettingsPage('accountInfo')">
+        <i class="fa-regular fa-user"></i>
+        <div>
+          <div style="font-weight:900;">Your account</div>
+          <div class="muted" id="settingsUsernameLine">Loading...</div>
         </div>
+        <div class="right"><i class="fa-solid fa-chevron-right"></i></div>
+      </div>
 
-        <div class="s-item" data-keywords="security account access password sessions apps" onclick="openSettingsPage('security')">
-          <div class="s-icon"><i class="fa-solid fa-lock"></i></div>
-          <div class="s-main">
-            <div class="s-h">Security and account access</div>
-            <p class="s-p">Manage your account’s security and keep track of account usage.</p>
-          </div>
-          <div class="s-icon"><i class="fa-solid fa-chevron-right"></i></div>
+      <div class="settings-item" onclick="openSettingsPage('security')">
+        <i class="fa-solid fa-shield"></i>
+        <div>
+          <div style="font-weight:900;">Security</div>
+          <div class="muted">Sign out, account info</div>
         </div>
+        <div class="right"><i class="fa-solid fa-chevron-right"></i></div>
+      </div>
 
-        <div class="s-item" data-keywords="privacy safety block mute content" onclick="openSettingsPage('privacy')">
-          <div class="s-icon"><i class="fa-regular fa-circle-check"></i></div>
-          <div class="s-main">
-            <div class="s-h">Privacy and safety</div>
-            <p class="s-p">Manage what information you see and share on EchoStream.</p>
-          </div>
-          <div class="s-icon"><i class="fa-solid fa-chevron-right"></i></div>
+      <div class="settings-item" onclick="openSettingsPage('appearance')">
+        <i class="fa-regular fa-moon"></i>
+        <div>
+          <div style="font-weight:900;">Appearance</div>
+          <div class="muted">Dark mode</div>
         </div>
+        <div class="right"><i class="fa-solid fa-chevron-right"></i></div>
+      </div>
 
-        <div class="s-item" data-keywords="notifications push email alerts" onclick="openSettingsPage('notifications')">
-          <div class="s-icon"><i class="fa-regular fa-bell"></i></div>
-          <div class="s-main">
-            <div class="s-h">Notifications</div>
-            <p class="s-p">Select the kinds of notifications you get about activity and recommendations.</p>
-          </div>
-          <div class="s-icon"><i class="fa-solid fa-chevron-right"></i></div>
+      <div class="settings-item" onclick="openSettingsPage('about')">
+        <i class="fa-regular fa-circle-question"></i>
+        <div>
+          <div style="font-weight:900;">About</div>
+          <div class="muted">Version + support</div>
         </div>
-
-        <div class="s-item" data-keywords="accessibility display language dark mode" onclick="openSettingsPage('accessibility')">
-          <div class="s-icon"><i class="fa-solid fa-universal-access"></i></div>
-          <div class="s-main">
-            <div class="s-h">Accessibility, display and languages</div>
-            <p class="s-p">Manage how EchoStream content is displayed to you.</p>
-          </div>
-          <div class="s-icon"><i class="fa-solid fa-chevron-right"></i></div>
-        </div>
-
-        <div class="s-item" data-keywords="resources help about terms" onclick="openSettingsPage('resources')">
-          <div class="s-icon"><i class="fa-solid fa-ellipsis"></i></div>
-          <div class="s-main">
-            <div class="s-h">Additional resources</div>
-            <p class="s-p">Helpful info to learn more about EchoStream.</p>
-          </div>
-          <div class="s-icon"><i class="fa-solid fa-chevron-right"></i></div>
-        </div>
+        <div class="right"><i class="fa-solid fa-chevron-right"></i></div>
       </div>
     </div>
 
-    <div class="card">
-      <div class="row" style="gap:10px;">
-        <input type="checkbox" id="darkToggle" style="width:auto;" />
+    <!-- page: account info -->
+    <div id="settingsAccountInfo" class="hidden">
+      <div class="settings-page-title">
+        <button class="secondary" onclick="openSettingsPage('home')"><i class="fa-solid fa-arrow-left"></i></button>
+        <span>Your account</span>
+      </div>
+
+      <div class="card">
+        <div style="font-weight:900; font-size:18px;" id="accountUsername">username</div>
+        <div class="muted" id="accountEmail">email</div>
+        <div style="height:10px;"></div>
+        <div class="pill" id="accountUid">UID: ...</div>
+      </div>
+
+      <div class="settings-item" onclick="openSettingsPage('changeUsername')">
+        <i class="fa-solid fa-pen"></i>
         <div>
-          <div style="font-weight:900;">Dark mode</div>
-          <div class="muted">Toggle dark theme</div>
+          <div style="font-weight:900;">Change username</div>
+          <div class="muted">Update your public username</div>
         </div>
-        <div class="space"></div>
+        <div class="right"><i class="fa-solid fa-chevron-right"></i></div>
       </div>
-      <div style="height:12px;"></div>
-      <button class="danger" onclick="logout()">Logout</button>
-    </div>
-  </div>
 
-  <!-- SETTINGS: Your account -->
-  <div id="accountView" class="hidden">
-    <div class="card">
-      <div class="row">
-        <div style="font-weight:900; font-size:18px;">Your account</div>
-        <div class="space"></div>
-        <span class="pill"><i class="fa-regular fa-user"></i> <span id="accountAt">@username</span></span>
-      </div>
-      <div class="muted" style="margin-top:8px;">
-        See information about your account, download an archive of your data, or learn about account deactivation options.
-      </div>
-    </div>
-
-    <div class="card settings-list">
-      <div class="settings-row" onclick="openSettingsPage('accountInfo')">
+      <div class="settings-item" onclick="openSettingsPage('downloadData')">
+        <i class="fa-solid fa-download"></i>
         <div>
-          <div style="font-weight:900;">Account information</div>
-          <div class="muted">See your account info like your email and user id.</div>
+          <div style="font-weight:900;">Download your data</div>
+          <div class="muted">Export basics (simple)</div>
         </div>
-        <i class="fa-solid fa-chevron-right" style="color:var(--muted)"></i>
+        <div class="right"><i class="fa-solid fa-chevron-right"></i></div>
       </div>
 
-      <div class="settings-row" onclick="openSettingsPage('changePassword')">
-        <div>
-          <div style="font-weight:900;">Change your password</div>
-          <div class="muted">Password changes depend on your sign-in provider.</div>
-        </div>
-        <i class="fa-solid fa-chevron-right" style="color:var(--muted)"></i>
-      </div>
-
-      <div class="settings-row" onclick="openSettingsPage('downloadData')">
-        <div>
-          <div style="font-weight:900;">Download an archive of your data</div>
-          <div class="muted">Export your posts and profile info (basic).</div>
-        </div>
-        <i class="fa-solid fa-chevron-right" style="color:var(--muted)"></i>
-      </div>
-
-      <div class="settings-row" onclick="openSettingsPage('deactivate')">
+      <div class="settings-item" onclick="openSettingsPage('deactivate')">
+        <i class="fa-regular fa-circle-xmark"></i>
         <div>
           <div style="font-weight:900;">Deactivate account</div>
-          <div class="muted">Temporarily disable your account (basic).</div>
+          <div class="muted">Sign out + stop using</div>
         </div>
-        <i class="fa-solid fa-chevron-right" style="color:var(--muted)"></i>
+        <div class="right"><i class="fa-solid fa-chevron-right"></i></div>
       </div>
     </div>
-  </div>
 
-  <!-- SETTINGS: Account information -->
-  <div id="accountInfoView" class="hidden">
-    <div class="card">
-      <div style="font-weight:900; font-size:18px;">Account information</div>
-      <div class="muted" style="margin-top:8px;">Basic account details.</div>
-
-      <div style="height:12px;"></div>
-
-      <div class="settings-row" style="cursor:default;">
-        <div>
-          <div style="font-weight:900;">Username</div>
-          <div class="muted" id="infoUsername">@username</div>
-        </div>
+    <!-- page: change username -->
+    <div id="settingsChangeUsername" class="hidden">
+      <div class="settings-page-title">
+        <button class="secondary" onclick="openSettingsPage('accountInfo')"><i class="fa-solid fa-arrow-left"></i></button>
+        <span>Change username</span>
       </div>
 
-      <div class="settings-row" style="cursor:default;">
-        <div>
-          <div style="font-weight:900;">Email</div>
-          <div class="muted" id="infoEmail">email</div>
+      <div class="card">
+        <div class="muted" style="margin-bottom:8px;">New username</div>
+        <input id="changeUsernameInput" placeholder="lowercase letters / numbers / underscore" maxlength="20"/>
+        <div class="row" style="margin-top:10px;">
+          <button onclick="changeUsername()">Save</button>
+          <div class="space"></div>
+          <span class="muted" id="changeUsernameStatus"></span>
+        </div>
+        <div class="muted" style="margin-top:10px;">
+          Note: must be unique. (This is client-side. For real safety, also validate server-side.)
         </div>
       </div>
+    </div>
 
-      <div class="settings-row" style="cursor:default;">
-        <div>
-          <div style="font-weight:900;">User ID</div>
-          <div class="muted" id="infoUid">uid</div>
+    <!-- page: security -->
+    <div id="settingsSecurity" class="hidden">
+      <div class="settings-page-title">
+        <button class="secondary" onclick="openSettingsPage('home')"><i class="fa-solid fa-arrow-left"></i></button>
+        <span>Security</span>
+      </div>
+
+      <div class="card">
+        <div style="font-weight:900;">Signed in as</div>
+        <div class="muted" id="securityEmail">...</div>
+        <div style="height:10px;"></div>
+        <button class="danger" onclick="logout()">Logout</button>
+      </div>
+    </div>
+
+    <!-- page: appearance -->
+    <div id="settingsAppearance" class="hidden">
+      <div class="settings-page-title">
+        <button class="secondary" onclick="openSettingsPage('home')"><i class="fa-solid fa-arrow-left"></i></button>
+        <span>Appearance</span>
+      </div>
+
+      <div class="card">
+        <label class="row" style="gap:10px;">
+          <input type="checkbox" id="darkToggle" style="width:auto;" />
+          <span>Dark mode</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- page: about -->
+    <div id="settingsAbout" class="hidden">
+      <div class="settings-page-title">
+        <button class="secondary" onclick="openSettingsPage('home')"><i class="fa-solid fa-arrow-left"></i></button>
+        <span>About</span>
+      </div>
+
+      <div class="card">
+        <div style="font-weight:900;">EchoStream</div>
+        <div class="muted">Version: 1.0</div>
+        <div class="muted" style="margin-top:10px;">
+          If something breaks, open DevTools → Console and paste the error to fix fast.
         </div>
       </div>
-
-      <div style="height:16px;"></div>
-
-      <div style="font-weight:900; margin-bottom:8px;">Change username</div>
-      <input id="newUsername" placeholder="new_username" maxlength="20" />
-      <div class="row" style="margin-top:10px;">
-        <button onclick="changeUsername()">Save username</button>
-        <div class="space"></div>
-        <span class="muted" id="changeUsernameStatus"></span>
-      </div>
     </div>
-  </div>
 
-  <!-- SETTINGS: Security -->
-  <div id="securityView" class="hidden">
-    <div class="card">
-      <div style="font-weight:900; font-size:18px;">Security and account access</div>
-      <div class="muted" style="margin-top:8px;">
-        This is a placeholder screen. We can add: active sessions, login devices, connected apps, etc.
-      </div>
-    </div>
-  </div>
-
-  <!-- SETTINGS: Privacy -->
-  <div id="privacyView" class="hidden">
-    <div class="card">
-      <div style="font-weight:900; font-size:18px;">Privacy and safety</div>
-      <div class="muted" style="margin-top:8px;">
-        Placeholder. We can add: private account, blocked users, muted words, etc.
-      </div>
-    </div>
-  </div>
-
-  <!-- SETTINGS: Notifications -->
-  <div id="notificationsView" class="hidden">
-    <div class="card">
-      <div style="font-weight:900; font-size:18px;">Notifications</div>
-      <div class="muted" style="margin-top:8px;">
-        Placeholder. We can add: likes/comments/reposts toggles.
-      </div>
-    </div>
-  </div>
-
-  <!-- SETTINGS: Accessibility -->
-  <div id="accessibilityView" class="hidden">
-    <div class="card">
-      <div style="font-weight:900; font-size:18px;">Accessibility, display and languages</div>
-      <div class="muted" style="margin-top:8px;">
-        Placeholder. Dark mode is already on Settings.
-      </div>
-    </div>
-  </div>
-
-  <!-- SETTINGS: Resources -->
-  <div id="resourcesView" class="hidden">
-    <div class="card">
-      <div style="font-weight:900; font-size:18px;">Additional resources</div>
-      <div class="muted" style="margin-top:8px;">
-        Placeholder. We can add: Terms, Privacy Policy, About.
-      </div>
-    </div>
-  </div>
-
-  <!-- SETTINGS: Download Data -->
-  <div id="downloadDataView" class="hidden">
-    <div class="card">
-      <div style="font-weight:900; font-size:18px;">Download an archive of your data</div>
-      <div class="muted" style="margin-top:8px;">
-        This exports a basic JSON of your profile + your posts (not messages).
+    <!-- page: download data -->
+    <div id="settingsDownloadData" class="hidden">
+      <div class="settings-page-title">
+        <button class="secondary" onclick="openSettingsPage('accountInfo')"><i class="fa-solid fa-arrow-left"></i></button>
+        <span>Download your data</span>
       </div>
 
-      <div style="height:12px;"></div>
-
-      <button onclick="downloadMyData()">Download JSON</button>
-      <div style="height:8px;"></div>
-      <div class="muted" id="downloadStatus"></div>
+      <div class="card">
+        <div class="muted" style="margin-bottom:10px;">This exports basic info locally (no server). It will download a JSON file.</div>
+        <button onclick="downloadMyData()">Download JSON</button>
+        <div class="muted" id="downloadStatus" style="margin-top:10px;"></div>
+      </div>
     </div>
-  </div>
 
-  <!-- SETTINGS: Deactivate -->
-  <div id="deactivateView" class="hidden">
-    <div class="card">
-      <div style="font-weight:900; font-size:18px;">Deactivate account</div>
-      <div class="muted" style="margin-top:8px;">
-        This is a basic “soft deactivate” flag in your user document.
-        (Your posts will still exist unless we implement deletion.)
+    <!-- page: deactivate -->
+    <div id="settingsDeactivate" class="hidden">
+      <div class="settings-page-title">
+        <button class="secondary" onclick="openSettingsPage('accountInfo')"><i class="fa-solid fa-arrow-left"></i></button>
+        <span>Deactivate</span>
       </div>
 
-      <div style="height:12px;"></div>
-
-      <button class="danger" onclick="toggleDeactivate()">Toggle Deactivate</button>
-      <div style="height:8px;"></div>
-      <div class="muted" id="deactivateStatus"></div>
-    </div>
-  </div>
-
-  <!-- SETTINGS: Change password -->
-  <div id="changePasswordView" class="hidden">
-    <div class="card">
-      <div style="font-weight:900; font-size:18px;">Change your password</div>
-      <div class="muted" style="margin-top:8px;">
-        You’re signing in with Google, so password changes are handled by Google.
-        (If you add Email/Password auth later, we can build this screen.)
+      <div class="card">
+        <div style="font-weight:900;">Deactivate account</div>
+        <div class="muted" style="margin-top:6px;">
+          This demo app can’t delete your Firebase Auth user from the client safely.
+          The safe “deactivate” here just logs you out.
+        </div>
+        <div style="height:12px;"></div>
+        <button class="danger" onclick="logout()">Logout</button>
       </div>
     </div>
   </div>
@@ -628,7 +539,7 @@
   </div>
 </nav>
 
-<!-- Username Modal -->
+<!-- Username Modal (first-time) -->
 <div id="usernameModal" class="modal">
   <div class="box">
     <h3 style="margin:0 0 8px;">Pick a username</h3>
@@ -639,6 +550,19 @@
       <div class="space"></div>
       <span class="muted" id="usernameStatus"></span>
     </div>
+  </div>
+</div>
+
+<!-- Followers/Following Modal -->
+<div id="followModal" class="modal">
+  <div class="box">
+    <div class="row">
+      <div id="followTitle" style="font-weight:900;">Followers</div>
+      <div class="space"></div>
+      <button class="secondary" onclick="closeFollowModal()">Close</button>
+    </div>
+    <div style="height:10px;"></div>
+    <div id="followList" class="noselect"></div>
   </div>
 </div>
 
@@ -665,15 +589,29 @@
   let currentUser = null;
   let userData = null;
 
-  // For messaging
+  // Messaging
   let activeChatUid = "AI";
-  let chatUnsub = null; // onSnapshot unsubscribe
+  let chatUnsub = null;
 
-  // For feed
+  // Feed
   let feedUnsub = null;
 
-  // Settings navigation stack (for back button)
-  let navStack = []; // stores objects like {page:"settingsHome", title:"Settings"}
+  // =========================
+  // Small safety: filter hateful usernames in UI
+  // (You can expand this list.)
+  // =========================
+  const BANNED_SUBSTRINGS = [
+    "nigger", "faggot", "kike", "spic", "chink"
+  ];
+  function isBannedUsername(name){
+    const s = String(name || "").toLowerCase();
+    return BANNED_SUBSTRINGS.some(w => s.includes(w));
+  }
+  function sanitizeUsernameForDisplay(name){
+    const s = safeString(name, "user");
+    if (isBannedUsername(s)) return "[blocked]";
+    return s;
+  }
 
   // =========================
   // UI helpers
@@ -696,33 +634,13 @@
   }
 
   function showView(id){
-    const views = [
-      "loginView","feedView","searchView","messagesView","profileView",
-      "settingsHomeView","accountView","accountInfoView","securityView","privacyView",
-      "notificationsView","accessibilityView","resourcesView",
-      "downloadDataView","deactivateView","changePasswordView"
-    ];
-    views.forEach(v => {
-      const el = document.getElementById(v);
-      if (el) el.classList.add("hidden");
-    });
-    const target = document.getElementById(id);
-    if (target) target.classList.remove("hidden");
+    const views = ["loginView","feedView","searchView","messagesView","profileView","settingsView"];
+    views.forEach(v => document.getElementById(v).classList.add("hidden"));
+    document.getElementById(id).classList.remove("hidden");
   }
 
-  function setHeader(title, mode){
-    // mode: "main" or "sub"
-    document.getElementById("headerTitle").textContent = title || "EchoStream";
-
-    const backBtn = document.getElementById("backBtn");
-    const burgerBtn = document.getElementById("burgerBtn");
-    if (mode === "sub"){
-      backBtn.classList.remove("hidden");
-      burgerBtn.classList.add("hidden");
-    } else {
-      backBtn.classList.add("hidden");
-      burgerBtn.classList.remove("hidden");
-    }
+  function setHeaderTitle(t){
+    document.getElementById("headerTitle").textContent = t || "EchoStream";
   }
 
   function safeString(x, fallback=""){
@@ -759,8 +677,7 @@
     if (!user){
       currentUser = null;
       userData = null;
-      navStack = [];
-      setHeader("EchoStream", "main");
+      setHeaderTitle("EchoStream");
       showView("loginView");
       return;
     }
@@ -773,13 +690,8 @@
 
     if (!snap.exists){
       const auto = safeString(user.displayName, "user").replace(/\s/g,"").toLowerCase();
-      await userRef.set({
-        username: auto,
-        followers: [],
-        following: [],
-        deactivated: false
-      });
-      userData = { username: auto, followers: [], following: [], deactivated:false };
+      await userRef.set({ username: auto, followers: [], following: [] });
+      userData = { username: auto, followers: [], following: [] };
       document.getElementById("usernameModal").classList.add("show");
     } else {
       userData = snap.data() || {};
@@ -787,26 +699,21 @@
         userData.username = safeString(user.displayName, "user").replace(/\s/g,"").toLowerCase();
         await userRef.update({ username: userData.username });
       }
-      if (typeof userData.deactivated !== "boolean"){
-        userData.deactivated = false;
-        await userRef.update({ deactivated: false });
-      }
     }
 
-    // dark mode init
+    // Dark mode init
     const dark = localStorage.getItem("darkMode") === "true";
     document.body.classList.toggle("dark", dark);
-    document.getElementById("darkToggle").checked = dark;
+    const dt = document.getElementById("darkToggle");
+    if (dt) dt.checked = dark;
 
-    // go feed by default
+    // Start feed + chat
     route("feed");
-
-    // start feed + chat
     startFeedListener();
     setChatAI();
 
-    // fill account header chips
-    refreshAccountLabels();
+    // Update settings header lines
+    refreshSettingsUI();
   });
 
   // Dark mode
@@ -817,28 +724,25 @@
   });
 
   // =========================
-  // MAIN ROUTING
+  // ROUTING
   // =========================
   function route(page){
     if (!currentUser){
-      navStack = [];
-      setHeader("EchoStream", "main");
       showView("loginView");
       return;
     }
 
     closeDrawer();
-    navStack = []; // leaving settings subpages resets stack
 
     if (page === "feed"){
-      setHeader("EchoStream", "main");
+      setHeaderTitle("EchoStream");
       showView("feedView");
       setActiveTab("feed");
       startFeedListener();
       return;
     }
     if (page === "search"){
-      setHeader("Search", "main");
+      setHeaderTitle("Search");
       showView("searchView");
       setActiveTab("search");
       document.getElementById("searchInput").value = "";
@@ -846,156 +750,92 @@
       return;
     }
     if (page === "messages"){
-      setHeader("Messages", "main");
+      setHeaderTitle("Messages");
       showView("messagesView");
       setActiveTab("messages");
       ensureChatListener();
       return;
     }
     if (page === "profile"){
-      setHeader("Profile", "main");
+      setHeaderTitle("Profile");
       showView("profileView");
       setActiveTab("profile");
       openProfile(currentUser.uid);
       return;
     }
     if (page === "settings"){
-      // Settings home (X-like)
-      openSettingsPage("settingsHome");
+      setHeaderTitle("Settings");
+      showView("settingsView");
+      // settings default page
+      openSettingsPage("home");
       return;
     }
   }
 
   // =========================
-  // SETTINGS NAV (X-like)
+  // SETTINGS PAGES
   // =========================
-  function openSettingsPage(key){
-    // map keys -> views + titles
-    const map = {
-      settingsHome: { view:"settingsHomeView", title:"Settings" },
-
-      account: { view:"accountView", title:"Your account" },
-      accountInfo: { view:"accountInfoView", title:"Account information" },
-      changePassword: { view:"changePasswordView", title:"Change password" },
-      downloadData: { view:"downloadDataView", title:"Download data" },
-      deactivate: { view:"deactivateView", title:"Deactivate account" },
-
-      security: { view:"securityView", title:"Security" },
-      privacy: { view:"privacyView", title:"Privacy & safety" },
-      notifications: { view:"notificationsView", title:"Notifications" },
-      accessibility: { view:"accessibilityView", title:"Accessibility" },
-      resources: { view:"resourcesView", title:"Resources" }
-    };
-
-    const target = map[key];
-    if (!target) return;
-
-    // push stack
-    navStack.push({ key, title: target.title });
-
-    // header mode: sub when stack depth > 1 OR when inside settings area
-    setHeader(target.title, "sub");
-
-    // show view
-    showView(target.view);
-
-    // bottom nav stays as-is (doesn't highlight settings tab)
-    refreshAccountLabels();
-
-    // if entering some pages, refresh their info
-    if (key === "accountInfo") fillAccountInfoPage();
-    if (key === "deactivate") updateDeactivateStatus();
+  function hideAllSettingsPages(){
+    const ids = [
+      "settingsHome",
+      "settingsAccountInfo",
+      "settingsChangeUsername",
+      "settingsSecurity",
+      "settingsAppearance",
+      "settingsAbout",
+      "settingsDownloadData",
+      "settingsDeactivate"
+    ];
+    ids.forEach(id => document.getElementById(id).classList.add("hidden"));
   }
 
-  function goBack(){
-    if (navStack.length <= 1){
-      // if somehow only one item, go back to feed
-      route("feed");
-      return;
-    }
-    // pop current
-    navStack.pop();
-    const prev = navStack[navStack.length - 1];
-    if (!prev){ route("feed"); return; }
+  function openSettingsPage(which){
+    hideAllSettingsPages();
 
-    // re-open previous without pushing new (so we "render" it)
-    const prevKey = prev.key;
-    // temporarily remove, then use openSettingsPage which pushes — so we need a render function:
-    renderSettingsKey(prevKey);
+    if (which === "home") document.getElementById("settingsHome").classList.remove("hidden");
+    if (which === "accountInfo") document.getElementById("settingsAccountInfo").classList.remove("hidden");
+    if (which === "changeUsername") document.getElementById("settingsChangeUsername").classList.remove("hidden");
+    if (which === "security") document.getElementById("settingsSecurity").classList.remove("hidden");
+    if (which === "appearance") document.getElementById("settingsAppearance").classList.remove("hidden");
+    if (which === "about") document.getElementById("settingsAbout").classList.remove("hidden");
+    if (which === "downloadData") document.getElementById("settingsDownloadData").classList.remove("hidden");
+    if (which === "deactivate") document.getElementById("settingsDeactivate").classList.remove("hidden");
+
+    refreshSettingsUI();
   }
 
-  function renderSettingsKey(key){
-    // render without pushing stack: rebuild stack up to key
-    const existing = navStack.map(x=>x.key);
-    const idx = existing.lastIndexOf(key);
-    if (idx === -1){
-      navStack = [];
-      openSettingsPage("settingsHome");
-      return;
-    }
-    navStack = navStack.slice(0, idx+1);
+  async function refreshSettingsUI(){
+    if (!currentUser) return;
 
-    const titles = {
-      settingsHome:"Settings",
-      account:"Your account",
-      accountInfo:"Account information",
-      changePassword:"Change password",
-      downloadData:"Download data",
-      deactivate:"Deactivate account",
-      security:"Security",
-      privacy:"Privacy & safety",
-      notifications:"Notifications",
-      accessibility:"Accessibility",
-      resources:"Resources"
-    };
+    // best current username from cache
+    const uname = sanitizeUsernameForDisplay(safeString(userData?.username, "user"));
+    const email = safeString(currentUser.email, "(no email)");
 
-    const views = {
-      settingsHome:"settingsHomeView",
-      account:"accountView",
-      accountInfo:"accountInfoView",
-      changePassword:"changePasswordView",
-      downloadData:"downloadDataView",
-      deactivate:"deactivateView",
-      security:"securityView",
-      privacy:"privacyView",
-      notifications:"notificationsView",
-      accessibility:"accessibilityView",
-      resources:"resourcesView"
-    };
+    const homeLine = document.getElementById("settingsUsernameLine");
+    if (homeLine) homeLine.textContent = "@" + uname;
 
-    setHeader(titles[key] || "Settings", "sub");
-    showView(views[key] || "settingsHomeView");
-    refreshAccountLabels();
+    const au = document.getElementById("accountUsername");
+    if (au) au.textContent = uname;
 
-    if (key === "accountInfo") fillAccountInfoPage();
-    if (key === "deactivate") updateDeactivateStatus();
+    const ae = document.getElementById("accountEmail");
+    if (ae) ae.textContent = email;
+
+    const uid = document.getElementById("accountUid");
+    if (uid) uid.textContent = "UID: " + currentUser.uid;
+
+    const se = document.getElementById("securityEmail");
+    if (se) se.textContent = email;
+
+    // keep input placeholder
+    const cui = document.getElementById("changeUsernameInput");
+    if (cui && !cui.value) cui.value = safeString(userData?.username, "");
   }
 
-  function refreshAccountLabels(){
-    const uname = safeString(userData?.username, "user");
-    const at = "@"+uname;
-    const el = document.getElementById("accountAt");
-    if (el) el.textContent = at;
-  }
-
-  function filterSettings(){
-    const q = safeString(document.getElementById("settingsSearch").value, "").toLowerCase().trim();
-    const list = document.querySelectorAll("#settingsList .s-item");
-    list.forEach(item=>{
-      const keys = safeString(item.getAttribute("data-keywords"), "").toLowerCase();
-      const title = safeString(item.innerText, "").toLowerCase();
-      const show = !q || keys.includes(q) || title.includes(q);
-      item.style.display = show ? "" : "none";
-    });
-  }
-
-  // =========================
-  // USERNAME (unique)
-  // =========================
-  async function saveUsername(){
-    const status = document.getElementById("usernameStatus");
+  async function changeUsername(){
+    const status = document.getElementById("changeUsernameStatus");
     status.textContent = "";
-    const name = safeString(document.getElementById("usernameInput").value, "").toLowerCase();
+
+    const name = safeString(document.getElementById("changeUsernameInput").value, "").toLowerCase().trim();
 
     if (name.length < 3){
       status.textContent = "Too short (min 3).";
@@ -1005,10 +845,90 @@
       status.textContent = "Only a-z 0-9 _";
       return;
     }
+    if (isBannedUsername(name)){
+      status.textContent = "That username isn’t allowed.";
+      return;
+    }
 
     // Must be unique
     const taken = await db.collection("users").where("username","==",name).limit(1).get();
-    if (!taken.empty){
+    if (!taken.empty && taken.docs[0].id !== currentUser.uid){
+      status.textContent = "Username taken.";
+      return;
+    }
+
+    await db.collection("users").doc(currentUser.uid).update({ username: name });
+    userData.username = name;
+
+    status.textContent = "Saved.";
+    setTimeout(()=>status.textContent="", 1200);
+
+    refreshSettingsUI();
+  }
+
+  async function downloadMyData(){
+    const status = document.getElementById("downloadStatus");
+    status.textContent = "Building export...";
+
+    try{
+      const me = currentUser.uid;
+      const userSnap = await db.collection("users").doc(me).get();
+      const userDoc = userSnap.exists ? userSnap.data() : {};
+
+      const postsSnap = await db.collection("posts").where("uid","==",me).get();
+      const posts = [];
+      postsSnap.forEach(d => posts.push({ id: d.id, ...d.data() }));
+
+      const exportObj = {
+        uid: me,
+        email: currentUser.email || null,
+        user: userDoc,
+        posts: posts
+      };
+
+      const blob = new Blob([JSON.stringify(exportObj, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "echostream_export.json";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+
+      status.textContent = "Downloaded.";
+      setTimeout(()=>status.textContent="", 1200);
+    } catch(e){
+      console.error(e);
+      status.textContent = "Export failed: " + (e.message || String(e));
+    }
+  }
+
+  // =========================
+  // USERNAME (first-time modal)
+  // =========================
+  async function saveUsername(){
+    const status = document.getElementById("usernameStatus");
+    status.textContent = "";
+
+    const name = safeString(document.getElementById("usernameInput").value, "").toLowerCase().trim();
+
+    if (name.length < 3){
+      status.textContent = "Too short (min 3).";
+      return;
+    }
+    if (!/^[a-z0-9_]+$/.test(name)){
+      status.textContent = "Only a-z 0-9 _";
+      return;
+    }
+    if (isBannedUsername(name)){
+      status.textContent = "That username isn’t allowed.";
+      return;
+    }
+
+    const taken = await db.collection("users").where("username","==",name).limit(1).get();
+    if (!taken.empty && taken.docs[0].id !== currentUser.uid){
       status.textContent = "Username taken.";
       return;
     }
@@ -1017,120 +937,7 @@
     userData.username = name;
 
     document.getElementById("usernameModal").classList.remove("show");
-    refreshAccountLabels();
-  }
-
-  async function changeUsername(){
-    const status = document.getElementById("changeUsernameStatus");
-    if (status) status.textContent = "";
-
-    const name = safeString(document.getElementById("newUsername").value, "").toLowerCase().trim();
-
-    if (name.length < 3){
-      if (status) status.textContent = "Too short (min 3).";
-      return;
-    }
-    if (!/^[a-z0-9_]+$/.test(name)){
-      if (status) status.textContent = "Only a-z 0-9 _";
-      return;
-    }
-
-    const taken = await db.collection("users").where("username","==",name).limit(1).get();
-    if (!taken.empty){
-      if (status) status.textContent = "Username taken.";
-      return;
-    }
-
-    try{
-      await db.collection("users").doc(currentUser.uid).update({ username: name });
-      userData.username = name;
-      refreshAccountLabels();
-      fillAccountInfoPage();
-      if (status) status.textContent = "Saved ✅";
-      document.getElementById("newUsername").value = "";
-    } catch(e){
-      console.error(e);
-      if (status) status.textContent = "Error: " + (e.message || String(e));
-    }
-  }
-
-  function fillAccountInfoPage(){
-    const uname = safeString(userData?.username, "user");
-    const email = safeString(currentUser?.email, "—");
-    const uid = safeString(currentUser?.uid, "—");
-
-    const iu = document.getElementById("infoUsername");
-    const ie = document.getElementById("infoEmail");
-    const id = document.getElementById("infoUid");
-
-    if (iu) iu.textContent = "@"+uname;
-    if (ie) ie.textContent = email;
-    if (id) id.textContent = uid;
-  }
-
-  // Download basic JSON
-  async function downloadMyData(){
-    const status = document.getElementById("downloadStatus");
-    if (status) status.textContent = "Preparing...";
-
-    try{
-      const meUid = currentUser.uid;
-
-      const meDoc = await db.collection("users").doc(meUid).get();
-      const meData = meDoc.data() || {};
-
-      const postsSnap = await db.collection("posts").where("uid","==",meUid).get();
-      const posts = [];
-      postsSnap.forEach(d=>{
-        const p = d.data() || {};
-        posts.push({ id:d.id, ...p });
-      });
-
-      const payload = {
-        exportedAt: new Date().toISOString(),
-        user: { uid: meUid, email: currentUser.email || null, ...meData },
-        posts
-      };
-
-      const blob = new Blob([JSON.stringify(payload, null, 2)], { type:"application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `echostream_export_${meUid}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-
-      if (status) status.textContent = "Downloaded ✅";
-    } catch(e){
-      console.error(e);
-      if (status) status.textContent = "Error: " + (e.message || String(e));
-    }
-  }
-
-  async function toggleDeactivate(){
-    const status = document.getElementById("deactivateStatus");
-    if (status) status.textContent = "Updating...";
-
-    try{
-      const ref = db.collection("users").doc(currentUser.uid);
-      const snap = await ref.get();
-      const data = snap.data() || {};
-      const next = !data.deactivated;
-
-      await ref.update({ deactivated: next });
-      userData.deactivated = next;
-
-      updateDeactivateStatus();
-    } catch(e){
-      console.error(e);
-      if (status) status.textContent = "Error: " + (e.message || String(e));
-    }
-  }
-
-  function updateDeactivateStatus(){
-    const status = document.getElementById("deactivateStatus");
-    const v = !!userData?.deactivated;
-    if (status) status.textContent = v ? "Status: DEACTIVATED" : "Status: ACTIVE";
+    refreshSettingsUI();
   }
 
   // =========================
@@ -1149,7 +956,6 @@
     }
 
     let imageUrl = "";
-
     if (file && storage){
       try{
         const path = `posts/${currentUser.uid}/${Date.now()}_${file.name}`;
@@ -1184,18 +990,22 @@
     const post = doc.data() || {};
     const postId = doc.id;
 
-    const username = safeString(post.username, "user");
+    const usernameRaw = safeString(post.username, "user");
+    const username = sanitizeUsernameForDisplay(usernameRaw);
+
     const likes = safeArray(post.likes);
     const comments = safeArray(post.comments);
     const shares = safeArray(post.shares);
-    const liked = likes.includes(currentUser.uid);
 
+    const liked = likes.includes(currentUser.uid);
     const avatar = initialLetter(username);
+
     const img = safeString(post.imageUrl, "");
 
     let commentsHtml = "";
     for (const c of comments){
-      const cu = safeString(c.username, "user");
+      const cuRaw = safeString(c.username, "user");
+      const cu = sanitizeUsernameForDisplay(cuRaw);
       const ct = safeString(c.text, "");
       commentsHtml += `
         <div class="comment">
@@ -1250,7 +1060,7 @@
   }
 
   function startFeedListener(){
-    if (feedUnsub) return; // already listening
+    if (feedUnsub) return;
     const postsDiv = document.getElementById("posts");
     postsDiv.innerHTML = `<div class="muted">Loading feed...</div>`;
 
@@ -1318,8 +1128,7 @@
   async function openProfile(uid){
     showView("profileView");
     setActiveTab("profile");
-    setHeader("Profile", "main");
-    navStack = []; // leaving settings
+    setHeaderTitle("Profile");
 
     const profile = document.getElementById("profileView");
     profile.innerHTML = `<div class="muted">Loading profile...</div>`;
@@ -1330,14 +1139,18 @@
         profile.innerHTML = `<div class="card">User not found.</div>`;
         return;
       }
+
       const u = userSnap.data() || {};
-      const username = safeString(u.username, "user");
+      const usernameRaw = safeString(u.username, "user");
+      const username = sanitizeUsernameForDisplay(usernameRaw);
+
       const followers = safeArray(u.followers);
       const following = safeArray(u.following);
 
       const isMe = uid === currentUser.uid;
       const iFollow = followers.includes(currentUser.uid);
 
+      // user posts (may require composite index: uid + timestamp desc)
       let postsHtml = "";
       const postsSnap = await db.collection("posts")
         .where("uid","==",uid)
@@ -1363,9 +1176,15 @@
           <div style="margin-top:10px; font-size:20px; font-weight:900;">${escapeHtml(username)}</div>
           <div class="muted">UID: ${escapeHtml(uid)}</div>
 
-          <div class="row" style="justify-content:center; gap:18px; margin-top:12px;">
-            <div><div style="font-weight:900;">${followers.length}</div><div class="muted">Followers</div></div>
-            <div><div style="font-weight:900;">${following.length}</div><div class="muted">Following</div></div>
+          <div class="row noselect" style="justify-content:center; gap:14px; margin-top:12px;">
+            <button type="button" class="stat-btn" onclick="openFollowList('${uid}','followers')">
+              <div class="stat-num">${followers.length}</div>
+              <div class="stat-label">Followers</div>
+            </button>
+            <button type="button" class="stat-btn" onclick="openFollowList('${uid}','following')">
+              <div class="stat-num">${following.length}</div>
+              <div class="stat-label">Following</div>
+            </button>
           </div>
 
           ${isMe ? "" : `
@@ -1386,6 +1205,10 @@
   }
 
   async function toggleFollow(targetUid){
+    // IMPORTANT:
+    // If you still get "Missing or insufficient permissions" here,
+    // it means your Firestore RULES do NOT allow writing to the *target user's* doc.
+    // That is a RULES problem (not HTML).
     const meUid = currentUser.uid;
 
     const myRef = db.collection("users").doc(meUid);
@@ -1416,8 +1239,79 @@
     openProfile(targetUid);
   }
 
+  // Followers/Following modal
+  function closeFollowModal(){
+    document.getElementById("followModal").classList.remove("show");
+    document.getElementById("followList").innerHTML = "";
+  }
+
+  async function openFollowList(profileUid, mode){
+    const title = mode === "followers" ? "Followers" : "Following";
+    document.getElementById("followTitle").textContent = title;
+    document.getElementById("followModal").classList.add("show");
+
+    const listEl = document.getElementById("followList");
+    listEl.innerHTML = `<div class="muted">Loading ${title.toLowerCase()}...</div>`;
+
+    try{
+      const userSnap = await db.collection("users").doc(profileUid).get();
+      if (!userSnap.exists){
+        listEl.innerHTML = `<div class="muted">User not found.</div>`;
+        return;
+      }
+
+      const data = userSnap.data() || {};
+      const ids = Array.isArray(data[mode]) ? data[mode] : [];
+
+      if (ids.length === 0){
+        listEl.innerHTML = `<div class="muted">No ${title.toLowerCase()} yet.</div>`;
+        return;
+      }
+
+      // Firestore "in" query limit is 10
+      const chunks = [];
+      for (let i=0; i<ids.length; i+=10) chunks.push(ids.slice(i,i+10));
+
+      let html = "";
+      for (const chunk of chunks){
+        const qs = await db.collection("users")
+          .where(firebase.firestore.FieldPath.documentId(), "in", chunk)
+          .get();
+
+        qs.forEach(doc=>{
+          const u = doc.data() || {};
+          const unameRaw = safeString(u.username, "user");
+          const uname = sanitizeUsernameForDisplay(unameRaw);
+
+          html += `
+            <div class="card">
+              <div class="row">
+                <div class="avatar">${initialLetter(uname)}</div>
+                <div style="flex:1;">
+                  <div style="font-weight:900;" class="click"
+                    onclick="closeFollowModal(); openProfile('${doc.id}')">
+                    ${escapeHtml(uname)}
+                  </div>
+                  <div class="muted">${escapeHtml(doc.id)}</div>
+                </div>
+                ${doc.id === currentUser.uid ? "" : `
+                  <button class="secondary" onclick="startChatWith('${doc.id}','${escapeAttr(uname)}')">Message</button>
+                `}
+              </div>
+            </div>
+          `;
+        });
+      }
+
+      listEl.innerHTML = html;
+    } catch(e){
+      console.error(e);
+      listEl.innerHTML = `<div class="card">Error: ${escapeHtml(e.message || String(e))}</div>`;
+    }
+  }
+
   // =========================
-  // SEARCH
+  // SEARCH (prefix query)
   // =========================
   let searchTimer = null;
 
@@ -1448,8 +1342,10 @@
       let html = "";
       snap.forEach(doc=>{
         const u = doc.data() || {};
-        const uname = safeString(u.username, "");
-        if (!uname) return;
+        const unameRaw = safeString(u.username, "");
+        if (!unameRaw) return;
+
+        const uname = sanitizeUsernameForDisplay(unameRaw);
 
         html += `
           <div class="card">
@@ -1457,7 +1353,7 @@
               <div class="avatar">${initialLetter(uname)}</div>
               <div style="flex:1;">
                 <div style="font-weight:900;" class="click" onclick="openProfile('${doc.id}')">${escapeHtml(uname)}</div>
-                <div class="muted">${doc.id}</div>
+                <div class="muted">${escapeHtml(doc.id)}</div>
               </div>
               <button class="secondary" onclick="startChatWith('${doc.id}','${escapeAttr(uname)}')">Message</button>
             </div>
@@ -1495,13 +1391,14 @@
   function ensureChatListener(){
     if (!currentUser) return;
 
+    // stop old listener
     if (chatUnsub){
       chatUnsub();
       chatUnsub = null;
     }
 
     const me = currentUser.uid;
-    const other = activeChatUid === "AI" ? "AI" : activeChatUid;
+    const other = (activeChatUid === "AI") ? "AI" : activeChatUid;
     const cid = chatId(me, other);
 
     const box = document.getElementById("chatBox");
@@ -1516,7 +1413,8 @@
         let html = "";
         snap.forEach(doc=>{
           const m = doc.data() || {};
-          const uname = safeString(m.username, m.uid === "AI" ? "EchoBot" : "user");
+          const unameRaw = safeString(m.username, m.uid === "AI" ? "EchoBot" : "user");
+          const uname = sanitizeUsernameForDisplay(unameRaw);
           const text = safeString(m.text, "");
           const mine = m.uid === currentUser.uid;
 
@@ -1543,8 +1441,11 @@
     const text = safeString(input.value, "").trim();
     if (!text) return;
 
+    // IMPORTANT FIX: capture text BEFORE clearing input (prevents "same thing" bugs)
+    input.value = "";
+
     const me = currentUser.uid;
-    const other = activeChatUid === "AI" ? "AI" : activeChatUid;
+    const other = (activeChatUid === "AI") ? "AI" : activeChatUid;
     const cid = chatId(me, other);
 
     try{
@@ -1557,8 +1458,6 @@
           text: text,
           timestamp: firebase.firestore.FieldValue.serverTimestamp()
         });
-
-      input.value = "";
 
       if (other === "AI"){
         aiReply(cid, text);
@@ -1574,7 +1473,8 @@
     let msg = "Tell me more.";
 
     if (t.includes("hi") || t.includes("hello")) msg = "Hey! What are you up to today?";
-    else if (t.includes("help")) msg = "What do you want help with in EchoStream?";
+    else if (t.includes("wsp") || t.includes("what's up")) msg = "Not much 😄 Want to post something or message someone?";
+    else if (t.includes("help")) msg = "Tell me what’s broken and paste the console error.";
     else if (t.includes("joke")) msg = "Why did the dev go broke? Because he used up all his cache.";
     else if (t.includes("bye")) msg = "Bye! Come back anytime.";
 
