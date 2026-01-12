@@ -11,7 +11,6 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
 
-  <!-- Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
 
   <style>
@@ -28,7 +27,6 @@
       margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
       background:var(--bg); color:var(--text);
     }
-
     header{
       position:fixed; top:0; left:0; right:0;
       display:flex; align-items:center; justify-content:space-between;
@@ -45,12 +43,10 @@
       cursor:pointer;
     }
     header .icon-btn:hover{ background:rgba(127,127,127,.12); }
-
     main{
       padding:72px 14px 88px;
       max-width:640px; margin:0 auto;
     }
-
     nav{
       position:fixed; bottom:0; left:0; right:0;
       display:flex; justify-content:space-around; align-items:center;
@@ -72,7 +68,6 @@
     nav i{ font-size:20px; }
 
     .hidden{ display:none !important; }
-
     .card{
       background:var(--card);
       border:1px solid var(--border);
@@ -80,7 +75,6 @@
       padding:14px;
       margin-bottom:12px;
     }
-
     textarea, input{
       width:100%;
       box-sizing:border-box;
@@ -111,6 +105,7 @@
 
     .row{ display:flex; gap:10px; align-items:center; }
     .space{ flex:1; }
+    .muted{ color:var(--muted); font-size:13px; }
 
     .avatar{
       width:42px; height:42px;
@@ -127,7 +122,6 @@
       border:1px solid var(--border);
     }
 
-    .muted{ color:var(--muted); font-size:13px; }
     .click{ cursor:pointer; }
     .click:hover{ text-decoration:underline; }
 
@@ -140,33 +134,6 @@
     .post-actions span{ cursor:pointer; }
     .post-actions span:hover{ color:var(--text); }
 
-    .comment{
-      display:flex; gap:10px;
-      margin-top:10px;
-      padding-top:10px;
-      border-top:1px solid var(--border);
-    }
-    .comment .avatar{ width:34px; height:34px; font-size:14px; }
-
-    /* Prevent Android text-select / dictionary popups on tappable UI */
-    .noselect, .noselect *{
-      -webkit-user-select:none;
-      user-select:none;
-      -webkit-touch-callout:none;
-    }
-
-    .stat-btn{
-      background: transparent;
-      border: 0;
-      padding: 10px 12px;
-      border-radius: 12px;
-      color: var(--text);
-      cursor: pointer;
-    }
-    .stat-btn:active{ background: rgba(127,127,127,.12); }
-    .stat-num{ font-weight: 900; font-size: 18px; }
-    .stat-label{ color: var(--muted); font-size: 13px; margin-top: 2px; }
-
     /* Drawer */
     .drawer-backdrop{
       position:fixed; inset:0;
@@ -175,7 +142,6 @@
       display:none;
     }
     .drawer-backdrop.show{ display:block; }
-
     .drawer{
       position:fixed; top:0; left:-320px;
       width:300px; height:100%;
@@ -186,7 +152,6 @@
       transition:left .2s ease;
     }
     .drawer.show{ left:0; }
-
     .drawer .item{
       padding:12px 10px;
       border-radius:12px;
@@ -207,40 +172,20 @@
     .modal.show{ display:flex; }
     .modal .box{
       width:100%;
-      max-width:460px;
+      max-width:520px;
       background:var(--bg);
       border:1px solid var(--border);
       border-radius:16px;
       padding:16px;
     }
 
-    /* Settings "pages" */
-    .settings-page-title{
-      font-weight:900; font-size:18px;
-      display:flex; align-items:center; gap:10px;
-      margin:0 0 12px;
-    }
-    .settings-item{
-      padding:14px;
+    .listRow{
+      display:flex; align-items:center; gap:12px;
+      padding:12px;
       border-radius:14px;
       border:1px solid var(--border);
-      background:var(--card);
-      cursor:pointer;
-      display:flex;
-      align-items:center;
-      gap:12px;
+      background:rgba(127,127,127,.06);
       margin-bottom:10px;
-    }
-    .settings-item:active{ background:rgba(127,127,127,.12); }
-    .settings-item .right{ margin-left:auto; color:var(--muted); }
-    .pill{
-      display:inline-block;
-      padding:6px 10px;
-      border-radius:999px;
-      border:1px solid var(--border);
-      background:transparent;
-      font-size:12px;
-      color:var(--muted);
     }
   </style>
 </head>
@@ -250,7 +195,7 @@
 <header>
   <div class="left">
     <div class="icon-btn" onclick="openDrawer()"><i class="fa-solid fa-bars"></i></div>
-    <div id="headerTitle">EchoStream</div>
+    <div id="topTitle">EchoStream</div>
   </div>
   <div class="icon-btn" onclick="route('settings')"><i class="fa-solid fa-gear"></i></div>
 </header>
@@ -269,6 +214,7 @@
   <div class="item" onclick="route('messages'); closeDrawer();"><i class="fa-solid fa-message"></i> Messages</div>
   <div class="item" onclick="route('profile'); closeDrawer();"><i class="fa-solid fa-user"></i> Profile</div>
   <div class="item" onclick="route('settings'); closeDrawer();"><i class="fa-solid fa-gear"></i> Settings</div>
+  <div id="adminDrawerItem" class="item hidden" onclick="route('admin'); closeDrawer();"><i class="fa-solid fa-shield"></i> Admin</div>
 </div>
 
 <main>
@@ -285,8 +231,10 @@
     <div class="card">
       <div class="muted" style="margin-bottom:8px;">Post</div>
       <textarea id="postText" placeholder="What’s happening?"></textarea>
+
       <div style="height:10px;"></div>
       <input id="postImage" type="file" accept="image/*"/>
+
       <div class="row" style="margin-top:10px;">
         <button onclick="createPost()">Post</button>
         <div class="space"></div>
@@ -334,190 +282,171 @@
   <!-- PROFILE -->
   <div id="profileView" class="hidden"></div>
 
-  <!-- SETTINGS -->
+  <!-- FOLLOW LIST VIEW -->
+  <div id="followListView" class="hidden"></div>
+
+  <!-- SETTINGS HOME -->
   <div id="settingsView" class="hidden">
-    <!-- page: home -->
-    <div id="settingsHome" class="hidden">
-      <div class="settings-page-title">
-        <span>Settings</span>
-      </div>
+    <div class="card">
+      <h3 style="margin:0 0 10px;">Settings</h3>
 
-      <div class="settings-item" onclick="openSettingsPage('accountInfo')">
-        <i class="fa-regular fa-user"></i>
-        <div>
+      <div class="listRow click" onclick="route('settings_account')">
+        <i class="fa-solid fa-user"></i>
+        <div style="flex:1;">
           <div style="font-weight:900;">Your account</div>
-          <div class="muted" id="settingsUsernameLine">Loading...</div>
+          <div class="muted">View username, UID, and change username</div>
         </div>
-        <div class="right"><i class="fa-solid fa-chevron-right"></i></div>
+        <i class="fa-solid fa-chevron-right"></i>
       </div>
 
-      <div class="settings-item" onclick="openSettingsPage('security')">
-        <i class="fa-solid fa-shield"></i>
-        <div>
+      <div class="listRow click" onclick="route('settings_security')">
+        <i class="fa-solid fa-lock"></i>
+        <div style="flex:1;">
           <div style="font-weight:900;">Security</div>
-          <div class="muted">Sign out, account info</div>
+          <div class="muted">Sign-in info</div>
         </div>
-        <div class="right"><i class="fa-solid fa-chevron-right"></i></div>
+        <i class="fa-solid fa-chevron-right"></i>
       </div>
 
-      <div class="settings-item" onclick="openSettingsPage('appearance')">
-        <i class="fa-regular fa-moon"></i>
-        <div>
-          <div style="font-weight:900;">Appearance</div>
-          <div class="muted">Dark mode</div>
+      <div class="listRow click" onclick="route('settings_privacy')">
+        <i class="fa-solid fa-shield-halved"></i>
+        <div style="flex:1;">
+          <div style="font-weight:900;">Privacy & safety</div>
+          <div class="muted">Basic privacy page</div>
         </div>
-        <div class="right"><i class="fa-solid fa-chevron-right"></i></div>
+        <i class="fa-solid fa-chevron-right"></i>
       </div>
 
-      <div class="settings-item" onclick="openSettingsPage('about')">
-        <i class="fa-regular fa-circle-question"></i>
-        <div>
-          <div style="font-weight:900;">About</div>
-          <div class="muted">Version + support</div>
-        </div>
-        <div class="right"><i class="fa-solid fa-chevron-right"></i></div>
-      </div>
-    </div>
-
-    <!-- page: account info -->
-    <div id="settingsAccountInfo" class="hidden">
-      <div class="settings-page-title">
-        <button class="secondary" onclick="openSettingsPage('home')"><i class="fa-solid fa-arrow-left"></i></button>
-        <span>Your account</span>
-      </div>
-
-      <div class="card">
-        <div style="font-weight:900; font-size:18px;" id="accountUsername">username</div>
-        <div class="muted" id="accountEmail">email</div>
-        <div style="height:10px;"></div>
-        <div class="pill" id="accountUid">UID: ...</div>
-      </div>
-
-      <div class="settings-item" onclick="openSettingsPage('changeUsername')">
-        <i class="fa-solid fa-pen"></i>
-        <div>
-          <div style="font-weight:900;">Change username</div>
-          <div class="muted">Update your public username</div>
-        </div>
-        <div class="right"><i class="fa-solid fa-chevron-right"></i></div>
-      </div>
-
-      <div class="settings-item" onclick="openSettingsPage('downloadData')">
+      <div class="listRow click" onclick="route('settings_data')">
         <i class="fa-solid fa-download"></i>
-        <div>
+        <div style="flex:1;">
           <div style="font-weight:900;">Download your data</div>
-          <div class="muted">Export basics (simple)</div>
+          <div class="muted">Simple export helper</div>
         </div>
-        <div class="right"><i class="fa-solid fa-chevron-right"></i></div>
+        <i class="fa-solid fa-chevron-right"></i>
       </div>
 
-      <div class="settings-item" onclick="openSettingsPage('deactivate')">
-        <i class="fa-regular fa-circle-xmark"></i>
-        <div>
-          <div style="font-weight:900;">Deactivate account</div>
-          <div class="muted">Sign out + stop using</div>
+      <div id="adminSettingsRow" class="listRow click hidden" onclick="route('admin')">
+        <i class="fa-solid fa-shield"></i>
+        <div style="flex:1;">
+          <div style="font-weight:900;">Admin Panel</div>
+          <div class="muted">Moderation tools</div>
         </div>
-        <div class="right"><i class="fa-solid fa-chevron-right"></i></div>
-      </div>
-    </div>
-
-    <!-- page: change username -->
-    <div id="settingsChangeUsername" class="hidden">
-      <div class="settings-page-title">
-        <button class="secondary" onclick="openSettingsPage('accountInfo')"><i class="fa-solid fa-arrow-left"></i></button>
-        <span>Change username</span>
+        <i class="fa-solid fa-chevron-right"></i>
       </div>
 
-      <div class="card">
-        <div class="muted" style="margin-bottom:8px;">New username</div>
-        <input id="changeUsernameInput" placeholder="lowercase letters / numbers / underscore" maxlength="20"/>
-        <div class="row" style="margin-top:10px;">
-          <button onclick="changeUsername()">Save</button>
-          <div class="space"></div>
-          <span class="muted" id="changeUsernameStatus"></span>
-        </div>
-        <div class="muted" style="margin-top:10px;">
-          Note: must be unique. (This is client-side. For real safety, also validate server-side.)
-        </div>
-      </div>
-    </div>
-
-    <!-- page: security -->
-    <div id="settingsSecurity" class="hidden">
-      <div class="settings-page-title">
-        <button class="secondary" onclick="openSettingsPage('home')"><i class="fa-solid fa-arrow-left"></i></button>
-        <span>Security</span>
-      </div>
-
-      <div class="card">
-        <div style="font-weight:900;">Signed in as</div>
-        <div class="muted" id="securityEmail">...</div>
-        <div style="height:10px;"></div>
-        <button class="danger" onclick="logout()">Logout</button>
-      </div>
-    </div>
-
-    <!-- page: appearance -->
-    <div id="settingsAppearance" class="hidden">
-      <div class="settings-page-title">
-        <button class="secondary" onclick="openSettingsPage('home')"><i class="fa-solid fa-arrow-left"></i></button>
-        <span>Appearance</span>
-      </div>
-
-      <div class="card">
+      <div class="card" style="margin-top:12px;">
         <label class="row" style="gap:10px;">
           <input type="checkbox" id="darkToggle" style="width:auto;" />
           <span>Dark mode</span>
         </label>
-      </div>
-    </div>
-
-    <!-- page: about -->
-    <div id="settingsAbout" class="hidden">
-      <div class="settings-page-title">
-        <button class="secondary" onclick="openSettingsPage('home')"><i class="fa-solid fa-arrow-left"></i></button>
-        <span>About</span>
-      </div>
-
-      <div class="card">
-        <div style="font-weight:900;">EchoStream</div>
-        <div class="muted">Version: 1.0</div>
-        <div class="muted" style="margin-top:10px;">
-          If something breaks, open DevTools → Console and paste the error to fix fast.
-        </div>
-      </div>
-    </div>
-
-    <!-- page: download data -->
-    <div id="settingsDownloadData" class="hidden">
-      <div class="settings-page-title">
-        <button class="secondary" onclick="openSettingsPage('accountInfo')"><i class="fa-solid fa-arrow-left"></i></button>
-        <span>Download your data</span>
-      </div>
-
-      <div class="card">
-        <div class="muted" style="margin-bottom:10px;">This exports basic info locally (no server). It will download a JSON file.</div>
-        <button onclick="downloadMyData()">Download JSON</button>
-        <div class="muted" id="downloadStatus" style="margin-top:10px;"></div>
-      </div>
-    </div>
-
-    <!-- page: deactivate -->
-    <div id="settingsDeactivate" class="hidden">
-      <div class="settings-page-title">
-        <button class="secondary" onclick="openSettingsPage('accountInfo')"><i class="fa-solid fa-arrow-left"></i></button>
-        <span>Deactivate</span>
-      </div>
-
-      <div class="card">
-        <div style="font-weight:900;">Deactivate account</div>
-        <div class="muted" style="margin-top:6px;">
-          This demo app can’t delete your Firebase Auth user from the client safely.
-          The safe “deactivate” here just logs you out.
-        </div>
         <div style="height:12px;"></div>
         <button class="danger" onclick="logout()">Logout</button>
       </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS: ACCOUNT -->
+  <div id="settingsAccountView" class="hidden">
+    <div class="card">
+      <div class="row">
+        <div style="font-weight:900;font-size:18px;">Your account</div>
+        <div class="space"></div>
+        <button class="secondary" onclick="route('settings')">Back</button>
+      </div>
+
+      <div style="height:12px;"></div>
+
+      <div class="muted">Username</div>
+      <input id="accountUsername" placeholder="username" />
+      <div class="muted" style="margin-top:10px;">UID</div>
+      <div id="accountUid" class="card" style="margin-top:6px; font-family:monospace;"></div>
+
+      <div class="row" style="margin-top:12px;">
+        <button onclick="updateMyUsername()">Save Username</button>
+        <div class="space"></div>
+        <span class="muted" id="accountStatus"></span>
+      </div>
+
+      <div class="muted" style="margin-top:10px;">
+        Username rules: lowercase letters/numbers/underscore. Must be unique.
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS: SECURITY -->
+  <div id="settingsSecurityView" class="hidden">
+    <div class="card">
+      <div class="row">
+        <div style="font-weight:900;font-size:18px;">Security</div>
+        <div class="space"></div>
+        <button class="secondary" onclick="route('settings')">Back</button>
+      </div>
+      <div style="height:12px;"></div>
+      <div class="muted">Signed in as</div>
+      <div id="securityEmail" class="card" style="margin-top:6px;"></div>
+      <div class="muted">Provider</div>
+      <div id="securityProvider" class="card" style="margin-top:6px;"></div>
+    </div>
+  </div>
+
+  <!-- SETTINGS: PRIVACY -->
+  <div id="settingsPrivacyView" class="hidden">
+    <div class="card">
+      <div class="row">
+        <div style="font-weight:900;font-size:18px;">Privacy & safety</div>
+        <div class="space"></div>
+        <button class="secondary" onclick="route('settings')">Back</button>
+      </div>
+      <div style="height:12px;"></div>
+      <div class="muted">
+        This is a starter page. Later you can add: private account, block list, report tools, etc.
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS: DATA -->
+  <div id="settingsDataView" class="hidden">
+    <div class="card">
+      <div class="row">
+        <div style="font-weight:900;font-size:18px;">Download your data</div>
+        <div class="space"></div>
+        <button class="secondary" onclick="route('settings')">Back</button>
+      </div>
+      <div style="height:12px;"></div>
+      <button onclick="exportMyData()">Export My Data (JSON)</button>
+      <div class="muted" id="dataStatus" style="margin-top:10px;"></div>
+    </div>
+  </div>
+
+  <!-- ADMIN -->
+  <div id="adminView" class="hidden">
+    <div class="card">
+      <div class="row">
+        <div style="font-weight:900;font-size:18px;">Admin Panel</div>
+        <div class="space"></div>
+        <button class="secondary" onclick="route('settings')">Back</button>
+      </div>
+
+      <div style="height:12px;"></div>
+      <div class="muted">Tools</div>
+
+      <div class="listRow">
+        <i class="fa-solid fa-trash"></i>
+        <div style="flex:1;">
+          <div style="font-weight:900;">Delete a post by ID</div>
+          <div class="muted">Paste Firestore postId</div>
+        </div>
+      </div>
+      <input id="adminDeletePostId" placeholder="postId" />
+      <div class="row" style="margin-top:10px;">
+        <button class="danger" onclick="adminDeletePost()">Delete Post</button>
+        <div class="space"></div>
+        <span class="muted" id="adminStatus"></span>
+      </div>
+
+      <div style="height:14px;"></div>
+      <div class="muted">You only see this if your UID exists in /admins/{uid}</div>
     </div>
   </div>
 
@@ -539,7 +468,7 @@
   </div>
 </nav>
 
-<!-- Username Modal (first-time) -->
+<!-- Username Modal (first time) -->
 <div id="usernameModal" class="modal">
   <div class="box">
     <h3 style="margin:0 0 8px;">Pick a username</h3>
@@ -550,19 +479,6 @@
       <div class="space"></div>
       <span class="muted" id="usernameStatus"></span>
     </div>
-  </div>
-</div>
-
-<!-- Followers/Following Modal -->
-<div id="followModal" class="modal">
-  <div class="box">
-    <div class="row">
-      <div id="followTitle" style="font-weight:900;">Followers</div>
-      <div class="space"></div>
-      <button class="secondary" onclick="closeFollowModal()">Close</button>
-    </div>
-    <div style="height:10px;"></div>
-    <div id="followList" class="noselect"></div>
   </div>
 </div>
 
@@ -581,37 +497,18 @@
 
   const auth = firebase.auth();
   const db = firebase.firestore();
-
-  // Storage optional
   let storage = null;
   try { storage = firebase.storage(); } catch(e) { storage = null; }
 
+  // app state
   let currentUser = null;
   let userData = null;
+  let isAdmin = false;
 
-  // Messaging
-  let activeChatUid = "AI";
-  let chatUnsub = null;
-
-  // Feed
+  // listeners
   let feedUnsub = null;
-
-  // =========================
-  // Small safety: filter hateful usernames in UI
-  // (You can expand this list.)
-  // =========================
-  const BANNED_SUBSTRINGS = [
-    "nigger", "faggot", "kike", "spic", "chink"
-  ];
-  function isBannedUsername(name){
-    const s = String(name || "").toLowerCase();
-    return BANNED_SUBSTRINGS.some(w => s.includes(w));
-  }
-  function sanitizeUsernameForDisplay(name){
-    const s = safeString(name, "user");
-    if (isBannedUsername(s)) return "[blocked]";
-    return s;
-  }
+  let chatUnsub = null;
+  let activeChatUid = "AI"; // "AI" or a real uid
 
   // =========================
   // UI helpers
@@ -633,14 +530,22 @@
     });
   }
 
-  function showView(id){
-    const views = ["loginView","feedView","searchView","messagesView","profileView","settingsView"];
-    views.forEach(v => document.getElementById(v).classList.add("hidden"));
-    document.getElementById(id).classList.remove("hidden");
+  function setTopTitle(text){
+    document.getElementById("topTitle").textContent = text || "EchoStream";
   }
 
-  function setHeaderTitle(t){
-    document.getElementById("headerTitle").textContent = t || "EchoStream";
+  function hideAllViews(){
+    const views = [
+      "loginView","feedView","searchView","messagesView","profileView",
+      "settingsView","settingsAccountView","settingsSecurityView","settingsPrivacyView","settingsDataView",
+      "adminView","followListView"
+    ];
+    views.forEach(v => document.getElementById(v).classList.add("hidden"));
+  }
+
+  function showView(id){
+    hideAllViews();
+    document.getElementById(id).classList.remove("hidden");
   }
 
   function safeString(x, fallback=""){
@@ -663,6 +568,17 @@
     return Math.floor(seconds/86400) + "d";
   }
 
+  function escapeHtml(str){
+    str = String(str ?? "");
+    return str
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+  function escapeAttr(str){ return escapeHtml(str); }
+
   // =========================
   // AUTH
   // =========================
@@ -677,21 +593,24 @@
     if (!user){
       currentUser = null;
       userData = null;
-      setHeaderTitle("EchoStream");
+      isAdmin = false;
+      if (feedUnsub) { feedUnsub(); feedUnsub = null; }
+      if (chatUnsub) { chatUnsub(); chatUnsub = null; }
       showView("loginView");
+      setTopTitle("EchoStream");
       return;
     }
 
     currentUser = user;
 
-    // Load or create user doc
+    // Load/create user doc
     const userRef = db.collection("users").doc(user.uid);
     const snap = await userRef.get();
 
     if (!snap.exists){
       const auto = safeString(user.displayName, "user").replace(/\s/g,"").toLowerCase();
-      await userRef.set({ username: auto, followers: [], following: [] });
-      userData = { username: auto, followers: [], following: [] };
+      await userRef.set({ username: auto, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+      userData = { username: auto };
       document.getElementById("usernameModal").classList.add("show");
     } else {
       userData = snap.data() || {};
@@ -701,19 +620,22 @@
       }
     }
 
-    // Dark mode init
+    // admin check
+    const adminSnap = await db.collection("admins").doc(user.uid).get();
+    isAdmin = adminSnap.exists;
+
+    // show admin UI
+    document.getElementById("adminSettingsRow").classList.toggle("hidden", !isAdmin);
+    document.getElementById("adminDrawerItem").classList.toggle("hidden", !isAdmin);
+
+    // dark mode init
     const dark = localStorage.getItem("darkMode") === "true";
     document.body.classList.toggle("dark", dark);
-    const dt = document.getElementById("darkToggle");
-    if (dt) dt.checked = dark;
+    document.getElementById("darkToggle").checked = dark;
 
-    // Start feed + chat
     route("feed");
     startFeedListener();
     setChatAI();
-
-    // Update settings header lines
-    refreshSettingsUI();
   });
 
   // Dark mode
@@ -724,194 +646,115 @@
   });
 
   // =========================
-  // ROUTING
+  // ROUTES (ALL OF THEM)
   // =========================
-  function route(page){
+  function route(page, param){
     if (!currentUser){
       showView("loginView");
+      setTopTitle("EchoStream");
       return;
     }
 
     closeDrawer();
 
+    // bottom tabs only for main pages
+    const mainTabs = ["feed","search","messages","profile"];
+    if (mainTabs.includes(page)) setActiveTab(page);
+
     if (page === "feed"){
-      setHeaderTitle("EchoStream");
+      setTopTitle("Feed");
       showView("feedView");
-      setActiveTab("feed");
       startFeedListener();
       return;
     }
+
     if (page === "search"){
-      setHeaderTitle("Search");
+      setTopTitle("Search");
       showView("searchView");
-      setActiveTab("search");
       document.getElementById("searchInput").value = "";
       document.getElementById("searchResults").innerHTML = "";
       return;
     }
+
     if (page === "messages"){
-      setHeaderTitle("Messages");
+      setTopTitle("Messages");
       showView("messagesView");
-      setActiveTab("messages");
       ensureChatListener();
       return;
     }
+
     if (page === "profile"){
-      setHeaderTitle("Profile");
+      setTopTitle("Profile");
       showView("profileView");
-      setActiveTab("profile");
       openProfile(currentUser.uid);
       return;
     }
+
     if (page === "settings"){
-      setHeaderTitle("Settings");
+      setTopTitle("Settings");
       showView("settingsView");
-      // settings default page
-      openSettingsPage("home");
+      // populate some settings info quickly
+      return;
+    }
+
+    if (page === "settings_account"){
+      setTopTitle("Your account");
+      showView("settingsAccountView");
+      document.getElementById("accountUid").textContent = currentUser.uid;
+      document.getElementById("accountUsername").value = safeString(userData?.username, "");
+      document.getElementById("accountStatus").textContent = "";
+      return;
+    }
+
+    if (page === "settings_security"){
+      setTopTitle("Security");
+      showView("settingsSecurityView");
+      document.getElementById("securityEmail").textContent = safeString(currentUser.email, "(no email)");
+      const provider = (currentUser.providerData && currentUser.providerData[0] && currentUser.providerData[0].providerId) || "unknown";
+      document.getElementById("securityProvider").textContent = provider;
+      return;
+    }
+
+    if (page === "settings_privacy"){
+      setTopTitle("Privacy & safety");
+      showView("settingsPrivacyView");
+      return;
+    }
+
+    if (page === "settings_data"){
+      setTopTitle("Download your data");
+      showView("settingsDataView");
+      document.getElementById("dataStatus").textContent = "";
+      return;
+    }
+
+    if (page === "follow_list"){
+      // param: { uid, mode: "followers" | "following", username }
+      setTopTitle(param?.mode === "followers" ? "Followers" : "Following");
+      showView("followListView");
+      renderFollowList(param?.uid, param?.mode, param?.username);
+      return;
+    }
+
+    if (page === "admin"){
+      if (!isAdmin){
+        setTopTitle("Settings");
+        showView("settingsView");
+        return;
+      }
+      setTopTitle("Admin");
+      showView("adminView");
+      document.getElementById("adminStatus").textContent = "";
       return;
     }
   }
 
   // =========================
-  // SETTINGS PAGES
-  // =========================
-  function hideAllSettingsPages(){
-    const ids = [
-      "settingsHome",
-      "settingsAccountInfo",
-      "settingsChangeUsername",
-      "settingsSecurity",
-      "settingsAppearance",
-      "settingsAbout",
-      "settingsDownloadData",
-      "settingsDeactivate"
-    ];
-    ids.forEach(id => document.getElementById(id).classList.add("hidden"));
-  }
-
-  function openSettingsPage(which){
-    hideAllSettingsPages();
-
-    if (which === "home") document.getElementById("settingsHome").classList.remove("hidden");
-    if (which === "accountInfo") document.getElementById("settingsAccountInfo").classList.remove("hidden");
-    if (which === "changeUsername") document.getElementById("settingsChangeUsername").classList.remove("hidden");
-    if (which === "security") document.getElementById("settingsSecurity").classList.remove("hidden");
-    if (which === "appearance") document.getElementById("settingsAppearance").classList.remove("hidden");
-    if (which === "about") document.getElementById("settingsAbout").classList.remove("hidden");
-    if (which === "downloadData") document.getElementById("settingsDownloadData").classList.remove("hidden");
-    if (which === "deactivate") document.getElementById("settingsDeactivate").classList.remove("hidden");
-
-    refreshSettingsUI();
-  }
-
-  async function refreshSettingsUI(){
-    if (!currentUser) return;
-
-    // best current username from cache
-    const uname = sanitizeUsernameForDisplay(safeString(userData?.username, "user"));
-    const email = safeString(currentUser.email, "(no email)");
-
-    const homeLine = document.getElementById("settingsUsernameLine");
-    if (homeLine) homeLine.textContent = "@" + uname;
-
-    const au = document.getElementById("accountUsername");
-    if (au) au.textContent = uname;
-
-    const ae = document.getElementById("accountEmail");
-    if (ae) ae.textContent = email;
-
-    const uid = document.getElementById("accountUid");
-    if (uid) uid.textContent = "UID: " + currentUser.uid;
-
-    const se = document.getElementById("securityEmail");
-    if (se) se.textContent = email;
-
-    // keep input placeholder
-    const cui = document.getElementById("changeUsernameInput");
-    if (cui && !cui.value) cui.value = safeString(userData?.username, "");
-  }
-
-  async function changeUsername(){
-    const status = document.getElementById("changeUsernameStatus");
-    status.textContent = "";
-
-    const name = safeString(document.getElementById("changeUsernameInput").value, "").toLowerCase().trim();
-
-    if (name.length < 3){
-      status.textContent = "Too short (min 3).";
-      return;
-    }
-    if (!/^[a-z0-9_]+$/.test(name)){
-      status.textContent = "Only a-z 0-9 _";
-      return;
-    }
-    if (isBannedUsername(name)){
-      status.textContent = "That username isn’t allowed.";
-      return;
-    }
-
-    // Must be unique
-    const taken = await db.collection("users").where("username","==",name).limit(1).get();
-    if (!taken.empty && taken.docs[0].id !== currentUser.uid){
-      status.textContent = "Username taken.";
-      return;
-    }
-
-    await db.collection("users").doc(currentUser.uid).update({ username: name });
-    userData.username = name;
-
-    status.textContent = "Saved.";
-    setTimeout(()=>status.textContent="", 1200);
-
-    refreshSettingsUI();
-  }
-
-  async function downloadMyData(){
-    const status = document.getElementById("downloadStatus");
-    status.textContent = "Building export...";
-
-    try{
-      const me = currentUser.uid;
-      const userSnap = await db.collection("users").doc(me).get();
-      const userDoc = userSnap.exists ? userSnap.data() : {};
-
-      const postsSnap = await db.collection("posts").where("uid","==",me).get();
-      const posts = [];
-      postsSnap.forEach(d => posts.push({ id: d.id, ...d.data() }));
-
-      const exportObj = {
-        uid: me,
-        email: currentUser.email || null,
-        user: userDoc,
-        posts: posts
-      };
-
-      const blob = new Blob([JSON.stringify(exportObj, null, 2)], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "echostream_export.json";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-
-      status.textContent = "Downloaded.";
-      setTimeout(()=>status.textContent="", 1200);
-    } catch(e){
-      console.error(e);
-      status.textContent = "Export failed: " + (e.message || String(e));
-    }
-  }
-
-  // =========================
-  // USERNAME (first-time modal)
+  // USERNAME (first time modal)
   // =========================
   async function saveUsername(){
     const status = document.getElementById("usernameStatus");
     status.textContent = "";
-
     const name = safeString(document.getElementById("usernameInput").value, "").toLowerCase().trim();
 
     if (name.length < 3){
@@ -922,8 +765,29 @@
       status.textContent = "Only a-z 0-9 _";
       return;
     }
-    if (isBannedUsername(name)){
-      status.textContent = "That username isn’t allowed.";
+
+    const taken = await db.collection("users").where("username","==",name).limit(1).get();
+    if (!taken.empty){
+      status.textContent = "Username taken.";
+      return;
+    }
+
+    await db.collection("users").doc(currentUser.uid).update({ username: name });
+    userData.username = name;
+    document.getElementById("usernameModal").classList.remove("show");
+  }
+
+  async function updateMyUsername(){
+    const status = document.getElementById("accountStatus");
+    status.textContent = "";
+    const name = safeString(document.getElementById("accountUsername").value, "").toLowerCase().trim();
+
+    if (name.length < 3){
+      status.textContent = "Too short (min 3).";
+      return;
+    }
+    if (!/^[a-z0-9_]+$/.test(name)){
+      status.textContent = "Only a-z 0-9 _";
       return;
     }
 
@@ -935,9 +799,8 @@
 
     await db.collection("users").doc(currentUser.uid).update({ username: name });
     userData.username = name;
-
-    document.getElementById("usernameModal").classList.remove("show");
-    refreshSettingsUI();
+    status.textContent = "Saved.";
+    setTimeout(()=>status.textContent="", 1200);
   }
 
   // =========================
@@ -967,13 +830,11 @@
       }
     }
 
-    const uname = safeString(userData?.username, "user");
-
     await db.collection("posts").add({
       uid: currentUser.uid,
-      username: uname,
-      text: text,
-      imageUrl: imageUrl,
+      username: safeString(userData?.username, "user"),
+      text,
+      imageUrl,
       likes: [],
       comments: [],
       shares: [],
@@ -990,29 +851,27 @@
     const post = doc.data() || {};
     const postId = doc.id;
 
-    const usernameRaw = safeString(post.username, "user");
-    const username = sanitizeUsernameForDisplay(usernameRaw);
-
+    const username = safeString(post.username, "user");
     const likes = safeArray(post.likes);
     const comments = safeArray(post.comments);
     const shares = safeArray(post.shares);
-
     const liked = likes.includes(currentUser.uid);
-    const avatar = initialLetter(username);
 
+    const avatar = initialLetter(username);
     const img = safeString(post.imageUrl, "");
 
     let commentsHtml = "";
     for (const c of comments){
-      const cuRaw = safeString(c.username, "user");
-      const cu = sanitizeUsernameForDisplay(cuRaw);
+      const cu = safeString(c.username, "user");
       const ct = safeString(c.text, "");
       commentsHtml += `
-        <div class="comment">
-          <div class="avatar">${initialLetter(cu)}</div>
-          <div style="flex:1;">
-            <div style="font-weight:800;">${escapeHtml(cu)}</div>
-            <div class="muted">${escapeHtml(ct)}</div>
+        <div style="border-top:1px solid var(--border); margin-top:10px; padding-top:10px;">
+          <div class="row">
+            <div class="avatar" style="width:34px;height:34px;font-size:14px;">${initialLetter(cu)}</div>
+            <div style="flex:1;">
+              <div style="font-weight:900;">${escapeHtml(cu)}</div>
+              <div class="muted">${escapeHtml(ct)}</div>
+            </div>
           </div>
         </div>
       `;
@@ -1068,11 +927,11 @@
       .orderBy("timestamp","desc")
       .onSnapshot((snap)=>{
         let html = "";
-        snap.forEach(doc => { html += renderPost(doc); });
+        snap.forEach(doc => html += renderPost(doc));
         postsDiv.innerHTML = html || `<div class="muted">No posts yet.</div>`;
       }, (err)=>{
         console.error("Feed listen error:", err);
-        postsDiv.innerHTML = `<div class="muted">Feed error: ${escapeHtml(err.message || String(err))}</div>`;
+        postsDiv.innerHTML = `<div class="card">Feed error: ${escapeHtml(err.message || String(err))}</div>`;
       });
   }
 
@@ -1082,12 +941,10 @@
     const data = snap.data() || {};
     let likes = safeArray(data.likes);
 
-    if (likes.includes(currentUser.uid)){
-      likes = likes.filter(x => x !== currentUser.uid);
-    } else {
-      likes.push(currentUser.uid);
-    }
-    await ref.update({ likes: likes });
+    if (likes.includes(currentUser.uid)) likes = likes.filter(x => x !== currentUser.uid);
+    else likes.push(currentUser.uid);
+
+    await ref.update({ likes });
   }
 
   function toggleComments(postId){
@@ -1102,15 +959,13 @@
     const text = safeString(input.value, "").trim();
     if (!text) return;
 
-    const comment = {
-      uid: currentUser.uid,
-      username: safeString(userData?.username, "user"),
-      text: text,
-      timestamp: firebase.firestore.FieldValue.serverTimestamp()
-    };
-
     await db.collection("posts").doc(postId).update({
-      comments: firebase.firestore.FieldValue.arrayUnion(comment)
+      comments: firebase.firestore.FieldValue.arrayUnion({
+        uid: currentUser.uid,
+        username: safeString(userData?.username, "user"),
+        text,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      })
     });
 
     input.value = "";
@@ -1123,12 +978,22 @@
   }
 
   // =========================
-  // PROFILES + FOLLOWERS
+  // PROFILES + FOLLOW SYSTEM (subcollections)
   // =========================
+  async function countSub(uid, sub){
+    const snap = await db.collection("users").doc(uid).collection(sub).get();
+    return snap.size;
+  }
+
+  async function iFollowUser(meUid, targetUid){
+    const doc = await db.collection("users").doc(meUid).collection("following").doc(targetUid).get();
+    return doc.exists;
+  }
+
   async function openProfile(uid){
     showView("profileView");
     setActiveTab("profile");
-    setHeaderTitle("Profile");
+    setTopTitle("Profile");
 
     const profile = document.getElementById("profileView");
     profile.innerHTML = `<div class="muted">Loading profile...</div>`;
@@ -1141,16 +1006,14 @@
       }
 
       const u = userSnap.data() || {};
-      const usernameRaw = safeString(u.username, "user");
-      const username = sanitizeUsernameForDisplay(usernameRaw);
-
-      const followers = safeArray(u.followers);
-      const following = safeArray(u.following);
-
+      const username = safeString(u.username, "user");
       const isMe = uid === currentUser.uid;
-      const iFollow = followers.includes(currentUser.uid);
 
-      // user posts (may require composite index: uid + timestamp desc)
+      const followersCount = await countSub(uid, "followers");
+      const followingCount = await countSub(uid, "following");
+      const iFollow = isMe ? false : await iFollowUser(currentUser.uid, uid);
+
+      // posts
       let postsHtml = "";
       const postsSnap = await db.collection("posts")
         .where("uid","==",uid)
@@ -1174,23 +1037,24 @@
         <div class="card" style="text-align:center;">
           <div class="avatar" style="width:64px;height:64px;margin:0 auto;font-size:24px;">${initialLetter(username)}</div>
           <div style="margin-top:10px; font-size:20px; font-weight:900;">${escapeHtml(username)}</div>
-          <div class="muted">UID: ${escapeHtml(uid)}</div>
+          <div class="muted" style="font-family:monospace;">UID: ${escapeHtml(uid)}</div>
 
-          <div class="row noselect" style="justify-content:center; gap:14px; margin-top:12px;">
-            <button type="button" class="stat-btn" onclick="openFollowList('${uid}','followers')">
-              <div class="stat-num">${followers.length}</div>
-              <div class="stat-label">Followers</div>
-            </button>
-            <button type="button" class="stat-btn" onclick="openFollowList('${uid}','following')">
-              <div class="stat-num">${following.length}</div>
-              <div class="stat-label">Following</div>
-            </button>
+          <div class="row" style="justify-content:center; gap:18px; margin-top:12px;">
+            <div class="click" onclick="route('follow_list', {uid:'${escapeAttr(uid)}', mode:'followers', username:'${escapeAttr(username)}'})">
+              <div style="font-weight:900;">${followersCount}</div>
+              <div class="muted">Followers</div>
+            </div>
+
+            <div class="click" onclick="route('follow_list', {uid:'${escapeAttr(uid)}', mode:'following', username:'${escapeAttr(username)}'})">
+              <div style="font-weight:900;">${followingCount}</div>
+              <div class="muted">Following</div>
+            </div>
           </div>
 
           ${isMe ? "" : `
             <div style="margin-top:12px;">
-              <button onclick="toggleFollow('${uid}')">${iFollow ? "Unfollow" : "Follow"}</button>
-              <button class="secondary" style="margin-left:8px;" onclick="startChatWith('${uid}','${escapeAttr(username)}')">Message</button>
+              <button onclick="toggleFollow('${escapeAttr(uid)}')">${iFollow ? "Unfollow" : "Follow"}</button>
+              <button class="secondary" style="margin-left:8px;" onclick="startChatWith('${escapeAttr(uid)}','${escapeAttr(username)}')">Message</button>
             </div>
           `}
         </div>
@@ -1205,108 +1069,78 @@
   }
 
   async function toggleFollow(targetUid){
-    // IMPORTANT:
-    // If you still get "Missing or insufficient permissions" here,
-    // it means your Firestore RULES do NOT allow writing to the *target user's* doc.
-    // That is a RULES problem (not HTML).
     const meUid = currentUser.uid;
 
-    const myRef = db.collection("users").doc(meUid);
-    const targetRef = db.collection("users").doc(targetUid);
+    const followingRef = db.collection("users").doc(meUid).collection("following").doc(targetUid);
+    const followerRef  = db.collection("users").doc(targetUid).collection("followers").doc(meUid);
 
-    const [mySnap, targetSnap] = await Promise.all([myRef.get(), targetRef.get()]);
-    const my = mySnap.data() || {};
-    const t = targetSnap.data() || {};
+    const snap = await followingRef.get();
+    const already = snap.exists;
 
-    let following = safeArray(my.following);
-    let followers = safeArray(t.followers);
-
-    const iAlreadyFollow = following.includes(targetUid);
-
-    if (iAlreadyFollow){
-      following = following.filter(x => x !== targetUid);
-      followers = followers.filter(x => x !== meUid);
+    if (already){
+      await Promise.all([ followingRef.delete(), followerRef.delete() ]);
     } else {
-      following.push(targetUid);
-      followers.push(meUid);
+      await Promise.all([
+        followingRef.set({ createdAt: firebase.firestore.FieldValue.serverTimestamp() }),
+        followerRef.set({ createdAt: firebase.firestore.FieldValue.serverTimestamp() })
+      ]);
     }
 
-    await Promise.all([
-      myRef.update({ following }),
-      targetRef.update({ followers })
-    ]);
-
+    // refresh profile
     openProfile(targetUid);
   }
 
-  // Followers/Following modal
-  function closeFollowModal(){
-    document.getElementById("followModal").classList.remove("show");
-    document.getElementById("followList").innerHTML = "";
-  }
+  async function renderFollowList(uid, mode, username){
+    const view = document.getElementById("followListView");
+    const title = (mode === "followers") ? "Followers" : "Following";
 
-  async function openFollowList(profileUid, mode){
-    const title = mode === "followers" ? "Followers" : "Following";
-    document.getElementById("followTitle").textContent = title;
-    document.getElementById("followModal").classList.add("show");
+    view.innerHTML = `
+      <div class="card">
+        <div class="row">
+          <div style="font-weight:900;font-size:18px;">${escapeHtml(title)} • ${escapeHtml(username || "")}</div>
+          <div class="space"></div>
+          <button class="secondary" onclick="openProfile('${escapeAttr(uid)}')">Back</button>
+        </div>
+      </div>
+      <div id="followListItems" class="muted">Loading...</div>
+    `;
 
-    const listEl = document.getElementById("followList");
-    listEl.innerHTML = `<div class="muted">Loading ${title.toLowerCase()}...</div>`;
+    const box = document.getElementById("followListItems");
 
     try{
-      const userSnap = await db.collection("users").doc(profileUid).get();
-      if (!userSnap.exists){
-        listEl.innerHTML = `<div class="muted">User not found.</div>`;
+      const sub = (mode === "followers") ? "followers" : "following";
+      const snap = await db.collection("users").doc(uid).collection(sub).get();
+
+      if (snap.empty){
+        box.innerHTML = `<div class="muted">No one here yet.</div>`;
         return;
       }
-
-      const data = userSnap.data() || {};
-      const ids = Array.isArray(data[mode]) ? data[mode] : [];
-
-      if (ids.length === 0){
-        listEl.innerHTML = `<div class="muted">No ${title.toLowerCase()} yet.</div>`;
-        return;
-      }
-
-      // Firestore "in" query limit is 10
-      const chunks = [];
-      for (let i=0; i<ids.length; i+=10) chunks.push(ids.slice(i,i+10));
 
       let html = "";
-      for (const chunk of chunks){
-        const qs = await db.collection("users")
-          .where(firebase.firestore.FieldPath.documentId(), "in", chunk)
-          .get();
+      for (const doc of snap.docs){
+        const otherUid = doc.id;
+        const uSnap = await db.collection("users").doc(otherUid).get();
+        const u = uSnap.data() || {};
+        const uname = safeString(u.username, otherUid);
 
-        qs.forEach(doc=>{
-          const u = doc.data() || {};
-          const unameRaw = safeString(u.username, "user");
-          const uname = sanitizeUsernameForDisplay(unameRaw);
-
-          html += `
-            <div class="card">
-              <div class="row">
-                <div class="avatar">${initialLetter(uname)}</div>
-                <div style="flex:1;">
-                  <div style="font-weight:900;" class="click"
-                    onclick="closeFollowModal(); openProfile('${doc.id}')">
-                    ${escapeHtml(uname)}
-                  </div>
-                  <div class="muted">${escapeHtml(doc.id)}</div>
-                </div>
-                ${doc.id === currentUser.uid ? "" : `
-                  <button class="secondary" onclick="startChatWith('${doc.id}','${escapeAttr(uname)}')">Message</button>
-                `}
+        html += `
+          <div class="card">
+            <div class="row">
+              <div class="avatar">${initialLetter(uname)}</div>
+              <div style="flex:1;">
+                <div style="font-weight:900;" class="click" onclick="openProfile('${escapeAttr(otherUid)}')">${escapeHtml(uname)}</div>
+                <div class="muted" style="font-family:monospace;">${escapeHtml(otherUid)}</div>
               </div>
+              <button class="secondary" onclick="startChatWith('${escapeAttr(otherUid)}','${escapeAttr(uname)}')">Message</button>
             </div>
-          `;
-        });
+          </div>
+        `;
       }
 
-      listEl.innerHTML = html;
+      box.innerHTML = html;
     } catch(e){
       console.error(e);
-      listEl.innerHTML = `<div class="card">Error: ${escapeHtml(e.message || String(e))}</div>`;
+      box.innerHTML = `<div class="card">Error: ${escapeHtml(e.message || String(e))}</div>`;
     }
   }
 
@@ -1314,7 +1148,6 @@
   // SEARCH (prefix query)
   // =========================
   let searchTimer = null;
-
   function doSearch(){
     clearTimeout(searchTimer);
     searchTimer = setTimeout(runSearch, 200);
@@ -1342,20 +1175,18 @@
       let html = "";
       snap.forEach(doc=>{
         const u = doc.data() || {};
-        const unameRaw = safeString(u.username, "");
-        if (!unameRaw) return;
-
-        const uname = sanitizeUsernameForDisplay(unameRaw);
+        const uname = safeString(u.username, "");
+        if (!uname) return;
 
         html += `
           <div class="card">
             <div class="row">
               <div class="avatar">${initialLetter(uname)}</div>
               <div style="flex:1;">
-                <div style="font-weight:900;" class="click" onclick="openProfile('${doc.id}')">${escapeHtml(uname)}</div>
-                <div class="muted">${escapeHtml(doc.id)}</div>
+                <div style="font-weight:900;" class="click" onclick="openProfile('${escapeAttr(doc.id)}')">${escapeHtml(uname)}</div>
+                <div class="muted" style="font-family:monospace;">${escapeHtml(doc.id)}</div>
               </div>
-              <button class="secondary" onclick="startChatWith('${doc.id}','${escapeAttr(uname)}')">Message</button>
+              <button class="secondary" onclick="startChatWith('${escapeAttr(doc.id)}','${escapeAttr(uname)}')">Message</button>
             </div>
           </div>
         `;
@@ -1369,9 +1200,9 @@
   }
 
   // =========================
-  // MESSAGES
+  // MESSAGES (CHATS collection)
   // =========================
-  function chatId(a,b){
+  function stableChatId(a,b){
     return (a < b) ? `${a}_${b}` : `${b}_${a}`;
   }
 
@@ -1388,35 +1219,43 @@
     ensureChatListener();
   }
 
-  function ensureChatListener(){
+  async function ensureChatDoc(meUid, otherUid){
+    const cid = stableChatId(meUid, otherUid);
+    const ref = db.collection("chats").doc(cid);
+    const snap = await ref.get();
+    if (!snap.exists){
+      await ref.set({
+        members: [meUid, otherUid],
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    }
+    return cid;
+  }
+
+  async function ensureChatListener(){
     if (!currentUser) return;
 
-    // stop old listener
-    if (chatUnsub){
-      chatUnsub();
-      chatUnsub = null;
-    }
-
-    const me = currentUser.uid;
-    const other = (activeChatUid === "AI") ? "AI" : activeChatUid;
-    const cid = chatId(me, other);
+    // stop old
+    if (chatUnsub){ chatUnsub(); chatUnsub = null; }
 
     const box = document.getElementById("chatBox");
     box.innerHTML = `<div class="muted">Loading chat...</div>`;
+    document.getElementById("msgStatus").textContent = "";
 
-    chatUnsub = db.collection("messages")
-      .doc(cid)
-      .collection("messages")
+    const me = currentUser.uid;
+    const other = (activeChatUid === "AI") ? "AI" : activeChatUid;
+    const cid = await ensureChatDoc(me, other);
+
+    chatUnsub = db.collection("chats").doc(cid).collection("messages")
       .orderBy("timestamp","asc")
       .limit(200)
       .onSnapshot((snap)=>{
         let html = "";
         snap.forEach(doc=>{
           const m = doc.data() || {};
-          const unameRaw = safeString(m.username, m.uid === "AI" ? "EchoBot" : "user");
-          const uname = sanitizeUsernameForDisplay(unameRaw);
+          const uname = safeString(m.username, m.uid === "AI" ? "EchoBot" : "user");
           const text = safeString(m.text, "");
-          const mine = m.uid === currentUser.uid;
+          const mine = m.uid === me;
 
           html += `
             <div class="card" style="margin:8px 0; padding:10px; border-radius:14px; ${mine ? "border-color: rgba(29,161,242,.6);" : ""}">
@@ -1425,6 +1264,7 @@
             </div>
           `;
         });
+
         box.innerHTML = html || `<div class="muted">No messages yet.</div>`;
         box.scrollTop = box.scrollHeight;
       }, (err)=>{
@@ -1441,24 +1281,26 @@
     const text = safeString(input.value, "").trim();
     if (!text) return;
 
-    // IMPORTANT FIX: capture text BEFORE clearing input (prevents "same thing" bugs)
-    input.value = "";
-
     const me = currentUser.uid;
     const other = (activeChatUid === "AI") ? "AI" : activeChatUid;
-    const cid = chatId(me, other);
+    const cid = await ensureChatDoc(me, other);
+
+    // IMPORTANT FIX: read input BEFORE clearing it
+    input.value = "";
 
     try{
-      await db.collection("messages")
-        .doc(cid)
-        .collection("messages")
-        .add({
-          uid: me,
-          username: safeString(userData?.username, "user"),
-          text: text,
-          timestamp: firebase.firestore.FieldValue.serverTimestamp()
-        });
+      await db.collection("chats").doc(cid).collection("messages").add({
+        uid: me,
+        username: safeString(userData?.username, "user"),
+        text,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      });
 
+      await db.collection("chats").doc(cid).update({
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+
+      // AI reply only if chatting with AI
       if (other === "AI"){
         aiReply(cid, text);
       }
@@ -1468,27 +1310,28 @@
     }
   }
 
+  // better bot: replies based on your last sent message, not empty string
   async function aiReply(cid, userText){
     const t = (userText || "").toLowerCase();
     let msg = "Tell me more.";
 
-    if (t.includes("hi") || t.includes("hello")) msg = "Hey! What are you up to today?";
-    else if (t.includes("wsp") || t.includes("what's up")) msg = "Not much 😄 Want to post something or message someone?";
-    else if (t.includes("help")) msg = "Tell me what’s broken and paste the console error.";
-    else if (t.includes("joke")) msg = "Why did the dev go broke? Because he used up all his cache.";
+    if (t.includes("hi") || t.includes("hello")) msg = "Hey! What’s up?";
+    else if (t.includes("help")) msg = "What do you want help with in EchoStream?";
+    else if (t.includes("joke")) msg = "Why do programmers hate nature? Too many bugs.";
     else if (t.includes("bye")) msg = "Bye! Come back anytime.";
 
     setTimeout(async ()=>{
       try{
-        await db.collection("messages")
-          .doc(cid)
-          .collection("messages")
-          .add({
-            uid: "AI",
-            username: "EchoBot",
-            text: msg,
-            timestamp: firebase.firestore.FieldValue.serverTimestamp()
-          });
+        await db.collection("chats").doc(cid).collection("messages").add({
+          uid: "AI",
+          username: "EchoBot",
+          text: msg,
+          timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        await db.collection("chats").doc(cid).update({
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
       } catch(e){
         console.warn("AI reply failed:", e);
       }
@@ -1496,19 +1339,60 @@
   }
 
   // =========================
-  // HTML escaping
+  // ADMIN
   // =========================
-  function escapeHtml(str){
-    str = String(str ?? "");
-    return str
-      .replaceAll("&","&amp;")
-      .replaceAll("<","&lt;")
-      .replaceAll(">","&gt;")
-      .replaceAll('"',"&quot;")
-      .replaceAll("'","&#039;");
+  async function adminDeletePost(){
+    const status = document.getElementById("adminStatus");
+    status.textContent = "";
+    const postId = safeString(document.getElementById("adminDeletePostId").value, "").trim();
+    if (!postId){
+      status.textContent = "Enter a postId.";
+      return;
+    }
+    try{
+      await db.collection("posts").doc(postId).delete();
+      status.textContent = "Deleted.";
+      setTimeout(()=>status.textContent="", 1200);
+    } catch(e){
+      console.error(e);
+      status.textContent = "Failed: " + (e.message || String(e));
+    }
   }
-  function escapeAttr(str){
-    return escapeHtml(str);
+
+  // =========================
+  // EXPORT DATA (simple)
+  // =========================
+  async function exportMyData(){
+    const out = { uid: currentUser.uid, username: userData?.username || null, posts: [], followers: [], following: [] };
+
+    const status = document.getElementById("dataStatus");
+    status.textContent = "Exporting...";
+
+    try{
+      const postsSnap = await db.collection("posts").where("uid","==",currentUser.uid).get();
+      postsSnap.forEach(d => out.posts.push({ id: d.id, ...d.data() }));
+
+      const folSnap = await db.collection("users").doc(currentUser.uid).collection("followers").get();
+      folSnap.forEach(d => out.followers.push(d.id));
+
+      const ingSnap = await db.collection("users").doc(currentUser.uid).collection("following").get();
+      ingSnap.forEach(d => out.following.push(d.id));
+
+      const blob = new Blob([JSON.stringify(out, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "echostream_export.json";
+      a.click();
+      URL.revokeObjectURL(url);
+
+      status.textContent = "Downloaded.";
+      setTimeout(()=>status.textContent="", 1200);
+    } catch(e){
+      console.error(e);
+      status.textContent = "Failed: " + (e.message || String(e));
+    }
   }
 </script>
 
