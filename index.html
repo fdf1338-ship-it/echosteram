@@ -19,7 +19,7 @@
       --bg:#ffffff; --text:#111; --muted:#666;
       --card:#f3f3f3; --border:#ddd;
       --accent:#1da1f2; --danger:#ff3b30;
-      --good:#22c55e;
+      --ok:#2ecc71;
     }
     body.dark{
       --bg:#0b0b0b; --text:#fff; --muted:#aaa;
@@ -44,6 +44,7 @@
       width:40px; height:40px; border-radius:999px;
       display:flex; align-items:center; justify-content:center;
       cursor:pointer;
+      user-select:none;
     }
     header .icon-btn:hover{ background:rgba(127,127,127,.12); }
 
@@ -82,7 +83,7 @@
       margin-bottom:12px;
     }
 
-    textarea, input{
+    textarea, input, select{
       width:100%;
       box-sizing:border-box;
       padding:10px;
@@ -109,7 +110,8 @@
       border:1px solid var(--border);
     }
     button.danger{ background:var(--danger); }
-    button.good{ background:var(--good); }
+    button.ok{ background:var(--ok); }
+    button:disabled{ opacity:.6; cursor:not-allowed; }
 
     .row{ display:flex; gap:10px; align-items:center; }
     .space{ flex:1; }
@@ -121,6 +123,7 @@
       display:flex; align-items:center; justify-content:center;
       color:#fff;
       font-weight:800;
+      flex:0 0 auto;
     }
     .post-image{
       margin-top:10px;
@@ -191,53 +194,48 @@
     .modal.show{ display:flex; }
     .modal .box{
       width:100%;
-      max-width:420px;
+      max-width:520px;
       background:var(--bg);
       border:1px solid var(--border);
       border-radius:16px;
       padding:16px;
     }
 
-    /* List modal */
-    .list-item{
-      padding:12px;
-      border-radius:12px;
-      cursor:pointer;
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 10px;
       border:1px solid var(--border);
-      background:var(--bg);
-      margin-bottom:10px;
+      border-radius:999px;
+      font-size:12px;
+      color:var(--muted);
+      background:rgba(127,127,127,.06);
+      user-select:none;
     }
-    .list-item:hover{ background:rgba(127,127,127,.12); }
 
-    /* Settings pages */
-    .settings-title{
-      font-size:18px; font-weight:900;
-      margin:0 0 10px;
+    .verified{
+      color:var(--accent);
+      margin-left:6px;
+      font-size:12px;
+      vertical-align:middle;
     }
-    .settings-row{
-      display:flex; align-items:center; gap:10px;
-      padding:14px 12px;
-      border-radius:14px;
+
+    .status-badge{
+      display:inline-flex;
+      gap:6px;
+      align-items:center;
+      padding:6px 10px;
+      border-radius:999px;
       border:1px solid var(--border);
-      background:var(--bg);
-      cursor:pointer;
-      margin-bottom:10px;
+      font-size:12px;
+      user-select:none;
     }
-    .settings-row:hover{ background:rgba(127,127,127,.12); }
-    .settings-row i{ width:20px; text-align:center; color:var(--muted); }
-    .settings-row .right{ margin-left:auto; color:var(--muted); }
+    .status-active{ color:var(--ok); }
+    .status-suspended{ color:#f39c12; }
+    .status-banned{ color:var(--danger); }
 
-    .top-back{
-      display:flex; align-items:center; gap:10px;
-      margin-bottom:10px;
-    }
-    .top-back .backbtn{
-      width:40px; height:40px; border-radius:999px;
-      display:flex; align-items:center; justify-content:center;
-      cursor:pointer;
-    }
-    .top-back .backbtn:hover{ background:rgba(127,127,127,.12); }
-
+    .divider{ height:1px; background:var(--border); margin:10px 0; }
   </style>
 </head>
 
@@ -248,7 +246,10 @@
     <div class="icon-btn" onclick="openDrawer()"><i class="fa-solid fa-bars"></i></div>
     <div id="headerTitle">EchoStream</div>
   </div>
-  <div class="icon-btn" onclick="route('settings')"><i class="fa-solid fa-gear"></i></div>
+  <div class="row" style="gap:6px;">
+    <div id="headerBack" class="icon-btn hidden" onclick="goBack()"><i class="fa-solid fa-arrow-left"></i></div>
+    <div class="icon-btn" onclick="route('settings')"><i class="fa-solid fa-gear"></i></div>
+  </div>
 </header>
 
 <!-- Drawer -->
@@ -274,6 +275,16 @@
     <h2 style="margin:0 0 8px;">Welcome to EchoStream</h2>
     <p class="muted" style="margin:0 0 12px;">Sign in to post, follow, message, and search.</p>
     <button onclick="login()">Sign in with Google</button>
+  </div>
+
+  <!-- BLOCKED -->
+  <div id="blockedView" class="hidden">
+    <div class="card">
+      <h2 style="margin:0 0 8px;" id="blockedTitle">Account restricted</h2>
+      <div class="muted" id="blockedText">Your account can’t use EchoStream right now.</div>
+      <div style="height:12px;"></div>
+      <button class="danger" onclick="logout()">Logout</button>
+    </div>
   </div>
 
   <!-- FEED -->
@@ -332,8 +343,151 @@
   <!-- PROFILE -->
   <div id="profileView" class="hidden"></div>
 
-  <!-- SETTINGS ROOT -->
-  <div id="settingsView" class="hidden"></div>
+  <!-- SETTINGS HUB -->
+  <div id="settingsView" class="hidden">
+    <div class="card">
+      <div class="row">
+        <div class="avatar" id="settingsAvatar">?</div>
+        <div style="flex:1;">
+          <div style="font-weight:900;" id="settingsName">Your account</div>
+          <div class="muted" id="settingsSub">Loading...</div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="item" onclick="route('settings-account')" style="padding:12px 10px; border-radius:12px; cursor:pointer;">
+        <i class="fa-solid fa-user"></i> <span style="margin-left:8px;">Your account</span>
+        <div class="muted" style="margin-left:28px; margin-top:4px;">Account info, username</div>
+      </div>
+
+      <div class="item" onclick="route('settings-privacy')" style="padding:12px 10px; border-radius:12px; cursor:pointer;">
+        <i class="fa-solid fa-shield"></i> <span style="margin-left:8px;">Privacy & safety</span>
+        <div class="muted" style="margin-left:28px; margin-top:4px;">Basic privacy options</div>
+      </div>
+
+      <div class="item" id="adminSettingsEntry" onclick="route('settings-admin')" style="padding:12px 10px; border-radius:12px; cursor:pointer; display:none;">
+        <i class="fa-solid fa-screwdriver-wrench"></i> <span style="margin-left:8px;">Admin settings</span>
+        <div class="muted" style="margin-left:28px; margin-top:4px;">Moderation tools</div>
+      </div>
+
+      <div class="divider"></div>
+
+      <label class="row" style="gap:10px; margin-top:6px;">
+        <input type="checkbox" id="darkToggle" style="width:auto;" />
+        <span>Dark mode</span>
+      </label>
+
+      <div style="height:12px;"></div>
+      <button class="danger" onclick="logout()">Logout</button>
+    </div>
+  </div>
+
+  <!-- SETTINGS: ACCOUNT -->
+  <div id="settingsAccountView" class="hidden">
+    <div class="card">
+      <div class="row">
+        <div style="font-weight:900; font-size:18px;">Your account</div>
+        <div class="space"></div>
+        <span id="accountVerifiedPill" class="pill hidden"><i class="fa-solid fa-circle-check"></i> Verified</span>
+        <span id="accountAdminPill" class="pill hidden"><i class="fa-solid fa-shield"></i> Admin</span>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="muted">Username</div>
+      <input id="accountUsername" placeholder="username" maxlength="20"/>
+      <div class="row" style="margin-top:10px;">
+        <button onclick="saveUsernameFromSettings()">Save username</button>
+        <div class="space"></div>
+        <span class="muted" id="accountStatus"></span>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="muted">Email</div>
+      <div style="font-weight:900;" id="accountEmail">-</div>
+
+      <div style="height:10px;"></div>
+
+      <div class="muted">UID</div>
+      <div style="font-weight:900; word-break:break-all;" id="accountUid">-</div>
+    </div>
+  </div>
+
+  <!-- SETTINGS: PRIVACY -->
+  <div id="settingsPrivacyView" class="hidden">
+    <div class="card">
+      <div style="font-weight:900; font-size:18px;">Privacy & safety</div>
+      <div class="muted" style="margin-top:8px;">
+        Placeholder page (you can add options later). Example:
+        hide UID, hide followers list, etc.
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS: ADMIN -->
+  <div id="settingsAdminView" class="hidden">
+    <div class="card">
+      <div style="font-weight:900; font-size:18px;">Admin settings</div>
+      <div class="muted" id="adminNote" style="margin-top:6px;">Loading admin status...</div>
+    </div>
+
+    <div class="card">
+      <div style="font-weight:900;">User lookup</div>
+      <div class="muted" style="margin-top:6px;">Search by username to verify/ban/suspend users.</div>
+
+      <div style="height:10px;"></div>
+      <input id="adminSearchInput" placeholder="Search username..." oninput="adminSearchDebounced()"/>
+      <div style="height:10px;"></div>
+
+      <div id="adminSearchResults"></div>
+    </div>
+
+    <div id="adminUserPanel" class="card hidden">
+      <div class="row">
+        <div class="avatar" id="adminTargetAvatar">?</div>
+        <div style="flex:1;">
+          <div style="font-weight:900;" id="adminTargetName">-</div>
+          <div class="muted" id="adminTargetUid">-</div>
+        </div>
+        <span class="status-badge" id="adminTargetStatusBadge">Status</span>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="row" style="flex-wrap:wrap;">
+        <button class="ok" onclick="adminSetVerified(true)"><i class="fa-solid fa-circle-check"></i> Verify</button>
+        <button class="secondary" onclick="adminSetVerified(false)"><i class="fa-regular fa-circle-xmark"></i> Remove verify</button>
+      </div>
+
+      <div style="height:10px;"></div>
+
+      <div class="row" style="flex-wrap:wrap;">
+        <button class="secondary" onclick="adminSuspendPreset(1)"><i class="fa-solid fa-clock"></i> Suspend 1 day</button>
+        <button class="secondary" onclick="adminSuspendPreset(7)"><i class="fa-solid fa-clock"></i> Suspend 7 days</button>
+        <button class="secondary" onclick="adminSuspendCustom()"><i class="fa-solid fa-clock"></i> Suspend custom</button>
+      </div>
+
+      <div style="height:10px;"></div>
+
+      <div class="row" style="flex-wrap:wrap;">
+        <button class="danger" onclick="adminBanUser()"><i class="fa-solid fa-ban"></i> Ban</button>
+        <button class="secondary" onclick="adminClearRestrictions()"><i class="fa-solid fa-unlock"></i> Unban/Unsuspend</button>
+      </div>
+
+      <div class="divider"></div>
+
+      <div style="font-weight:900;">Danger zone</div>
+      <div class="muted" style="margin-top:6px;">Optional tools.</div>
+
+      <div style="height:10px;"></div>
+      <button class="danger" onclick="adminDeleteUserPosts()">Delete all posts by user</button>
+
+      <div style="height:10px;"></div>
+      <div class="muted" id="adminActionStatus"></div>
+    </div>
+  </div>
 
 </main>
 
@@ -360,7 +514,7 @@
     <p class="muted" style="margin:0 0 12px;">Unique, lowercase letters/numbers/underscore only.</p>
     <input id="usernameInput" placeholder="username" maxlength="20"/>
     <div class="row" style="margin-top:12px;">
-      <button onclick="saveUsernameFromModal()">Save</button>
+      <button onclick="saveUsername()">Save</button>
       <div class="space"></div>
       <span class="muted" id="usernameStatus"></span>
     </div>
@@ -370,12 +524,12 @@
 <!-- Followers/Following Modal -->
 <div id="listModal" class="modal">
   <div class="box">
-    <div class="row" style="align-items:center;">
+    <div class="row">
       <div style="font-weight:900;" id="listTitle">List</div>
       <div class="space"></div>
       <div class="icon-btn" onclick="closeListModal()"><i class="fa-solid fa-xmark"></i></div>
     </div>
-    <div style="height:8px;"></div>
+    <div class="divider"></div>
     <div id="listBody" class="muted">Loading...</div>
   </div>
 </div>
@@ -403,15 +557,22 @@
   let userData = null;
   let isAdminUser = false;
 
-  // messaging
+  // For messaging
   let activeChatUid = "AI";
   let chatUnsub = null;
 
-  // feed
+  // For feed
   let feedUnsub = null;
 
+  // Simple cache for user profiles (for verified badge everywhere)
+  const userCache = new Map(); // uid -> {username, verified, status}
+  const userCachePromises = new Map(); // uid -> Promise
+
+  // Settings router stack
+  const routeStack = [];
+
   // =========================
-  // helpers
+  // UI helpers
   // =========================
   function openDrawer(){
     document.getElementById("drawerBackdrop").classList.add("show");
@@ -420,10 +581,6 @@
   function closeDrawer(){
     document.getElementById("drawerBackdrop").classList.remove("show");
     document.getElementById("drawer").classList.remove("show");
-  }
-
-  function setHeader(title){
-    document.getElementById("headerTitle").textContent = title || "EchoStream";
   }
 
   function setActiveTab(page){
@@ -435,7 +592,11 @@
   }
 
   function showView(id){
-    const views = ["loginView","feedView","searchView","messagesView","profileView","settingsView"];
+    const views = [
+      "loginView","blockedView",
+      "feedView","searchView","messagesView","profileView",
+      "settingsView","settingsAccountView","settingsPrivacyView","settingsAdminView"
+    ];
     views.forEach(v => document.getElementById(v).classList.add("hidden"));
     document.getElementById(id).classList.remove("hidden");
   }
@@ -450,6 +611,7 @@
     const s = safeString(name, "?");
     return (s[0] ? s[0].toUpperCase() : "?");
   }
+
   function timeAgo(ts){
     if (!ts || !ts.toDate) return "now";
     const seconds = Math.floor((Date.now() - ts.toDate()) / 1000);
@@ -457,6 +619,60 @@
     if (seconds < 3600) return Math.floor(seconds/60) + "m";
     if (seconds < 86400) return Math.floor(seconds/3600) + "h";
     return Math.floor(seconds/86400) + "d";
+  }
+
+  function setHeader(title, canBack=false){
+    document.getElementById("headerTitle").textContent = title;
+    document.getElementById("headerBack").classList.toggle("hidden", !canBack);
+  }
+
+  function goBack(){
+    if (routeStack.length > 1){
+      routeStack.pop();
+      const prev = routeStack[routeStack.length - 1];
+      internalRoute(prev, false);
+    } else {
+      route("settings");
+    }
+  }
+
+  function formatNameWithVerified(username, verified){
+    const u = escapeHtml(username);
+    if (verified) {
+      return `${u} <i class="fa-solid fa-circle-check verified" title="Verified"></i>`;
+    }
+    return u;
+  }
+
+  async function ensureUserCached(uid){
+    if (!uid) return null;
+    if (userCache.has(uid)) return userCache.get(uid);
+    if (userCachePromises.has(uid)) return userCachePromises.get(uid);
+
+    const p = (async ()=>{
+      try{
+        const snap = await db.collection("users").doc(uid).get();
+        if (!snap.exists){
+          const obj = { username: "user", verified: false, status: "active" };
+          userCache.set(uid, obj);
+          return obj;
+        }
+        const d = snap.data() || {};
+        const obj = {
+          username: safeString(d.username, "user"),
+          verified: !!d.verified,
+          status: safeString(d.status, "active"),
+          suspendedUntil: d.suspendedUntil || null,
+        };
+        userCache.set(uid, obj);
+        return obj;
+      } finally {
+        userCachePromises.delete(uid);
+      }
+    })();
+
+    userCachePromises.set(uid, p);
+    return p;
   }
 
   // =========================
@@ -469,13 +685,65 @@
     auth.signOut().then(()=>location.reload());
   }
 
-  async function checkAdmin(uid){
+  function showBlocked(title, text){
+    showView("blockedView");
+    setHeader("EchoStream", false);
+    document.getElementById("blockedTitle").textContent = title;
+    document.getElementById("blockedText").textContent = text;
+  }
+
+  async function checkIfAdmin(uid){
     try{
-      const snap = await db.collection("admins").doc(uid).get();
-      return snap.exists;
+      const doc = await db.collection("admins").doc(uid).get();
+      return doc.exists;
     } catch(e){
       return false;
     }
+  }
+
+  function updateSettingsHeaderInfo(){
+    const name = safeString(userData?.username, safeString(currentUser?.displayName, "Your account"));
+    const email = safeString(currentUser?.email, "");
+    document.getElementById("settingsAvatar").textContent = initialLetter(name);
+    document.getElementById("settingsName").innerHTML = formatNameWithVerified(name, !!userData?.verified);
+    document.getElementById("settingsSub").textContent = email || (currentUser?.uid || "");
+  }
+
+  async function enforceAccountStatus(uid){
+    const snap = await db.collection("users").doc(uid).get();
+    if (!snap.exists) return true;
+    const d = snap.data() || {};
+    const status = safeString(d.status, "active");
+    const suspendedUntil = d.suspendedUntil;
+
+    if (status === "banned"){
+      showBlocked("Banned", safeString(d.banReason, "Your account has been banned."));
+      await auth.signOut();
+      return false;
+    }
+
+    if (status === "suspended"){
+      // if suspendedUntil exists and is in the future
+      if (suspendedUntil && suspendedUntil.toDate){
+        const until = suspendedUntil.toDate();
+        if (until.getTime() > Date.now()){
+          showBlocked("Suspended", "Your account is suspended until " + until.toLocaleString());
+          await auth.signOut();
+          return false;
+        } else {
+          // suspension expired, auto-clear
+          try{
+            await db.collection("users").doc(uid).update({ status: "active", suspendedUntil: firebase.firestore.FieldValue.delete() });
+          } catch(e){}
+        }
+      } else {
+        showBlocked("Suspended", "Your account is suspended.");
+        await auth.signOut();
+        return false;
+      }
+    }
+
+    return true;
   }
 
   auth.onAuthStateChanged(async (user) => {
@@ -483,18 +751,21 @@
       currentUser = null;
       userData = null;
       isAdminUser = false;
+      routeStack.length = 0;
       showView("loginView");
-      setHeader("EchoStream");
+      setHeader("EchoStream", false);
       return;
     }
 
     currentUser = user;
-    showView("feedView");
-    setActiveTab("feed");
-    setHeader("EchoStream");
 
-    // Check admin (safe)
-    isAdminUser = await checkAdmin(user.uid);
+    // enforce ban/suspension
+    const ok = await enforceAccountStatus(user.uid);
+    if (!ok) return;
+
+    // admin?
+    isAdminUser = await checkIfAdmin(user.uid);
+    document.getElementById("adminSettingsEntry").style.display = isAdminUser ? "block" : "none";
 
     // Load or create user doc
     const userRef = db.collection("users").doc(user.uid);
@@ -504,11 +775,13 @@
       const auto = safeString(user.displayName, "user").replace(/\s/g,"").toLowerCase();
       await userRef.set({
         username: auto,
+        verified: false,
+        status: "active",
         followers: [],
-        following: []
+        following: [],
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
-      userData = { username: auto, followers: [], following: [] };
-      document.getElementById("usernameInput").value = auto;
+      userData = { username: auto, verified:false, status:"active", followers: [], following: [] };
       document.getElementById("usernameModal").classList.add("show");
     } else {
       userData = snap.data() || {};
@@ -518,35 +791,69 @@
       }
     }
 
+    // cache self
+    userCache.set(user.uid, {
+      username: safeString(userData?.username, "user"),
+      verified: !!userData?.verified,
+      status: safeString(userData?.status, "active"),
+      suspendedUntil: userData?.suspendedUntil || null,
+    });
+
     // dark mode init
     const dark = localStorage.getItem("darkMode") === "true";
     document.body.classList.toggle("dark", dark);
+    document.getElementById("darkToggle").checked = dark;
 
-    // start feed + chat
-    startFeedListener();
+    // default route
+    route("feed", true);
+
+    // start chat listener
     setChatAI();
+
+    updateSettingsHeaderInfo();
+  });
+
+  // Dark mode
+  document.getElementById("darkToggle").addEventListener("change", (e)=>{
+    const v = !!e.target.checked;
+    document.body.classList.toggle("dark", v);
+    localStorage.setItem("darkMode", String(v));
   });
 
   // =========================
   // ROUTING
   // =========================
-  function route(page){
+  function route(page, resetStack=false){
+    internalRoute(page, resetStack);
+  }
+
+  function internalRoute(page, resetStack){
     if (!currentUser){
       showView("loginView");
+      setHeader("EchoStream", false);
       return;
     }
 
     closeDrawer();
 
+    if (resetStack){
+      routeStack.length = 0;
+      routeStack.push(page);
+    } else {
+      const current = routeStack[routeStack.length-1];
+      if (current !== page) routeStack.push(page);
+    }
+
+    // Main tabs
     if (page === "feed"){
-      setHeader("EchoStream");
+      setHeader("EchoStream", false);
       showView("feedView");
       setActiveTab("feed");
       startFeedListener();
       return;
     }
     if (page === "search"){
-      setHeader("Search");
+      setHeader("Search", false);
       showView("searchView");
       setActiveTab("search");
       document.getElementById("searchInput").value = "";
@@ -554,55 +861,116 @@
       return;
     }
     if (page === "messages"){
-      setHeader("Messages");
+      setHeader("Messages", false);
       showView("messagesView");
       setActiveTab("messages");
       ensureChatListener();
       return;
     }
     if (page === "profile"){
-      setHeader("Profile");
+      setHeader("Profile", false);
       showView("profileView");
       setActiveTab("profile");
       openProfile(currentUser.uid);
       return;
     }
+
+    // Settings pages (show back arrow)
     if (page === "settings"){
-      setHeader("Settings");
+      setHeader("Settings", false);
       showView("settingsView");
-      renderSettingsHome();
+      updateSettingsHeaderInfo();
+      setActiveTab(""); // keep bottom tab unchanged
+      return;
+    }
+    if (page === "settings-account"){
+      setHeader("Your account", true);
+      showView("settingsAccountView");
+      fillAccountSettings();
+      return;
+    }
+    if (page === "settings-privacy"){
+      setHeader("Privacy & safety", true);
+      showView("settingsPrivacyView");
+      return;
+    }
+    if (page === "settings-admin"){
+      setHeader("Admin settings", true);
+      showView("settingsAdminView");
+      loadAdminSettings();
       return;
     }
   }
 
   // =========================
-  // USERNAME (unique)
+  // USERNAME VALIDATION
   // =========================
-  async function saveUsername(name){
-    name = safeString(name, "").toLowerCase().trim();
+  // Note: don't allow offensive usernames. Keep this lightweight.
+  function containsBannedWord(name){
+    // Put your own list here if you want. Keep it simple & non-explicit.
+    const blocked = ["hate", "slur", "admin", "moderator"];
+    const n = (name || "").toLowerCase();
+    return blocked.some(w => n.includes(w));
+  }
+
+  async function saveUsernameCore(name){
+    const statusEl = document.getElementById("usernameStatus") || document.getElementById("accountStatus");
+    if (statusEl) statusEl.textContent = "";
+
+    name = safeString(name, "").toLowerCase();
 
     if (name.length < 3) throw new Error("Too short (min 3).");
     if (!/^[a-z0-9_]+$/.test(name)) throw new Error("Only a-z 0-9 _");
+    if (containsBannedWord(name)) throw new Error("Pick a different username.");
 
     // unique
     const taken = await db.collection("users").where("username","==",name).limit(1).get();
-    if (!taken.empty && taken.docs[0].id !== currentUser.uid){
-      throw new Error("Username taken.");
-    }
+    if (!taken.empty && taken.docs[0].id !== currentUser.uid) throw new Error("Username taken.");
 
     await db.collection("users").doc(currentUser.uid).update({ username: name });
     userData.username = name;
+
+    // update cache + settings header
+    const cached = await ensureUserCached(currentUser.uid);
+    cached.username = name;
+    userCache.set(currentUser.uid, cached);
+
+    updateSettingsHeaderInfo();
   }
 
-  async function saveUsernameFromModal(){
+  async function saveUsername(){
     const status = document.getElementById("usernameStatus");
     status.textContent = "";
     try{
-      await saveUsername(document.getElementById("usernameInput").value);
+      const name = safeString(document.getElementById("usernameInput").value, "");
+      await saveUsernameCore(name);
       document.getElementById("usernameModal").classList.remove("show");
     } catch(e){
       status.textContent = e.message || String(e);
     }
+  }
+
+  async function saveUsernameFromSettings(){
+    const status = document.getElementById("accountStatus");
+    status.textContent = "";
+    try{
+      const name = safeString(document.getElementById("accountUsername").value, "");
+      await saveUsernameCore(name);
+      status.textContent = "Saved.";
+      setTimeout(()=>status.textContent="", 1200);
+    } catch(e){
+      status.textContent = e.message || String(e);
+    }
+  }
+
+  function fillAccountSettings(){
+    const name = safeString(userData?.username, "user");
+    document.getElementById("accountUsername").value = name;
+    document.getElementById("accountEmail").textContent = safeString(currentUser?.email, "-");
+    document.getElementById("accountUid").textContent = safeString(currentUser?.uid, "-");
+
+    document.getElementById("accountVerifiedPill").classList.toggle("hidden", !userData?.verified);
+    document.getElementById("accountAdminPill").classList.toggle("hidden", !isAdminUser);
   }
 
   // =========================
@@ -634,10 +1002,12 @@
     }
 
     const uname = safeString(userData?.username, "user");
+    const verified = !!userData?.verified;
 
     await db.collection("posts").add({
       uid: currentUser.uid,
       username: uname,
+      verified: verified,
       text: text,
       imageUrl: imageUrl,
       likes: [],
@@ -656,29 +1026,45 @@
     const post = doc.data() || {};
     const postId = doc.id;
 
-    const username = safeString(post.username, "user");
     const likes = safeArray(post.likes);
     const comments = safeArray(post.comments);
     const shares = safeArray(post.shares);
     const liked = likes.includes(currentUser.uid);
 
-    const avatar = initialLetter(username);
+    const avatar = initialLetter(post.username || "u");
     const img = safeString(post.imageUrl, "");
+
+    const nameSpanId = `postname-${postId}`;
 
     let commentsHtml = "";
     for (const c of comments){
       const cu = safeString(c.username, "user");
       const ct = safeString(c.text, "");
+      const cv = !!c.verified;
       commentsHtml += `
         <div class="comment">
           <div class="avatar">${initialLetter(cu)}</div>
           <div style="flex:1;">
-            <div style="font-weight:800;">${escapeHtml(cu)}</div>
+            <div style="font-weight:800;">${formatNameWithVerified(cu, cv)}</div>
             <div class="muted">${escapeHtml(ct)}</div>
           </div>
         </div>
       `;
     }
+
+    // initial render uses stored verified (denormalized)
+    const initialNameHtml = formatNameWithVerified(safeString(post.username,"user"), !!post.verified);
+
+    // after render, we’ll fetch latest user doc and update name badge to be accurate everywhere
+    setTimeout(async ()=>{
+      try{
+        const u = await ensureUserCached(post.uid);
+        const el = document.getElementById(nameSpanId);
+        if (el && u){
+          el.innerHTML = formatNameWithVerified(u.username, !!u.verified);
+        }
+      } catch(e){}
+    }, 0);
 
     return `
       <div class="card">
@@ -686,7 +1072,7 @@
           <div class="avatar">${avatar}</div>
           <div style="flex:1;">
             <div style="font-weight:900;">
-              <span class="click" onclick="openProfile('${post.uid}')">${escapeHtml(username)}</span>
+              <span class="click" id="${nameSpanId}" onclick="openProfile('${escapeAttr(post.uid)}')">${initialNameHtml}</span>
             </div>
             <div class="muted">${timeAgo(post.timestamp)}</div>
           </div>
@@ -697,23 +1083,23 @@
         ${img ? `<img class="post-image" src="${escapeAttr(img)}" alt="post image"/>` : ""}
 
         <div class="post-actions">
-          <span onclick="toggleLike('${postId}')">
+          <span onclick="toggleLike('${escapeAttr(postId)}')">
             <i class="${liked ? "fa-solid" : "fa-regular"} fa-heart"></i> ${likes.length}
           </span>
-          <span onclick="toggleComments('${postId}')">
+          <span onclick="toggleComments('${escapeAttr(postId)}')">
             <i class="fa-regular fa-comment"></i> ${comments.length}
           </span>
-          <span onclick="sharePost('${postId}')">
+          <span onclick="sharePost('${escapeAttr(postId)}')">
             <i class="fa-solid fa-retweet"></i> ${shares.length}
           </span>
         </div>
 
-        <div id="comments-${postId}" class="hidden" style="margin-top:12px;">
+        <div id="comments-${escapeAttr(postId)}" class="hidden" style="margin-top:12px;">
           ${commentsHtml}
           <div style="height:10px;"></div>
-          <input id="commentInput-${postId}" placeholder="Write a comment..."/>
+          <input id="commentInput-${escapeAttr(postId)}" placeholder="Write a comment..."/>
           <div class="row" style="margin-top:10px;">
-            <button onclick="addComment('${postId}')">Send</button>
+            <button onclick="addComment('${escapeAttr(postId)}')">Send</button>
             <div class="space"></div>
           </div>
         </div>
@@ -767,6 +1153,7 @@
     const comment = {
       uid: currentUser.uid,
       username: safeString(userData?.username, "user"),
+      verified: !!userData?.verified,
       text: text,
       timestamp: firebase.firestore.FieldValue.serverTimestamp()
     };
@@ -787,59 +1174,10 @@
   // =========================
   // PROFILES + FOLLOWERS LIST
   // =========================
-  function openListModal(title){
-    document.getElementById("listTitle").textContent = title;
-    document.getElementById("listBody").innerHTML = `<div class="muted">Loading...</div>`;
-    document.getElementById("listModal").classList.add("show");
-  }
-  function closeListModal(){
-    document.getElementById("listModal").classList.remove("show");
-  }
-
-  async function showUserIdList(title, uidList){
-    openListModal(title);
-    const body = document.getElementById("listBody");
-
-    const ids = safeArray(uidList);
-    if (!ids.length){
-      body.innerHTML = `<div class="muted">No users.</div>`;
-      return;
-    }
-
-    // Firestore "in" supports up to 10
-    const chunks = [];
-    for (let i=0;i<ids.length;i+=10) chunks.push(ids.slice(i,i+10));
-
-    let users = [];
-    for (const chunk of chunks){
-      const snap = await db.collection("users").where(firebase.firestore.FieldPath.documentId(), "in", chunk).get();
-      snap.forEach(d=>{
-        const u = d.data() || {};
-        users.push({ uid: d.id, username: safeString(u.username, d.id) });
-      });
-    }
-
-    // Keep original order
-    const map = new Map(users.map(u => [u.uid, u]));
-    const ordered = ids.map(id => map.get(id)).filter(Boolean);
-
-    body.innerHTML = ordered.map(u => `
-      <div class="list-item" onclick="closeListModal(); openProfile('${u.uid}')">
-        <div class="row">
-          <div class="avatar">${initialLetter(u.username)}</div>
-          <div style="flex:1;">
-            <div style="font-weight:900;">${escapeHtml(u.username)}</div>
-            <div class="muted">${escapeHtml(u.uid)}</div>
-          </div>
-        </div>
-      </div>
-    `).join("");
-  }
-
   async function openProfile(uid){
-    setHeader("Profile");
     showView("profileView");
     setActiveTab("profile");
+    setHeader("Profile", false);
 
     const profile = document.getElementById("profileView");
     profile.innerHTML = `<div class="muted">Loading profile...</div>`;
@@ -850,15 +1188,17 @@
         profile.innerHTML = `<div class="card">User not found.</div>`;
         return;
       }
-
       const u = userSnap.data() || {};
       const username = safeString(u.username, "user");
+      const verified = !!u.verified;
       const followers = safeArray(u.followers);
       const following = safeArray(u.following);
 
+      const status = safeString(u.status, "active");
       const isMe = uid === currentUser.uid;
       const iFollow = followers.includes(currentUser.uid);
 
+      // user posts
       let postsHtml = "";
       const postsSnap = await db.collection("posts")
         .where("uid","==",uid)
@@ -878,18 +1218,26 @@
         `;
       });
 
+      const statusClass = status === "banned" ? "status-banned" : (status === "suspended" ? "status-suspended" : "status-active");
+
       profile.innerHTML = `
         <div class="card" style="text-align:center;">
           <div class="avatar" style="width:64px;height:64px;margin:0 auto;font-size:24px;">${initialLetter(username)}</div>
-          <div style="margin-top:10px; font-size:20px; font-weight:900;">${escapeHtml(username)}</div>
+          <div style="margin-top:10px; font-size:20px; font-weight:900;">
+            ${formatNameWithVerified(username, verified)}
+          </div>
           <div class="muted">UID: ${escapeHtml(uid)}</div>
 
+          <div style="margin-top:10px;">
+            <span class="status-badge ${statusClass}"><i class="fa-solid fa-circle"></i> ${escapeHtml(status)}</span>
+          </div>
+
           <div class="row" style="justify-content:center; gap:18px; margin-top:12px;">
-            <div class="click" onclick="showUserIdList('Followers', ${escapeAttr(JSON.stringify(followers))})">
+            <div class="click" onclick="openFollowList('${escapeAttr(uid)}','followers')">
               <div style="font-weight:900;">${followers.length}</div>
               <div class="muted">Followers</div>
             </div>
-            <div class="click" onclick="showUserIdList('Following', ${escapeAttr(JSON.stringify(following))})">
+            <div class="click" onclick="openFollowList('${escapeAttr(uid)}','following')">
               <div style="font-weight:900;">${following.length}</div>
               <div class="muted">Following</div>
             </div>
@@ -897,8 +1245,8 @@
 
           ${isMe ? "" : `
             <div style="margin-top:12px;">
-              <button onclick="toggleFollow('${uid}')">${iFollow ? "Unfollow" : "Follow"}</button>
-              <button class="secondary" style="margin-left:8px;" onclick="startChatWith('${uid}','${escapeAttr(username)}')">Message</button>
+              <button onclick="toggleFollow('${escapeAttr(uid)}')">${iFollow ? "Unfollow" : "Follow"}</button>
+              <button class="secondary" style="margin-left:8px;" onclick="startChatWith('${escapeAttr(uid)}','${escapeAttr(username)}')">Message</button>
             </div>
           `}
         </div>
@@ -910,6 +1258,57 @@
       console.error(e);
       profile.innerHTML = `<div class="card">Profile error: ${escapeHtml(e.message || String(e))}</div>`;
     }
+  }
+
+  async function openFollowList(uid, type){
+    document.getElementById("listTitle").textContent = type === "followers" ? "Followers" : "Following";
+    document.getElementById("listBody").innerHTML = `<div class="muted">Loading...</div>`;
+    document.getElementById("listModal").classList.add("show");
+
+    try{
+      const snap = await db.collection("users").doc(uid).get();
+      if (!snap.exists){
+        document.getElementById("listBody").innerHTML = `<div class="muted">User not found.</div>`;
+        return;
+      }
+      const data = snap.data() || {};
+      const arr = type === "followers" ? safeArray(data.followers) : safeArray(data.following);
+
+      if (!arr.length){
+        document.getElementById("listBody").innerHTML = `<div class="muted">None yet.</div>`;
+        return;
+      }
+
+      // load each user doc (simple, ok for small lists)
+      const docs = await Promise.all(arr.map(id => db.collection("users").doc(id).get()));
+      let html = "";
+      docs.forEach((d, idx)=>{
+        const id = arr[idx];
+        const ud = d.exists ? (d.data() || {}) : {};
+        const uname = safeString(ud.username, "user");
+        const ver = !!ud.verified;
+
+        html += `
+          <div class="card" style="margin:10px 0; cursor:pointer;" onclick="closeListModal(); openProfile('${escapeAttr(id)}')">
+            <div class="row">
+              <div class="avatar">${initialLetter(uname)}</div>
+              <div style="flex:1;">
+                <div style="font-weight:900;">${formatNameWithVerified(uname, ver)}</div>
+                <div class="muted">${escapeHtml(id)}</div>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+
+      document.getElementById("listBody").innerHTML = html;
+    } catch(e){
+      document.getElementById("listBody").innerHTML = `<div class="muted">Error: ${escapeHtml(e.message || String(e))}</div>`;
+    }
+  }
+
+  function closeListModal(){
+    document.getElementById("listModal").classList.remove("show");
   }
 
   async function toggleFollow(targetUid){
@@ -940,13 +1339,19 @@
       targetRef.update({ followers })
     ]);
 
+    // update local userData if viewing self
+    if (meUid === currentUser.uid) {
+      userData.following = following;
+    }
+
     openProfile(targetUid);
   }
 
   // =========================
-  // SEARCH (prefix on username)
+  // SEARCH
   // =========================
   let searchTimer = null;
+
   function doSearch(){
     clearTimeout(searchTimer);
     searchTimer = setTimeout(runSearch, 200);
@@ -982,10 +1387,10 @@
             <div class="row">
               <div class="avatar">${initialLetter(uname)}</div>
               <div style="flex:1;">
-                <div style="font-weight:900;" class="click" onclick="openProfile('${doc.id}')">${escapeHtml(uname)}</div>
+                <div style="font-weight:900;" class="click" onclick="openProfile('${escapeAttr(doc.id)}')">${formatNameWithVerified(uname, !!u.verified)}</div>
                 <div class="muted">${escapeHtml(doc.id)}</div>
               </div>
-              <button class="secondary" onclick="startChatWith('${doc.id}','${escapeAttr(uname)}')">Message</button>
+              <button class="secondary" onclick="startChatWith('${escapeAttr(doc.id)}','${escapeAttr(uname)}')">Message</button>
             </div>
           </div>
         `;
@@ -1038,21 +1443,35 @@
       .collection("messages")
       .orderBy("timestamp","asc")
       .limit(200)
-      .onSnapshot((snap)=>{
+      .onSnapshot(async (snap)=>{
         let html = "";
-        snap.forEach(doc=>{
+        for (const doc of snap.docs){
           const m = doc.data() || {};
-          const uname = safeString(m.username, m.uid === "AI" ? "EchoBot" : "user");
-          const text = safeString(m.text, "");
           const mine = m.uid === currentUser.uid;
+
+          let uname = safeString(m.username, m.uid === "AI" ? "EchoBot" : "user");
+          let verified = !!m.verified;
+
+          // If not AI, fetch latest verified status to show blue check everywhere
+          if (m.uid && m.uid !== "AI"){
+            try{
+              const u = await ensureUserCached(m.uid);
+              if (u){
+                uname = u.username || uname;
+                verified = !!u.verified;
+              }
+            } catch(e){}
+          }
+
+          const text = safeString(m.text, "");
 
           html += `
             <div class="card" style="margin:8px 0; padding:10px; border-radius:14px; ${mine ? "border-color: rgba(29,161,242,.6);" : ""}">
-              <div style="font-weight:900;">${escapeHtml(uname)}</div>
+              <div style="font-weight:900;">${formatNameWithVerified(uname, verified)}</div>
               <div>${escapeHtml(text)}</div>
             </div>
           `;
-        });
+        }
         box.innerHTML = html || `<div class="muted">No messages yet.</div>`;
         box.scrollTop = box.scrollHeight;
       }, (err)=>{
@@ -1060,17 +1479,6 @@
         box.innerHTML = `<div class="card">Chat error: ${escapeHtml(err.message || String(err))}</div>`;
       });
   }
-
-  // Send on Enter
-  document.addEventListener("keydown", (e)=>{
-    const active = document.activeElement;
-    if (active && active.id === "chatInput" && e.key === "Enter"){
-      e.preventDefault();
-      sendMessage();
-    }
-  });
-
-  let aiCooldown = 0;
 
   async function sendMessage(){
     const status = document.getElementById("msgStatus");
@@ -1091,6 +1499,7 @@
         .add({
           uid: me,
           username: safeString(userData?.username, "user"),
+          verified: !!userData?.verified,
           text: text,
           timestamp: firebase.firestore.FieldValue.serverTimestamp()
         });
@@ -1098,11 +1507,7 @@
       input.value = "";
 
       if (other === "AI"){
-        const now = Date.now();
-        if (now > aiCooldown){
-          aiCooldown = now + 800; // avoid duplicates
-          aiReply(cid, text);
-        }
+        aiReply(cid, text);
       }
     } catch(e){
       console.error(e);
@@ -1127,200 +1532,221 @@
           .add({
             uid: "AI",
             username: "EchoBot",
+            verified: true,
             text: msg,
             timestamp: firebase.firestore.FieldValue.serverTimestamp()
           });
       } catch(e){
         console.warn("AI reply failed:", e);
       }
-    }, 450);
+    }, 650);
   }
 
   // =========================
-  // SETTINGS (like X)
+  // ADMIN SETTINGS
   // =========================
-  function renderSettingsHome(){
-    const root = document.getElementById("settingsView");
+  let adminSearchTimer = null;
+  let adminTargetUid = null;
+  let adminTargetData = null;
 
-    const uname = safeString(userData?.username, "user");
-    const uid = safeString(currentUser?.uid, "");
-    const email = safeString(currentUser?.email, "");
-
-    const dark = localStorage.getItem("darkMode") === "true";
-
-    root.innerHTML = `
-      <div class="card">
-        <div class="row">
-          <div class="avatar">${initialLetter(uname)}</div>
-          <div style="flex:1;">
-            <div style="font-weight:900; font-size:16px;">${escapeHtml(uname)}</div>
-            <div class="muted">${escapeHtml(email || uid)}</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="settings-row" onclick="renderAccountInfo()">
-        <i class="fa-regular fa-user"></i>
-        <div>
-          <div style="font-weight:900;">Your account</div>
-          <div class="muted">Account information, username, admin</div>
-        </div>
-        <div class="right"><i class="fa-solid fa-chevron-right"></i></div>
-      </div>
-
-      <div class="settings-row" onclick="renderPrivacy()">
-        <i class="fa-solid fa-shield-halved"></i>
-        <div>
-          <div style="font-weight:900;">Privacy & safety</div>
-          <div class="muted">Basic privacy options</div>
-        </div>
-        <div class="right"><i class="fa-solid fa-chevron-right"></i></div>
-      </div>
-
-      <div class="card">
-        <div class="row" style="align-items:center;">
-          <div style="font-weight:900;">Dark mode</div>
-          <div class="space"></div>
-          <input type="checkbox" id="darkToggle" style="width:auto;" ${dark ? "checked" : ""}/>
-        </div>
-        <div class="muted" style="margin-top:8px;">Toggle theme for this device.</div>
-      </div>
-
-      <div class="card">
-        <button class="danger" onclick="logout()">Logout</button>
-      </div>
-    `;
-
-    document.getElementById("darkToggle").addEventListener("change", (e)=>{
-      const v = !!e.target.checked;
-      document.body.classList.toggle("dark", v);
-      localStorage.setItem("darkMode", String(v));
-    });
+  function adminSearchDebounced(){
+    clearTimeout(adminSearchTimer);
+    adminSearchTimer = setTimeout(adminRunSearch, 200);
   }
 
-  function settingsBack(){
-    renderSettingsHome();
+  async function loadAdminSettings(){
+    if (!isAdminUser){
+      document.getElementById("adminNote").textContent = "You are not an admin.";
+      document.getElementById("adminUserPanel").classList.add("hidden");
+      return;
+    }
+    document.getElementById("adminNote").textContent = "You are an admin.";
+    document.getElementById("adminSearchInput").value = "";
+    document.getElementById("adminSearchResults").innerHTML = "";
+    document.getElementById("adminUserPanel").classList.add("hidden");
+    adminTargetUid = null;
+    adminTargetData = null;
   }
 
-  function renderAccountInfo(){
-    const root = document.getElementById("settingsView");
-
-    const uname = safeString(userData?.username, "user");
-    const uid = safeString(currentUser?.uid, "");
-    const email = safeString(currentUser?.email, "");
-
-    root.innerHTML = `
-      <div class="top-back">
-        <div class="backbtn" onclick="settingsBack()"><i class="fa-solid fa-arrow-left"></i></div>
-        <div class="settings-title">Your account</div>
-      </div>
-
-      <div class="card">
-        <div style="font-weight:900; margin-bottom:6px;">Account information</div>
-        <div class="muted">Username</div>
-        <div style="font-weight:900; margin-bottom:10px;">@${escapeHtml(uname)}</div>
-
-        <div class="muted">Email</div>
-        <div style="font-weight:900; margin-bottom:10px;">${escapeHtml(email || "—")}</div>
-
-        <div class="muted">UID</div>
-        <div style="font-weight:900; word-break:break-all;">${escapeHtml(uid)}</div>
-      </div>
-
-      <div class="settings-row" onclick="renderChangeUsername()">
-        <i class="fa-solid fa-at"></i>
-        <div>
-          <div style="font-weight:900;">Change username</div>
-          <div class="muted">Pick a new unique username</div>
-        </div>
-        <div class="right"><i class="fa-solid fa-chevron-right"></i></div>
-      </div>
-
-      ${isAdminUser ? `
-        <div class="settings-row" onclick="renderAdminPanel()">
-          <i class="fa-solid fa-user-shield"></i>
-          <div>
-            <div style="font-weight:900;">Admin settings</div>
-            <div class="muted">Admin-only tools</div>
-          </div>
-          <div class="right"><i class="fa-solid fa-chevron-right"></i></div>
-        </div>
-      ` : `
-        <div class="card">
-          <div class="muted">Admin settings will appear here after you create <b>/admins/${escapeHtml(uid)}</b> in Firestore.</div>
-        </div>
-      `}
-    `;
+  function setAdminStatusBadge(status){
+    const el = document.getElementById("adminTargetStatusBadge");
+    const s = safeString(status, "active");
+    el.className = "status-badge";
+    if (s === "banned") el.classList.add("status-banned");
+    else if (s === "suspended") el.classList.add("status-suspended");
+    else el.classList.add("status-active");
+    el.innerHTML = `<i class="fa-solid fa-circle"></i> ${escapeHtml(s)}`;
   }
 
-  function renderChangeUsername(){
-    const root = document.getElementById("settingsView");
-    const current = safeString(userData?.username, "user");
+  async function adminRunSearch(){
+    if (!isAdminUser) return;
 
-    root.innerHTML = `
-      <div class="top-back">
-        <div class="backbtn" onclick="renderAccountInfo()"><i class="fa-solid fa-arrow-left"></i></div>
-        <div class="settings-title">Change username</div>
-      </div>
+    const q = safeString(document.getElementById("adminSearchInput").value, "").toLowerCase().trim();
+    const res = document.getElementById("adminSearchResults");
 
-      <div class="card">
-        <div class="muted" style="margin-bottom:8px;">New username</div>
-        <input id="newUsername" maxlength="20" value="${escapeAttr(current)}" />
-        <div class="muted" style="margin-top:10px;">Use lowercase letters, numbers, underscore.</div>
-        <div class="row" style="margin-top:12px;">
-          <button class="good" onclick="saveUsernameFromSettings()">Save</button>
-          <div class="space"></div>
-          <span class="muted" id="unameSaveStatus"></span>
-        </div>
-      </div>
-    `;
-  }
+    if (!q){
+      res.innerHTML = "";
+      return;
+    }
 
-  async function saveUsernameFromSettings(){
-    const status = document.getElementById("unameSaveStatus");
-    status.textContent = "";
+    res.innerHTML = `<div class="muted">Searching...</div>`;
+
     try{
-      await saveUsername(document.getElementById("newUsername").value);
-      status.textContent = "Saved!";
-      setTimeout(()=>renderAccountInfo(), 650);
+      const snap = await db.collection("users")
+        .orderBy("username")
+        .startAt(q)
+        .endAt(q + "\uf8ff")
+        .limit(15)
+        .get();
+
+      let html = "";
+      snap.forEach(doc=>{
+        const u = doc.data() || {};
+        const uname = safeString(u.username, "user");
+        html += `
+          <div class="card" style="cursor:pointer;" onclick="adminSelectUser('${escapeAttr(doc.id)}')">
+            <div class="row">
+              <div class="avatar">${initialLetter(uname)}</div>
+              <div style="flex:1;">
+                <div style="font-weight:900;">${formatNameWithVerified(uname, !!u.verified)}</div>
+                <div class="muted">${escapeHtml(doc.id)}</div>
+              </div>
+              <span class="pill">${escapeHtml(safeString(u.status,"active"))}</span>
+            </div>
+          </div>
+        `;
+      });
+
+      res.innerHTML = html || `<div class="muted">No matches.</div>`;
     } catch(e){
-      status.textContent = e.message || String(e);
+      res.innerHTML = `<div class="muted">Search error: ${escapeHtml(e.message || String(e))}</div>`;
     }
   }
 
-  function renderPrivacy(){
-    const root = document.getElementById("settingsView");
-    root.innerHTML = `
-      <div class="top-back">
-        <div class="backbtn" onclick="renderSettingsHome()"><i class="fa-solid fa-arrow-left"></i></div>
-        <div class="settings-title">Privacy & safety</div>
-      </div>
+  async function adminSelectUser(uid){
+    if (!isAdminUser) return;
 
-      <div class="card">
-        <div style="font-weight:900; margin-bottom:6px;">Basic privacy</div>
-        <div class="muted">This is a simple demo page. We can add blocks/mutes later.</div>
-      </div>
-    `;
+    document.getElementById("adminActionStatus").textContent = "";
+    adminTargetUid = uid;
+    const panel = document.getElementById("adminUserPanel");
+    panel.classList.remove("hidden");
+
+    const snap = await db.collection("users").doc(uid).get();
+    adminTargetData = snap.exists ? (snap.data() || {}) : {};
+
+    const uname = safeString(adminTargetData.username, "user");
+
+    document.getElementById("adminTargetAvatar").textContent = initialLetter(uname);
+    document.getElementById("adminTargetName").innerHTML = formatNameWithVerified(uname, !!adminTargetData.verified);
+    document.getElementById("adminTargetUid").textContent = uid;
+
+    setAdminStatusBadge(safeString(adminTargetData.status, "active"));
   }
 
-  function renderAdminPanel(){
-    const root = document.getElementById("settingsView");
-    root.innerHTML = `
-      <div class="top-back">
-        <div class="backbtn" onclick="renderAccountInfo()"><i class="fa-solid fa-arrow-left"></i></div>
-        <div class="settings-title">Admin settings</div>
-      </div>
+  async function adminSetVerified(v){
+    if (!isAdminUser || !adminTargetUid) return;
+    const status = document.getElementById("adminActionStatus");
+    status.textContent = "Updating...";
+    try{
+      await db.collection("users").doc(adminTargetUid).update({ verified: !!v });
+      status.textContent = v ? "Verified set." : "Verified removed.";
+      await adminSelectUser(adminTargetUid);
+    } catch(e){
+      status.textContent = "Error: " + (e.message || String(e));
+    }
+  }
 
-      <div class="card">
-        <div style="font-weight:900; margin-bottom:8px;">Admin tools</div>
-        <div class="muted">You are marked as admin because /admins/${escapeHtml(currentUser.uid)} exists.</div>
-      </div>
+  async function adminSuspendPreset(days){
+    if (!isAdminUser || !adminTargetUid) return;
+    const until = new Date(Date.now() + days*24*60*60*1000);
+    await adminSuspendUntil(until);
+  }
 
-      <div class="card">
-        <div style="font-weight:900; margin-bottom:8px;">Quick checks</div>
-        <button class="secondary" onclick="alert('Admin ok ✅')">Test admin</button>
-      </div>
-    `;
+  async function adminSuspendCustom(){
+    if (!isAdminUser || !adminTargetUid) return;
+    const s = prompt("Suspend for how many hours? (example: 24)");
+    if (!s) return;
+    const hours = Number(s);
+    if (!Number.isFinite(hours) || hours <= 0){
+      alert("Invalid hours.");
+      return;
+    }
+    const until = new Date(Date.now() + hours*60*60*1000);
+    await adminSuspendUntil(until);
+  }
+
+  async function adminSuspendUntil(dateObj){
+    const status = document.getElementById("adminActionStatus");
+    status.textContent = "Suspending...";
+    try{
+      await db.collection("users").doc(adminTargetUid).update({
+        status: "suspended",
+        suspendedUntil: firebase.firestore.Timestamp.fromDate(dateObj),
+        banReason: firebase.firestore.FieldValue.delete()
+      });
+      status.textContent = "Suspended until " + dateObj.toLocaleString();
+      await adminSelectUser(adminTargetUid);
+    } catch(e){
+      status.textContent = "Error: " + (e.message || String(e));
+    }
+  }
+
+  async function adminBanUser(){
+    if (!isAdminUser || !adminTargetUid) return;
+    const reason = prompt("Ban reason (optional):") || "";
+    const status = document.getElementById("adminActionStatus");
+    status.textContent = "Banning...";
+    try{
+      await db.collection("users").doc(adminTargetUid).update({
+        status: "banned",
+        banReason: reason,
+        suspendedUntil: firebase.firestore.FieldValue.delete()
+      });
+      status.textContent = "User banned.";
+      await adminSelectUser(adminTargetUid);
+    } catch(e){
+      status.textContent = "Error: " + (e.message || String(e));
+    }
+  }
+
+  async function adminClearRestrictions(){
+    if (!isAdminUser || !adminTargetUid) return;
+    const status = document.getElementById("adminActionStatus");
+    status.textContent = "Clearing...";
+    try{
+      await db.collection("users").doc(adminTargetUid).update({
+        status: "active",
+        banReason: firebase.firestore.FieldValue.delete(),
+        suspendedUntil: firebase.firestore.FieldValue.delete()
+      });
+      status.textContent = "Restrictions cleared.";
+      await adminSelectUser(adminTargetUid);
+    } catch(e){
+      status.textContent = "Error: " + (e.message || String(e));
+    }
+  }
+
+  async function adminDeleteUserPosts(){
+    if (!isAdminUser || !adminTargetUid) return;
+    if (!confirm("Delete ALL posts by this user?")) return;
+
+    const status = document.getElementById("adminActionStatus");
+    status.textContent = "Deleting posts...";
+
+    try{
+      const snap = await db.collection("posts").where("uid","==",adminTargetUid).get();
+      let count = 0;
+      // Firestore has limits; for small apps this is okay.
+      const batch = db.batch();
+      snap.forEach(doc=>{
+        batch.delete(doc.ref);
+        count++;
+      });
+      await batch.commit();
+      status.textContent = `Deleted ${count} posts.`;
+    } catch(e){
+      status.textContent = "Error: " + (e.message || String(e));
+    }
   }
 
   // =========================
