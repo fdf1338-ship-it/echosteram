@@ -17,14 +17,14 @@
   <style>
     :root{
       --bg:#ffffff; --text:#111; --muted:#666;
-      --card:#f3f3f3; --border:#ddd;
-      --accent:#1da1f2; --danger:#ff3b30;
-      --ok:#2ecc71;
+      --card:#f7f7f7; --border:#ddd;
+      --accent:#1da1f2; --danger:#ff3b30; --ok:#2ecc71;
     }
     body.dark{
       --bg:#0b0b0b; --text:#fff; --muted:#aaa;
       --card:#151515; --border:#2a2a2a;
     }
+    *{box-sizing:border-box}
     body{
       margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
       background:var(--bg); color:var(--text);
@@ -33,214 +33,120 @@
     header{
       position:fixed; top:0; left:0; right:0;
       display:flex; align-items:center; justify-content:space-between;
-      padding:14px 14px;
+      padding:14px;
       background:var(--bg);
       border-bottom:1px solid var(--border);
-      z-index:20;
-      font-weight:800;
+      z-index:20; font-weight:800;
     }
     header .left{display:flex; align-items:center; gap:10px;}
-    header .icon-btn{
+    .icon-btn{
       width:40px; height:40px; border-radius:999px;
       display:flex; align-items:center; justify-content:center;
-      cursor:pointer;
-      user-select:none;
+      cursor:pointer; user-select:none;
     }
-    header .icon-btn:hover{ background:rgba(127,127,127,.12); }
+    .icon-btn:hover{ background:rgba(127,127,127,.12); }
 
     main{
-      padding:72px 14px 88px;
+      padding:72px 14px 96px;
       max-width:640px; margin:0 auto;
     }
 
+    /* Bottom Nav: Home, Search, Notifications, AI (center), Messages, Profile */
     nav{
       position:fixed; bottom:0; left:0; right:0;
-      display:flex; justify-content:space-around; align-items:center;
-      padding:10px 0;
+      display:flex; align-items:center; justify-content:space-around;
+      padding:8px 6px;
       background:var(--bg);
       border-top:1px solid var(--border);
       z-index:20;
     }
     nav .tab{
-      width:25%;
-      display:flex; flex-direction:column; align-items:center;
-      gap:6px;
-      color:var(--muted);
-      cursor:pointer;
-      user-select:none;
-      padding:6px 0;
+      flex:1 0 auto; min-width:0;
+      display:flex; flex-direction:column; align-items:center; gap:4px;
+      color:var(--muted); cursor:pointer; padding:6px 0; user-select:none;
+      font-size:12px;
     }
+    nav .tab i{font-size:20px;}
     nav .tab.active{ color:var(--accent); }
-    nav i{ font-size:20px; }
+    .ai-fab{
+      width:58px; height:58px; border-radius:999px;
+      background:var(--accent); color:#fff!important; border:4px solid var(--bg);
+      display:flex; align-items:center; justify-content:center; margin-top:-28px;
+      box-shadow:0 6px 16px rgba(0,0,0,.25); font-size:22px;
+    }
 
     .hidden{ display:none !important; }
-
     .card{
-      background:var(--card);
-      border:1px solid var(--border);
-      border-radius:16px;
-      padding:14px;
-      margin-bottom:12px;
+      background:var(--card); border:1px solid var(--border);
+      border-radius:16px; padding:14px; margin-bottom:12px;
     }
-
     textarea, input, select{
-      width:100%;
-      box-sizing:border-box;
-      padding:10px;
-      border-radius:12px;
-      border:1px solid var(--border);
-      background:var(--bg);
-      color:var(--text);
+      width:100%; padding:10px; border-radius:12px;
+      border:1px solid var(--border); background:var(--bg); color:var(--text);
       outline:none;
     }
     textarea{ min-height:84px; resize:vertical; }
 
     button{
-      border:none;
-      background:var(--accent);
-      color:#fff;
-      padding:10px 14px;
-      border-radius:999px;
-      font-weight:700;
-      cursor:pointer;
+      border:none; background:var(--accent); color:#fff;
+      padding:10px 14px; border-radius:999px; font-weight:700; cursor:pointer;
     }
-    button.secondary{
-      background:transparent;
-      color:var(--text);
-      border:1px solid var(--border);
-    }
+    button.secondary{ background:transparent; color:var(--text); border:1px solid var(--border); }
     button.danger{ background:var(--danger); }
     button.ok{ background:var(--ok); }
     button:disabled{ opacity:.6; cursor:not-allowed; }
 
     .row{ display:flex; gap:10px; align-items:center; }
     .space{ flex:1; }
+    .muted{ color:var(--muted); font-size:13px; }
+    .click{ cursor:pointer; } .click:hover{ text-decoration:underline; }
 
     .avatar{
-      width:42px; height:42px;
-      border-radius:999px;
-      background:#666;
-      display:flex; align-items:center; justify-content:center;
-      color:#fff;
-      font-weight:800;
-      flex:0 0 auto;
-    }
-    .post-image{
-      margin-top:10px;
-      max-width:100%;
-      border-radius:14px;
-      border:1px solid var(--border);
+      width:42px; height:42px; border-radius:999px; background:#666;
+      display:flex; align-items:center; justify-content:center; color:#fff; font-weight:800; flex:0 0 auto;
     }
 
-    .muted{ color:var(--muted); font-size:13px; }
-    .click{ cursor:pointer; }
-    .click:hover{ text-decoration:underline; }
+    .post-image{ margin-top:10px; max-width:100%; border-radius:14px; border:1px solid var(--border); }
+    .post-actions{ display:flex; gap:18px; margin-top:10px; color:var(--muted); user-select:none; }
+    .post-actions span{ cursor:pointer; } .post-actions span:hover{ color:var(--text); }
 
-    .post-actions{
-      display:flex; gap:18px;
-      margin-top:10px;
-      color:var(--muted);
-      user-select:none;
-    }
-    .post-actions span{ cursor:pointer; }
-    .post-actions span:hover{ color:var(--text); }
-
-    .comment{
-      display:flex; gap:10px;
-      margin-top:10px;
-      padding-top:10px;
-      border-top:1px solid var(--border);
-    }
+    .comment{ display:flex; gap:10px; margin-top:10px; padding-top:10px; border-top:1px solid var(--border); }
     .comment .avatar{ width:34px; height:34px; font-size:14px; }
+    .divider{ height:1px; background:var(--border); margin:10px 0; }
+
+    .pill{
+      display:inline-flex; align-items:center; gap:6px; padding:6px 10px;
+      border:1px solid var(--border); border-radius:999px; font-size:12px;
+      color:var(--muted); background:rgba(127,127,127,.06); user-select:none;
+    }
+    .verified{ color:var(--accent); margin-left:6px; font-size:12px; vertical-align:middle; }
 
     /* Drawer */
-    .drawer-backdrop{
-      position:fixed; inset:0;
-      background:rgba(0,0,0,.45);
-      z-index:50;
-      display:none;
-    }
+    .drawer-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:50; display:none; }
     .drawer-backdrop.show{ display:block; }
-
-    .drawer{
-      position:fixed; top:0; left:-320px;
-      width:300px; height:100%;
-      background:var(--bg);
-      border-right:1px solid var(--border);
-      z-index:60;
-      padding:14px;
-      transition:left .2s ease;
-    }
+    .drawer{ position:fixed; top:0; left:-320px; width:300px; height:100%;
+      background:var(--bg); border-right:1px solid var(--border); z-index:60; padding:14px; transition:left .2s ease; }
     .drawer.show{ left:0; }
-
-    .drawer h3{ margin:6px 0 10px; }
-    .drawer .item{
-      padding:12px 10px;
-      border-radius:12px;
-      cursor:pointer;
-      display:flex; gap:10px; align-items:center;
-    }
+    .drawer .item{ padding:12px 10px; border-radius:12px; cursor:pointer; display:flex; gap:10px; align-items:center; }
     .drawer .item:hover{ background:rgba(127,127,127,.12); }
 
     /* Modal */
-    .modal{
-      position:fixed; inset:0;
-      background:rgba(0,0,0,.55);
-      display:none;
-      align-items:center; justify-content:center;
-      z-index:80;
-      padding:14px;
-    }
+    .modal{ position:fixed; inset:0; background:rgba(0,0,0,.55); display:none; align-items:center; justify-content:center; z-index:80; padding:14px; }
     .modal.show{ display:flex; }
-    .modal .box{
-      width:100%;
-      max-width:520px;
-      background:var(--bg);
+    .modal .box{ width:100%; max-width:520px; background:var(--bg); border:1px solid var(--border); border-radius:16px; padding:16px; }
+
+    /* Pretty login panel */
+    .login-hero{
+      display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;
+      padding:26px 18px; border-radius:18px; background:linear-gradient(135deg, rgba(29,161,242,.12), rgba(29,161,242,.02));
       border:1px solid var(--border);
-      border-radius:16px;
-      padding:16px;
     }
-
-    .pill{
-      display:inline-flex;
-      align-items:center;
-      gap:6px;
-      padding:6px 10px;
-      border:1px solid var(--border);
-      border-radius:999px;
-      font-size:12px;
-      color:var(--muted);
-      background:rgba(127,127,127,.06);
-      user-select:none;
-    }
-
-    .verified{
-      color:var(--accent);
-      margin-left:6px;
-      font-size:12px;
-      vertical-align:middle;
-    }
-
-    .status-badge{
-      display:inline-flex;
-      gap:6px;
-      align-items:center;
-      padding:6px 10px;
-      border-radius:999px;
-      border:1px solid var(--border);
-      font-size:12px;
-      user-select:none;
-    }
-    .status-active{ color:var(--ok); }
-    .status-suspended{ color:#f39c12; }
-    .status-banned{ color:var(--danger); }
-
-    .divider{ height:1px; background:var(--border); margin:10px 0; }
+    .login-hero .brand{ font-size:28px; font-weight:900; margin-top:6px; }
+    .login-hero .sub{ color:var(--muted); margin-top:8px; }
   </style>
 </head>
 
 <body>
-
 <header>
   <div class="left">
     <div class="icon-btn" onclick="openDrawer()"><i class="fa-solid fa-bars"></i></div>
@@ -263,18 +169,22 @@
   <div style="height:8px;"></div>
   <div class="item" onclick="route('feed'); closeDrawer();"><i class="fa-solid fa-house"></i> Feed</div>
   <div class="item" onclick="route('search'); closeDrawer();"><i class="fa-solid fa-magnifying-glass"></i> Search</div>
+  <div class="item" onclick="route('notifications'); closeDrawer();"><i class="fa-solid fa-bell"></i> Notifications</div>
   <div class="item" onclick="route('messages'); closeDrawer();"><i class="fa-solid fa-message"></i> Messages</div>
   <div class="item" onclick="route('profile'); closeDrawer();"><i class="fa-solid fa-user"></i> Profile</div>
   <div class="item" onclick="route('settings'); closeDrawer();"><i class="fa-solid fa-gear"></i> Settings</div>
 </div>
 
 <main>
-
   <!-- LOGIN -->
   <div id="loginView" class="card">
-    <h2 style="margin:0 0 8px;">Welcome to EchoStream</h2>
-    <p class="muted" style="margin:0 0 12px;">Sign in to post, follow, message, and search.</p>
-    <button onclick="login()">Sign in with Google</button>
+    <div class="login-hero">
+      <i class="fa-solid fa-comments" style="font-size:38px;"></i>
+      <div class="brand">EchoStream</div>
+      <div class="sub">Fast, simple, secure. Share what’s happening now.</div>
+      <div style="height:16px;"></div>
+      <button onclick="login()"><i class="fa-brands fa-google" style="margin-right:8px;"></i> Sign in with Google</button>
+    </div>
   </div>
 
   <!-- BLOCKED -->
@@ -292,27 +202,44 @@
     <div class="card">
       <div class="muted" style="margin-bottom:8px;">Post</div>
       <textarea id="postText" placeholder="What’s happening?"></textarea>
-
       <div style="height:10px;"></div>
       <input id="postImage" type="file" accept="image/*"/>
-
       <div class="row" style="margin-top:10px;">
         <button onclick="createPost()">Post</button>
         <div class="space"></div>
         <span class="muted" id="postStatus"></span>
       </div>
     </div>
-
     <div id="posts"></div>
   </div>
 
-  <!-- SEARCH -->
+  <!-- SEARCH (For You / Trending + user search) -->
   <div id="searchView" class="hidden">
     <div class="card">
       <div class="muted" style="margin-bottom:8px;">Search users</div>
       <input id="searchInput" placeholder="Search by username..." oninput="doSearch()"/>
     </div>
     <div id="searchResults"></div>
+
+    <div class="card" id="forYouCard">
+      <div class="row">
+        <div style="font-weight:900;">For you</div>
+        <div class="space"></div>
+        <button class="secondary" onclick="refreshForYou()" style="font-size:12px; padding:6px 10px;">Refresh</button>
+      </div>
+      <div class="muted" style="margin-top:6px;">New & popular posts</div>
+    </div>
+
+    <div class="card" id="trendingCard">
+      <div style="font-weight:900;">Trending</div>
+      <div class="muted" style="margin-top:6px;">Based on likes (simple estimate)</div>
+      <div id="trendingList" style="margin-top:10px;"></div>
+    </div>
+  </div>
+
+  <!-- NOTIFICATIONS -->
+  <div id="notificationsView" class="hidden">
+    <div id="notifsBody" class="muted">Loading notifications…</div>
   </div>
 
   <!-- MESSAGES -->
@@ -358,17 +285,15 @@
 
       <div class="item" onclick="route('settings-account')" style="padding:12px 10px; border-radius:12px; cursor:pointer;">
         <i class="fa-solid fa-user"></i> <span style="margin-left:8px;">Your account</span>
-        <div class="muted" style="margin-left:28px; margin-top:4px;">Account info, username</div>
+        <div class="muted" style="margin-left:28px; margin-top:4px;">Account info, username, bio</div>
       </div>
 
       <div class="item" onclick="route('settings-privacy')" style="padding:12px 10px; border-radius:12px; cursor:pointer;">
         <i class="fa-solid fa-shield"></i> <span style="margin-left:8px;">Privacy & safety</span>
-        <div class="muted" style="margin-left:28px; margin-top:4px;">Basic privacy options</div>
       </div>
 
       <div class="item" id="adminSettingsEntry" onclick="route('settings-admin')" style="padding:12px 10px; border-radius:12px; cursor:pointer; display:none;">
         <i class="fa-solid fa-screwdriver-wrench"></i> <span style="margin-left:8px;">Admin settings</span>
-        <div class="muted" style="margin-left:28px; margin-top:4px;">Moderation tools</div>
       </div>
 
       <div class="divider"></div>
@@ -397,8 +322,12 @@
 
       <div class="muted">Username</div>
       <input id="accountUsername" placeholder="username" maxlength="20"/>
+
+      <div class="muted" style="margin-top:12px;">Bio</div>
+      <textarea id="accountBio" placeholder="Tell people about yourself (max 160 chars)" maxlength="160"></textarea>
+
       <div class="row" style="margin-top:10px;">
-        <button onclick="saveUsernameFromSettings()">Save username</button>
+        <button onclick="saveAccountSettings()">Save</button>
         <div class="space"></div>
         <span class="muted" id="accountStatus"></span>
       </div>
@@ -407,9 +336,7 @@
 
       <div class="muted">Email</div>
       <div style="font-weight:900;" id="accountEmail">-</div>
-
       <div style="height:10px;"></div>
-
       <div class="muted">UID</div>
       <div style="font-weight:900; word-break:break-all;" id="accountUid">-</div>
     </div>
@@ -419,10 +346,7 @@
   <div id="settingsPrivacyView" class="hidden">
     <div class="card">
       <div style="font-weight:900; font-size:18px;">Privacy & safety</div>
-      <div class="muted" style="margin-top:8px;">
-        Placeholder page (you can add options later). Example:
-        hide UID, hide followers list, etc.
-      </div>
+      <div class="muted" style="margin-top:8px;">(placeholder for more options later)</div>
     </div>
   </div>
 
@@ -435,12 +359,10 @@
 
     <div class="card">
       <div style="font-weight:900;">User lookup</div>
-      <div class="muted" style="margin-top:6px;">Search by username to verify/ban/suspend users.</div>
-
+      <div class="muted" style="margin-top:6px;">Search by username to verify / suspend / ban.</div>
       <div style="height:10px;"></div>
       <input id="adminSearchInput" placeholder="Search username..." oninput="adminSearchDebounced()"/>
       <div style="height:10px;"></div>
-
       <div id="adminSearchResults"></div>
     </div>
 
@@ -451,7 +373,7 @@
           <div style="font-weight:900;" id="adminTargetName">-</div>
           <div class="muted" id="adminTargetUid">-</div>
         </div>
-        <span class="status-badge" id="adminTargetStatusBadge">Status</span>
+        <span class="pill" id="adminTargetStatusBadge"><i class="fa-solid fa-circle"></i> active</span>
       </div>
 
       <div class="divider"></div>
@@ -462,7 +384,6 @@
       </div>
 
       <div style="height:10px;"></div>
-
       <div class="row" style="flex-wrap:wrap;">
         <button class="secondary" onclick="adminSuspendPreset(1)"><i class="fa-solid fa-clock"></i> Suspend 1 day</button>
         <button class="secondary" onclick="adminSuspendPreset(7)"><i class="fa-solid fa-clock"></i> Suspend 7 days</button>
@@ -470,40 +391,42 @@
       </div>
 
       <div style="height:10px;"></div>
-
       <div class="row" style="flex-wrap:wrap;">
         <button class="danger" onclick="adminBanUser()"><i class="fa-solid fa-ban"></i> Ban</button>
         <button class="secondary" onclick="adminClearRestrictions()"><i class="fa-solid fa-unlock"></i> Unban/Unsuspend</button>
       </div>
 
       <div class="divider"></div>
-
       <div style="font-weight:900;">Danger zone</div>
       <div class="muted" style="margin-top:6px;">Optional tools.</div>
-
       <div style="height:10px;"></div>
       <button class="danger" onclick="adminDeleteUserPosts()">Delete all posts by user</button>
-
       <div style="height:10px;"></div>
       <div class="muted" id="adminActionStatus"></div>
     </div>
   </div>
-
 </main>
 
-<!-- Bottom Nav -->
+<!-- Bottom Nav (order: Home, Search, Notifications, AI, Messages, Profile)
+     If you want Messages to the LEFT of AI, swap “messages” and “notifications”. -->
 <nav>
   <div class="tab" id="tab-feed" onclick="route('feed')">
-    <i class="fa-solid fa-house"></i><div class="muted" style="font-size:12px;">Feed</div>
+    <i class="fa-solid fa-house"></i><div>Home</div>
   </div>
   <div class="tab" id="tab-search" onclick="route('search')">
-    <i class="fa-solid fa-magnifying-glass"></i><div class="muted" style="font-size:12px;">Search</div>
+    <i class="fa-solid fa-magnifying-glass"></i><div>Search</div>
+  </div>
+  <div class="tab" id="tab-notifications" onclick="route('notifications')">
+    <i class="fa-solid fa-bell"></i><div>Alerts</div>
+  </div>
+  <div class="tab ai-fab" id="tab-ai" onclick="route('messages'); setChatAI();" title="AI">
+    <i class="fa-solid fa-robot"></i>
   </div>
   <div class="tab" id="tab-messages" onclick="route('messages')">
-    <i class="fa-solid fa-message"></i><div class="muted" style="font-size:12px;">Messages</div>
+    <i class="fa-solid fa-message"></i><div>Messages</div>
   </div>
   <div class="tab" id="tab-profile" onclick="route('profile')">
-    <i class="fa-solid fa-user"></i><div class="muted" style="font-size:12px;">Profile</div>
+    <i class="fa-solid fa-user"></i><div>Profile</div>
   </div>
 </nav>
 
@@ -535,9 +458,9 @@
 </div>
 
 <script>
-  // =========================
-  // FIREBASE CONFIG (yours)
-  // =========================
+  /* =========================
+     FIREBASE CONFIG (yours)
+     ========================= */
   firebase.initializeApp({
     apiKey: "AIzaSyCmY_zfNcH5XnEaQxlqaTW1D8EUR670-Zo",
     authDomain: "echostream-a102a.firebaseapp.com",
@@ -549,7 +472,6 @@
 
   const auth = firebase.auth();
   const db = firebase.firestore();
-
   let storage = null;
   try { storage = firebase.storage(); } catch(e) { storage = null; }
 
@@ -557,60 +479,46 @@
   let userData = null;
   let isAdminUser = false;
 
-  // For messaging
-  let activeChatUid = "AI";
-  let chatUnsub = null;
-
-  // For feed
+  // listeners
   let feedUnsub = null;
+  let chatUnsub = null;
+  let notifUnsub = null;
 
-  // Simple cache for user profiles (for verified badge everywhere)
-  const userCache = new Map(); // uid -> {username, verified, status}
-  const userCachePromises = new Map(); // uid -> Promise
+  // cache
+  const userCache = new Map();
+  const userCachePromises = new Map();
 
-  // Settings router stack
+  // settings stack
   const routeStack = [];
 
-  // =========================
-  // UI helpers
-  // =========================
-  function openDrawer(){
-    document.getElementById("drawerBackdrop").classList.add("show");
-    document.getElementById("drawer").classList.add("show");
-  }
-  function closeDrawer(){
-    document.getElementById("drawerBackdrop").classList.remove("show");
-    document.getElementById("drawer").classList.remove("show");
-  }
+  /* =========================
+     UI helpers
+     ========================= */
+  function openDrawer(){ document.getElementById("drawerBackdrop").classList.add("show"); document.getElementById("drawer").classList.add("show"); }
+  function closeDrawer(){ document.getElementById("drawerBackdrop").classList.remove("show"); document.getElementById("drawer").classList.remove("show"); }
 
   function setActiveTab(page){
-    ["feed","search","messages","profile"].forEach(p=>{
+    ["feed","search","notifications","messages","profile"].forEach(p=>{
       const el = document.getElementById("tab-"+p);
       if (!el) return;
       el.classList.toggle("active", p===page);
     });
+    document.getElementById("tab-ai")?.classList.toggle("active", page==="messages");
   }
 
   function showView(id){
     const views = [
       "loginView","blockedView",
-      "feedView","searchView","messagesView","profileView",
+      "feedView","searchView","notificationsView","messagesView","profileView",
       "settingsView","settingsAccountView","settingsPrivacyView","settingsAdminView"
     ];
     views.forEach(v => document.getElementById(v).classList.add("hidden"));
     document.getElementById(id).classList.remove("hidden");
   }
 
-  function safeString(x, fallback=""){
-    return (typeof x === "string" && x.trim().length) ? x : fallback;
-  }
-  function safeArray(x){
-    return Array.isArray(x) ? x : [];
-  }
-  function initialLetter(name){
-    const s = safeString(name, "?");
-    return (s[0] ? s[0].toUpperCase() : "?");
-  }
+  function safeString(x, fallback=""){ return (typeof x === "string" && x.trim().length) ? x : fallback; }
+  function safeArray(x){ return Array.isArray(x) ? x : []; }
+  function initialLetter(name){ const s = safeString(name, "?"); return (s[0] ? s[0].toUpperCase() : "?"); }
 
   function timeAgo(ts){
     if (!ts || !ts.toDate) return "now";
@@ -625,7 +533,6 @@
     document.getElementById("headerTitle").textContent = title;
     document.getElementById("headerBack").classList.toggle("hidden", !canBack);
   }
-
   function goBack(){
     if (routeStack.length > 1){
       routeStack.pop();
@@ -638,52 +545,36 @@
 
   function formatNameWithVerified(username, verified){
     const u = escapeHtml(username);
-    if (verified) {
-      return `${u} <i class="fa-solid fa-circle-check verified" title="Verified"></i>`;
-    }
-    return u;
+    return verified ? `${u} <i class="fa-solid fa-circle-check verified" title="Verified"></i>` : u;
   }
 
   async function ensureUserCached(uid){
     if (!uid) return null;
     if (userCache.has(uid)) return userCache.get(uid);
     if (userCachePromises.has(uid)) return userCachePromises.get(uid);
-
     const p = (async ()=>{
       try{
         const snap = await db.collection("users").doc(uid).get();
-        if (!snap.exists){
-          const obj = { username: "user", verified: false, status: "active" };
-          userCache.set(uid, obj);
-          return obj;
-        }
+        if (!snap.exists){ const obj={ username:"user", verified:false, status:"active" }; userCache.set(uid,obj); return obj; }
         const d = snap.data() || {};
         const obj = {
-          username: safeString(d.username, "user"),
+          username: safeString(d.username,"user"),
           verified: !!d.verified,
-          status: safeString(d.status, "active"),
+          status: safeString(d.status,"active"),
           suspendedUntil: d.suspendedUntil || null,
+          bio: safeString(d.bio,"")
         };
-        userCache.set(uid, obj);
-        return obj;
-      } finally {
-        userCachePromises.delete(uid);
-      }
+        userCache.set(uid,obj); return obj;
+      } finally { userCachePromises.delete(uid); }
     })();
-
-    userCachePromises.set(uid, p);
-    return p;
+    userCachePromises.set(uid,p); return p;
   }
 
-  // =========================
-  // AUTH
-  // =========================
-  function login(){
-    auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
-  }
-  function logout(){
-    auth.signOut().then(()=>location.reload());
-  }
+  /* =========================
+     AUTH + ACCOUNT STATE
+     ========================= */
+  function login(){ auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
+  function logout(){ auth.signOut().then(()=>location.reload()); }
 
   function showBlocked(title, text){
     showView("blockedView");
@@ -693,248 +584,153 @@
   }
 
   async function checkIfAdmin(uid){
-    try{
-      const doc = await db.collection("admins").doc(uid).get();
-      return doc.exists;
-    } catch(e){
-      return false;
-    }
-  }
-
-  function updateSettingsHeaderInfo(){
-    const name = safeString(userData?.username, safeString(currentUser?.displayName, "Your account"));
-    const email = safeString(currentUser?.email, "");
-    document.getElementById("settingsAvatar").textContent = initialLetter(name);
-    document.getElementById("settingsName").innerHTML = formatNameWithVerified(name, !!userData?.verified);
-    document.getElementById("settingsSub").textContent = email || (currentUser?.uid || "");
+    try{ const doc = await db.collection("admins").doc(uid).get(); return doc.exists; }catch{ return false; }
   }
 
   async function enforceAccountStatus(uid){
     const snap = await db.collection("users").doc(uid).get();
     if (!snap.exists) return true;
     const d = snap.data() || {};
-    const status = safeString(d.status, "active");
+    const status = safeString(d.status,"active");
     const suspendedUntil = d.suspendedUntil;
 
     if (status === "banned"){
-      showBlocked("Banned", safeString(d.banReason, "Your account has been banned."));
-      await auth.signOut();
-      return false;
+      showBlocked("Banned", safeString(d.banReason,"Your account has been banned."));
+      await auth.signOut(); return false;
     }
-
     if (status === "suspended"){
-      // if suspendedUntil exists and is in the future
-      if (suspendedUntil && suspendedUntil.toDate){
+      if (suspendedUntil?.toDate){
         const until = suspendedUntil.toDate();
         if (until.getTime() > Date.now()){
-          showBlocked("Suspended", "Your account is suspended until " + until.toLocaleString());
-          await auth.signOut();
-          return false;
+          showBlocked("Suspended","Your account is suspended until " + until.toLocaleString());
+          await auth.signOut(); return false;
         } else {
-          // suspension expired, auto-clear
-          try{
-            await db.collection("users").doc(uid).update({ status: "active", suspendedUntil: firebase.firestore.FieldValue.delete() });
-          } catch(e){}
+          try{ await db.collection("users").doc(uid).update({ status:"active", suspendedUntil: firebase.firestore.FieldValue.delete() }); }catch{}
         }
       } else {
-        showBlocked("Suspended", "Your account is suspended.");
-        await auth.signOut();
-        return false;
+        showBlocked("Suspended","Your account is suspended.");
+        await auth.signOut(); return false;
       }
     }
-
     return true;
   }
 
   auth.onAuthStateChanged(async (user) => {
     if (!user){
-      currentUser = null;
-      userData = null;
-      isAdminUser = false;
-      routeStack.length = 0;
-      showView("loginView");
-      setHeader("EchoStream", false);
-      return;
+      currentUser=null; userData=null; isAdminUser=false; routeStack.length=0;
+      showView("loginView"); setHeader("EchoStream", false); return;
     }
-
     currentUser = user;
 
-    // enforce ban/suspension
     const ok = await enforceAccountStatus(user.uid);
     if (!ok) return;
 
-    // admin?
     isAdminUser = await checkIfAdmin(user.uid);
     document.getElementById("adminSettingsEntry").style.display = isAdminUser ? "block" : "none";
 
-    // Load or create user doc
-    const userRef = db.collection("users").doc(user.uid);
-    const snap = await userRef.get();
-
+    // load or create user doc
+    const ref = db.collection("users").doc(user.uid);
+    const snap = await ref.get();
     if (!snap.exists){
-      const auto = safeString(user.displayName, "user").replace(/\s/g,"").toLowerCase();
-      await userRef.set({
-        username: auto,
-        verified: false,
-        status: "active",
-        followers: [],
-        following: [],
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      const auto = safeString(user.displayName,"user").replace(/\s/g,"").toLowerCase();
+      await ref.set({
+        username:auto, bio:"", verified:false, status:"active",
+        followers:[], following:[], createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
-      userData = { username: auto, verified:false, status:"active", followers: [], following: [] };
+      userData = { username:auto, bio:"", verified:false, status:"active", followers:[], following:[] };
       document.getElementById("usernameModal").classList.add("show");
     } else {
       userData = snap.data() || {};
       if (!userData.username){
-        userData.username = safeString(user.displayName, "user").replace(/\s/g,"").toLowerCase();
-        await userRef.update({ username: userData.username });
+        userData.username = safeString(user.displayName,"user").replace(/\s/g,"").toLowerCase();
+        await ref.update({ username:userData.username });
       }
+      if (typeof userData.bio !== "string"){ userData.bio=""; await ref.update({ bio:"" }); }
     }
 
     // cache self
     userCache.set(user.uid, {
-      username: safeString(userData?.username, "user"),
-      verified: !!userData?.verified,
-      status: safeString(userData?.status, "active"),
-      suspendedUntil: userData?.suspendedUntil || null,
+      username: safeString(userData.username,"user"),
+      verified: !!userData.verified,
+      status: safeString(userData.status,"active"),
+      suspendedUntil: userData.suspendedUntil || null,
+      bio: safeString(userData.bio,"")
     });
 
-    // dark mode init
-    const dark = localStorage.getItem("darkMode") === "true";
+    // dark mode
+    const dark = localStorage.getItem("darkMode")==="true";
     document.body.classList.toggle("dark", dark);
     document.getElementById("darkToggle").checked = dark;
 
     // default route
     route("feed", true);
-
-    // start chat listener
+    // start listeners
     setChatAI();
+    startNotificationsListener();
 
     updateSettingsHeaderInfo();
+    buildForYou();
+    buildTrending();
   });
 
-  // Dark mode
-  document.getElementById("darkToggle").addEventListener("change", (e)=>{
-    const v = !!e.target.checked;
-    document.body.classList.toggle("dark", v);
-    localStorage.setItem("darkMode", String(v));
+  document.getElementById("darkToggle").addEventListener("change",(e)=>{
+    const v = !!e.target.checked; document.body.classList.toggle("dark",v); localStorage.setItem("darkMode",String(v));
   });
 
-  // =========================
-  // ROUTING
-  // =========================
-  function route(page, resetStack=false){
-    internalRoute(page, resetStack);
+  function updateSettingsHeaderInfo(){
+    const name = safeString(userData?.username, safeString(currentUser?.displayName,"Your account"));
+    const email = safeString(currentUser?.email,"");
+    document.getElementById("settingsAvatar").textContent = initialLetter(name);
+    document.getElementById("settingsName").innerHTML = formatNameWithVerified(name, !!userData?.verified);
+    document.getElementById("settingsSub").textContent = email || (currentUser?.uid || "");
   }
 
+  /* =========================
+     ROUTING
+     ========================= */
+  function route(page, resetStack=false){ internalRoute(page, resetStack); }
   function internalRoute(page, resetStack){
-    if (!currentUser){
-      showView("loginView");
-      setHeader("EchoStream", false);
-      return;
-    }
-
+    if (!currentUser){ showView("loginView"); setHeader("EchoStream", false); return; }
     closeDrawer();
 
-    if (resetStack){
-      routeStack.length = 0;
-      routeStack.push(page);
-    } else {
-      const current = routeStack[routeStack.length-1];
-      if (current !== page) routeStack.push(page);
-    }
+    if (resetStack){ routeStack.length=0; routeStack.push(page); }
+    else { const cur = routeStack[routeStack.length-1]; if (cur !== page) routeStack.push(page); }
 
-    // Main tabs
-    if (page === "feed"){
-      setHeader("EchoStream", false);
-      showView("feedView");
-      setActiveTab("feed");
-      startFeedListener();
-      return;
-    }
-    if (page === "search"){
-      setHeader("Search", false);
-      showView("searchView");
-      setActiveTab("search");
-      document.getElementById("searchInput").value = "";
-      document.getElementById("searchResults").innerHTML = "";
-      return;
-    }
-    if (page === "messages"){
-      setHeader("Messages", false);
-      showView("messagesView");
-      setActiveTab("messages");
-      ensureChatListener();
-      return;
-    }
-    if (page === "profile"){
-      setHeader("Profile", false);
-      showView("profileView");
-      setActiveTab("profile");
-      openProfile(currentUser.uid);
-      return;
-    }
+    if (page==="feed"){ setHeader("EchoStream", false); showView("feedView"); setActiveTab("feed"); startFeedListener(); return; }
+    if (page==="search"){ setHeader("Search", false); showView("searchView"); setActiveTab("search"); document.getElementById("searchInput").value=""; document.getElementById("searchResults").innerHTML=""; return; }
+    if (page==="notifications"){ setHeader("Notifications", false); showView("notificationsView"); setActiveTab("notifications"); return; }
+    if (page==="messages"){ setHeader("Messages", false); showView("messagesView"); setActiveTab("messages"); ensureChatListener(); return; }
+    if (page==="profile"){ setHeader("Profile", false); showView("profileView"); setActiveTab("profile"); openProfile(currentUser.uid); return; }
 
-    // Settings pages (show back arrow)
-    if (page === "settings"){
-      setHeader("Settings", false);
-      showView("settingsView");
-      updateSettingsHeaderInfo();
-      setActiveTab(""); // keep bottom tab unchanged
-      return;
-    }
-    if (page === "settings-account"){
-      setHeader("Your account", true);
-      showView("settingsAccountView");
-      fillAccountSettings();
-      return;
-    }
-    if (page === "settings-privacy"){
-      setHeader("Privacy & safety", true);
-      showView("settingsPrivacyView");
-      return;
-    }
-    if (page === "settings-admin"){
-      setHeader("Admin settings", true);
-      showView("settingsAdminView");
-      loadAdminSettings();
-      return;
-    }
+    if (page==="settings"){ setHeader("Settings", false); showView("settingsView"); updateSettingsHeaderInfo(); setActiveTab(""); return; }
+    if (page==="settings-account"){ setHeader("Your account", true); showView("settingsAccountView"); fillAccountSettings(); return; }
+    if (page==="settings-privacy"){ setHeader("Privacy & safety", true); showView("settingsPrivacyView"); return; }
+    if (page==="settings-admin"){ setHeader("Admin settings", true); showView("settingsAdminView"); loadAdminSettings(); return; }
   }
 
-  // =========================
-  // USERNAME VALIDATION
-  // =========================
-  // Note: don't allow offensive usernames. Keep this lightweight.
+  /* =========================
+     USERNAME + ACCOUNT (bio)
+     ========================= */
   function containsBannedWord(name){
-    // Put your own list here if you want. Keep it simple & non-explicit.
-    const blocked = ["hate", "slur", "admin", "moderator"];
+    const blocked = ["hate","slur","admin","moderator"];
     const n = (name || "").toLowerCase();
     return blocked.some(w => n.includes(w));
   }
 
   async function saveUsernameCore(name){
-    const statusEl = document.getElementById("usernameStatus") || document.getElementById("accountStatus");
-    if (statusEl) statusEl.textContent = "";
-
-    name = safeString(name, "").toLowerCase();
-
+    name = safeString(name,"").toLowerCase();
     if (name.length < 3) throw new Error("Too short (min 3).");
     if (!/^[a-z0-9_]+$/.test(name)) throw new Error("Only a-z 0-9 _");
     if (containsBannedWord(name)) throw new Error("Pick a different username.");
 
-    // unique
     const taken = await db.collection("users").where("username","==",name).limit(1).get();
     if (!taken.empty && taken.docs[0].id !== currentUser.uid) throw new Error("Username taken.");
 
-    await db.collection("users").doc(currentUser.uid).update({ username: name });
+    await db.collection("users").doc(currentUser.uid).update({ username:name });
     userData.username = name;
 
-    // update cache + settings header
     const cached = await ensureUserCached(currentUser.uid);
-    cached.username = name;
-    userCache.set(currentUser.uid, cached);
-
+    cached.username = name; userCache.set(currentUser.uid, cached);
     updateSettingsHeaderInfo();
   }
 
@@ -942,105 +738,78 @@
     const status = document.getElementById("usernameStatus");
     status.textContent = "";
     try{
-      const name = safeString(document.getElementById("usernameInput").value, "");
+      const name = safeString(document.getElementById("usernameInput").value,"");
       await saveUsernameCore(name);
       document.getElementById("usernameModal").classList.remove("show");
-    } catch(e){
-      status.textContent = e.message || String(e);
-    }
-  }
-
-  async function saveUsernameFromSettings(){
-    const status = document.getElementById("accountStatus");
-    status.textContent = "";
-    try{
-      const name = safeString(document.getElementById("accountUsername").value, "");
-      await saveUsernameCore(name);
-      status.textContent = "Saved.";
-      setTimeout(()=>status.textContent="", 1200);
-    } catch(e){
-      status.textContent = e.message || String(e);
-    }
+    }catch(e){ status.textContent = e.message || String(e); }
   }
 
   function fillAccountSettings(){
-    const name = safeString(userData?.username, "user");
-    document.getElementById("accountUsername").value = name;
-    document.getElementById("accountEmail").textContent = safeString(currentUser?.email, "-");
-    document.getElementById("accountUid").textContent = safeString(currentUser?.uid, "-");
-
+    document.getElementById("accountUsername").value = safeString(userData?.username,"user");
+    document.getElementById("accountBio").value = safeString(userData?.bio,"");
+    document.getElementById("accountEmail").textContent = safeString(currentUser?.email,"-");
+    document.getElementById("accountUid").textContent = safeString(currentUser?.uid,"-");
     document.getElementById("accountVerifiedPill").classList.toggle("hidden", !userData?.verified);
     document.getElementById("accountAdminPill").classList.toggle("hidden", !isAdminUser);
   }
 
-  // =========================
-  // POSTS
-  // =========================
-  async function createPost(){
-    const status = document.getElementById("postStatus");
+  async function saveAccountSettings(){
+    const status = document.getElementById("accountStatus");
     status.textContent = "";
+    try{
+      const newUsername = safeString(document.getElementById("accountUsername").value,"");
+      const newBio = safeString(document.getElementById("accountBio").value,"").slice(0,160);
+      await saveUsernameCore(newUsername);
+      await db.collection("users").doc(currentUser.uid).update({ bio:newBio });
+      userData.bio = newBio;
+      status.textContent = "Saved.";
+      setTimeout(()=>status.textContent="", 1200);
+    }catch(e){ status.textContent = e.message || String(e); }
+  }
 
-    const text = safeString(document.getElementById("postText").value, "").trim();
+  /* =========================
+     POSTS
+     ========================= */
+  async function createPost(){
+    const status = document.getElementById("postStatus"); status.textContent="";
+    const text = safeString(document.getElementById("postText").value,"").trim();
     const file = document.getElementById("postImage").files[0];
+    if (!text && !file){ status.textContent="Write something first."; return; }
 
-    if (!text && !file){
-      status.textContent = "Write something first.";
-      return;
-    }
-
-    let imageUrl = "";
-
+    let imageUrl="";
     if (file && storage){
       try{
         const path = `posts/${currentUser.uid}/${Date.now()}_${file.name}`;
-        const ref = storage.ref(path);
-        await ref.put(file);
+        const ref = storage.ref(path); await ref.put(file);
         imageUrl = await ref.getDownloadURL();
-      } catch(e){
-        console.warn("Storage upload skipped:", e);
-      }
+      }catch(e){ console.warn("Storage upload skipped:", e); }
     }
 
-    const uname = safeString(userData?.username, "user");
-    const verified = !!userData?.verified;
-
+    const uname = safeString(userData?.username,"user");
     await db.collection("posts").add({
-      uid: currentUser.uid,
-      username: uname,
-      verified: verified,
-      text: text,
-      imageUrl: imageUrl,
-      likes: [],
-      comments: [],
-      shares: [],
+      uid: currentUser.uid, username: uname, verified: !!userData?.verified,
+      text, imageUrl, likes:[], comments:[], shares:[],
       timestamp: firebase.firestore.FieldValue.serverTimestamp()
     });
 
-    document.getElementById("postText").value = "";
-    document.getElementById("postImage").value = "";
-    status.textContent = "Posted.";
-    setTimeout(()=>status.textContent="", 1200);
+    // create a simple self-notification
+    await addNotification(currentUser.uid, "post", `${uname} posted`, text.slice(0,80));
+
+    document.getElementById("postText").value="";
+    document.getElementById("postImage").value="";
+    status.textContent="Posted."; setTimeout(()=>status.textContent="", 1200);
   }
 
   function renderPost(doc){
-    const post = doc.data() || {};
-    const postId = doc.id;
-
-    const likes = safeArray(post.likes);
-    const comments = safeArray(post.comments);
-    const shares = safeArray(post.shares);
+    const post = doc.data() || {}; const postId = doc.id;
+    const likes = safeArray(post.likes); const comments = safeArray(post.comments); const shares = safeArray(post.shares);
     const liked = likes.includes(currentUser.uid);
-
-    const avatar = initialLetter(post.username || "u");
-    const img = safeString(post.imageUrl, "");
-
+    const avatar = initialLetter(post.username || "u"); const img = safeString(post.imageUrl,"");
     const nameSpanId = `postname-${postId}`;
 
-    let commentsHtml = "";
+    let commentsHtml="";
     for (const c of comments){
-      const cu = safeString(c.username, "user");
-      const ct = safeString(c.text, "");
-      const cv = !!c.verified;
+      const cu = safeString(c.username,"user"); const ct = safeString(c.text,""); const cv = !!c.verified;
       commentsHtml += `
         <div class="comment">
           <div class="avatar">${initialLetter(cu)}</div>
@@ -1048,23 +817,11 @@
             <div style="font-weight:800;">${formatNameWithVerified(cu, cv)}</div>
             <div class="muted">${escapeHtml(ct)}</div>
           </div>
-        </div>
-      `;
+        </div>`;
     }
 
-    // initial render uses stored verified (denormalized)
     const initialNameHtml = formatNameWithVerified(safeString(post.username,"user"), !!post.verified);
-
-    // after render, we’ll fetch latest user doc and update name badge to be accurate everywhere
-    setTimeout(async ()=>{
-      try{
-        const u = await ensureUserCached(post.uid);
-        const el = document.getElementById(nameSpanId);
-        if (el && u){
-          el.innerHTML = formatNameWithVerified(u.username, !!u.verified);
-        }
-      } catch(e){}
-    }, 0);
+    setTimeout(async ()=>{ try{ const u = await ensureUserCached(post.uid); const el=document.getElementById(nameSpanId); if (el&&u){ el.innerHTML = formatNameWithVerified(u.username, !!u.verified); } }catch{} },0);
 
     return `
       <div class="card">
@@ -1079,7 +836,6 @@
         </div>
 
         ${post.text ? `<div style="margin-top:10px;">${escapeHtml(post.text)}</div>` : ""}
-
         ${img ? `<img class="post-image" src="${escapeAttr(img)}" alt="post image"/>` : ""}
 
         <div class="post-actions">
@@ -1103,8 +859,7 @@
             <div class="space"></div>
           </div>
         </div>
-      </div>
-    `;
+      </div>`;
   }
 
   function startFeedListener(){
@@ -1112,659 +867,423 @@
     const postsDiv = document.getElementById("posts");
     postsDiv.innerHTML = `<div class="muted">Loading feed...</div>`;
 
-    feedUnsub = db.collection("posts")
-      .orderBy("timestamp","desc")
-      .onSnapshot((snap)=>{
-        let html = "";
-        snap.forEach(doc => { html += renderPost(doc); });
-        postsDiv.innerHTML = html || `<div class="muted">No posts yet.</div>`;
-      }, (err)=>{
-        console.error("Feed listen error:", err);
-        postsDiv.innerHTML = `<div class="muted">Feed error: ${escapeHtml(err.message || String(err))}</div>`;
-      });
+    feedUnsub = db.collection("posts").orderBy("timestamp","desc").onSnapshot((snap)=>{
+      let html=""; snap.forEach(doc => { html += renderPost(doc); });
+      postsDiv.innerHTML = html || `<div class="muted">No posts yet.</div>`;
+    }, (err)=>{
+      console.error("Feed listen error:", err);
+      postsDiv.innerHTML = `<div class="muted">Feed error: ${escapeHtml(err.message || String(err))}</div>`;
+    });
   }
 
   async function toggleLike(postId){
     const ref = db.collection("posts").doc(postId);
-    const snap = await ref.get();
-    const data = snap.data() || {};
-    let likes = safeArray(data.likes);
+    const snap = await ref.get(); const data=snap.data()||{}; let likes = safeArray(data.likes);
+    const wasLiked = likes.includes(currentUser.uid);
+    if (wasLiked){ likes = likes.filter(x=>x!==currentUser.uid); } else { likes.push(currentUser.uid); }
+    await ref.update({ likes });
 
-    if (likes.includes(currentUser.uid)){
-      likes = likes.filter(x => x !== currentUser.uid);
-    } else {
-      likes.push(currentUser.uid);
+    if (!wasLiked){
+      // simple notif to post owner (not for self-like)
+      if (data.uid && data.uid !== currentUser.uid){
+        const liker = safeString(userData?.username,"user");
+        await addNotification(data.uid, "like", `${liker} liked your post`, safeString(data.text,""));
+      }
     }
-    await ref.update({ likes: likes });
   }
-
-  function toggleComments(postId){
-    const el = document.getElementById(`comments-${postId}`);
-    if (!el) return;
-    el.classList.toggle("hidden");
-  }
-
+  function toggleComments(postId){ const el = document.getElementById(`comments-${postId}`); if (el) el.classList.toggle("hidden"); }
   async function addComment(postId){
-    const input = document.getElementById(`commentInput-${postId}`);
-    if (!input) return;
-    const text = safeString(input.value, "").trim();
-    if (!text) return;
-
-    const comment = {
-      uid: currentUser.uid,
-      username: safeString(userData?.username, "user"),
-      verified: !!userData?.verified,
-      text: text,
-      timestamp: firebase.firestore.FieldValue.serverTimestamp()
-    };
-
-    await db.collection("posts").doc(postId).update({
-      comments: firebase.firestore.FieldValue.arrayUnion(comment)
-    });
-
-    input.value = "";
+    const input = document.getElementById(`commentInput-${postId}`); if (!input) return;
+    const text = safeString(input.value,"").trim(); if (!text) return;
+    const comment = { uid: currentUser.uid, username: safeString(userData?.username,"user"), verified: !!userData?.verified, text, timestamp: firebase.firestore.FieldValue.serverTimestamp() };
+    const ref = db.collection("posts").doc(postId);
+    await ref.update({ comments: firebase.firestore.FieldValue.arrayUnion(comment) });
+    input.value="";
+    // notify owner
+    const snap = await ref.get(); const data = snap.data()||{};
+    if (data.uid && data.uid !== currentUser.uid){
+      await addNotification(data.uid, "comment", `${safeString(userData?.username,"user")} commented`, text.slice(0,80));
+    }
   }
-
   async function sharePost(postId){
     await db.collection("posts").doc(postId).update({
       shares: firebase.firestore.FieldValue.arrayUnion(currentUser.uid)
     });
   }
 
-  // =========================
-  // PROFILES + FOLLOWERS LIST
-  // =========================
+  /* =========================
+     PROFILE (+ bio + lists)
+     ========================= */
   async function openProfile(uid){
-    showView("profileView");
-    setActiveTab("profile");
-    setHeader("Profile", false);
-
+    showView("profileView"); setActiveTab("profile"); setHeader("Profile", false);
     const profile = document.getElementById("profileView");
     profile.innerHTML = `<div class="muted">Loading profile...</div>`;
-
     try{
       const userSnap = await db.collection("users").doc(uid).get();
-      if (!userSnap.exists){
-        profile.innerHTML = `<div class="card">User not found.</div>`;
-        return;
-      }
-      const u = userSnap.data() || {};
-      const username = safeString(u.username, "user");
-      const verified = !!u.verified;
-      const followers = safeArray(u.followers);
-      const following = safeArray(u.following);
+      if (!userSnap.exists){ profile.innerHTML = `<div class="card">User not found.</div>`; return; }
+      const u = userSnap.data()||{};
+      const username=safeString(u.username,"user"); const verified=!!u.verified;
+      const followers=safeArray(u.followers); const following=safeArray(u.following);
+      const bio = safeString(u.bio,"");
+      const status=safeString(u.status,"active");
+      const isMe = uid===currentUser.uid; const iFollow = followers.includes(currentUser.uid);
 
-      const status = safeString(u.status, "active");
-      const isMe = uid === currentUser.uid;
-      const iFollow = followers.includes(currentUser.uid);
-
-      // user posts
-      let postsHtml = "";
-      const postsSnap = await db.collection("posts")
-        .where("uid","==",uid)
-        .orderBy("timestamp","desc")
-        .get();
-
+      let postsHtml=""; const postsSnap = await db.collection("posts").where("uid","==",uid).orderBy("timestamp","desc").get();
       postsSnap.forEach(doc=>{
-        const p = doc.data() || {};
-        const txt = safeString(p.text, "");
-        const img = safeString(p.imageUrl, "");
-        postsHtml += `
-          <div class="card">
-            ${txt ? `<div>${escapeHtml(txt)}</div>` : ""}
-            ${img ? `<img class="post-image" src="${escapeAttr(img)}" alt="post image"/>` : ""}
-            <div class="muted" style="margin-top:8px;">${timeAgo(p.timestamp)}</div>
-          </div>
-        `;
+        const p=doc.data()||{}; const txt=safeString(p.text,""); const img=safeString(p.imageUrl,"");
+        postsHtml += `<div class="card">${txt?`<div>${escapeHtml(txt)}</div>`:""} ${img?`<img class="post-image" src="${escapeAttr(img)}" alt="post image"/>`:""} <div class="muted" style="margin-top:8px;">${timeAgo(p.timestamp)}</div></div>`;
       });
 
-      const statusClass = status === "banned" ? "status-banned" : (status === "suspended" ? "status-suspended" : "status-active");
+      const statusClass = status==="banned"?"color:var(--danger)":(status==="suspended"?"color:#f39c12":"color:var(--ok)");
 
       profile.innerHTML = `
         <div class="card" style="text-align:center;">
           <div class="avatar" style="width:64px;height:64px;margin:0 auto;font-size:24px;">${initialLetter(username)}</div>
-          <div style="margin-top:10px; font-size:20px; font-weight:900;">
-            ${formatNameWithVerified(username, verified)}
-          </div>
-          <div class="muted">UID: ${escapeHtml(uid)}</div>
-
-          <div style="margin-top:10px;">
-            <span class="status-badge ${statusClass}"><i class="fa-solid fa-circle"></i> ${escapeHtml(status)}</span>
-          </div>
-
+          <div style="margin-top:10px; font-size:20px; font-weight:900;">${formatNameWithVerified(username, verified)}</div>
+          <div class="muted" style="${statusClass}"><i class="fa-solid fa-circle"></i> ${escapeHtml(status)}</div>
+          ${bio ? `<div style="margin-top:8px;">${escapeHtml(bio)}</div>` : ""}
           <div class="row" style="justify-content:center; gap:18px; margin-top:12px;">
             <div class="click" onclick="openFollowList('${escapeAttr(uid)}','followers')">
-              <div style="font-weight:900;">${followers.length}</div>
-              <div class="muted">Followers</div>
+              <div style="font-weight:900;">${followers.length}</div><div class="muted">Followers</div>
             </div>
             <div class="click" onclick="openFollowList('${escapeAttr(uid)}','following')">
-              <div style="font-weight:900;">${following.length}</div>
-              <div class="muted">Following</div>
+              <div style="font-weight:900;">${following.length}</div><div class="muted">Following</div>
             </div>
           </div>
-
-          ${isMe ? "" : `
-            <div style="margin-top:12px;">
-              <button onclick="toggleFollow('${escapeAttr(uid)}')">${iFollow ? "Unfollow" : "Follow"}</button>
-              <button class="secondary" style="margin-left:8px;" onclick="startChatWith('${escapeAttr(uid)}','${escapeAttr(username)}')">Message</button>
-            </div>
-          `}
+          ${isMe?"":
+            `<div style="margin-top:12px;">
+               <button onclick="toggleFollow('${escapeAttr(uid)}')">${iFollow?"Unfollow":"Follow"}</button>
+               <button class="secondary" style="margin-left:8px;" onclick="startChatWith('${escapeAttr(uid)}','${escapeAttr(username)}')">Message</button>
+             </div>`
+          }
         </div>
-
         <div style="font-weight:900; margin:10px 0 8px;">Posts</div>
         ${postsHtml || `<div class="muted">No posts yet.</div>`}
       `;
-    } catch(e){
-      console.error(e);
-      profile.innerHTML = `<div class="card">Profile error: ${escapeHtml(e.message || String(e))}</div>`;
-    }
+    }catch(e){ console.error(e); profile.innerHTML = `<div class="card">Profile error: ${escapeHtml(e.message || String(e))}</div>`; }
   }
 
   async function openFollowList(uid, type){
-    document.getElementById("listTitle").textContent = type === "followers" ? "Followers" : "Following";
+    document.getElementById("listTitle").textContent = type==="followers"?"Followers":"Following";
     document.getElementById("listBody").innerHTML = `<div class="muted">Loading...</div>`;
     document.getElementById("listModal").classList.add("show");
-
     try{
-      const snap = await db.collection("users").doc(uid).get();
-      if (!snap.exists){
-        document.getElementById("listBody").innerHTML = `<div class="muted">User not found.</div>`;
-        return;
-      }
-      const data = snap.data() || {};
-      const arr = type === "followers" ? safeArray(data.followers) : safeArray(data.following);
-
-      if (!arr.length){
-        document.getElementById("listBody").innerHTML = `<div class="muted">None yet.</div>`;
-        return;
-      }
-
-      // load each user doc (simple, ok for small lists)
-      const docs = await Promise.all(arr.map(id => db.collection("users").doc(id).get()));
-      let html = "";
-      docs.forEach((d, idx)=>{
-        const id = arr[idx];
-        const ud = d.exists ? (d.data() || {}) : {};
-        const uname = safeString(ud.username, "user");
-        const ver = !!ud.verified;
-
-        html += `
-          <div class="card" style="margin:10px 0; cursor:pointer;" onclick="closeListModal(); openProfile('${escapeAttr(id)}')">
-            <div class="row">
-              <div class="avatar">${initialLetter(uname)}</div>
-              <div style="flex:1;">
-                <div style="font-weight:900;">${formatNameWithVerified(uname, ver)}</div>
-                <div class="muted">${escapeHtml(id)}</div>
-              </div>
-            </div>
-          </div>
-        `;
+      const snap=await db.collection("users").doc(uid).get();
+      if (!snap.exists){ document.getElementById("listBody").innerHTML=`<div class="muted">User not found.</div>`; return; }
+      const data=snap.data()||{}; const arr= type==="followers"?safeArray(data.followers):safeArray(data.following);
+      if (!arr.length){ document.getElementById("listBody").innerHTML=`<div class="muted">None yet.</div>`; return; }
+      const docs=await Promise.all(arr.map(id=>db.collection("users").doc(id).get()));
+      let html=""; docs.forEach((d,idx)=>{
+        const id=arr[idx]; const ud=d.exists?(d.data()||{}):{}; const uname=safeString(ud.username,"user"); const ver=!!ud.verified;
+        html += `<div class="card" style="margin:10px 0; cursor:pointer;" onclick="closeListModal(); openProfile('${escapeAttr(id)}')">
+          <div class="row"><div class="avatar">${initialLetter(uname)}</div>
+          <div style="flex:1;"><div style="font-weight:900;">${formatNameWithVerified(uname,ver)}</div><div class="muted">${escapeHtml(id)}</div></div></div></div>`;
       });
-
-      document.getElementById("listBody").innerHTML = html;
-    } catch(e){
-      document.getElementById("listBody").innerHTML = `<div class="muted">Error: ${escapeHtml(e.message || String(e))}</div>`;
-    }
+      document.getElementById("listBody").innerHTML=html;
+    }catch(e){ document.getElementById("listBody").innerHTML = `<div class="muted">Error: ${escapeHtml(e.message || String(e))}</div>`; }
   }
-
-  function closeListModal(){
-    document.getElementById("listModal").classList.remove("show");
-  }
+  function closeListModal(){ document.getElementById("listModal").classList.remove("show"); }
 
   async function toggleFollow(targetUid){
-    const meUid = currentUser.uid;
-
-    const myRef = db.collection("users").doc(meUid);
-    const targetRef = db.collection("users").doc(targetUid);
-
-    const [mySnap, targetSnap] = await Promise.all([myRef.get(), targetRef.get()]);
-    const my = mySnap.data() || {};
-    const t = targetSnap.data() || {};
-
-    let following = safeArray(my.following);
-    let followers = safeArray(t.followers);
-
-    const iAlreadyFollow = following.includes(targetUid);
-
-    if (iAlreadyFollow){
-      following = following.filter(x => x !== targetUid);
-      followers = followers.filter(x => x !== meUid);
-    } else {
-      following.push(targetUid);
-      followers.push(meUid);
-    }
-
-    await Promise.all([
-      myRef.update({ following }),
-      targetRef.update({ followers })
-    ]);
-
-    // update local userData if viewing self
-    if (meUid === currentUser.uid) {
-      userData.following = following;
-    }
-
+    const meUid=currentUser.uid; const myRef=db.collection("users").doc(meUid); const targetRef=db.collection("users").doc(targetUid);
+    const [mySnap,targetSnap]=await Promise.all([myRef.get(),targetRef.get()]);
+    const my=mySnap.data()||{}; const t=targetSnap.data()||{};
+    let following=safeArray(my.following); let followers=safeArray(t.followers);
+    const iAlready=following.includes(targetUid);
+    if (iAlready){ following=following.filter(x=>x!==targetUid); followers=followers.filter(x=>x!==meUid); }
+    else { following.push(targetUid); followers.push(meUid); await addNotification(targetUid, "follow", `${safeString(userData?.username,"user")} followed you`, ""); }
+    await Promise.all([ myRef.update({following}), targetRef.update({followers}) ]);
+    if (meUid===currentUser.uid){ userData.following=following; }
     openProfile(targetUid);
   }
 
-  // =========================
-  // SEARCH
-  // =========================
-  let searchTimer = null;
-
-  function doSearch(){
-    clearTimeout(searchTimer);
-    searchTimer = setTimeout(runSearch, 200);
-  }
-
+  /* =========================
+     SEARCH (users + ForYou/Trending)
+     ========================= */
+  let searchTimer=null;
+  function doSearch(){ clearTimeout(searchTimer); searchTimer=setTimeout(runSearch,200); }
   async function runSearch(){
-    const q = safeString(document.getElementById("searchInput").value, "").toLowerCase().trim();
-    const res = document.getElementById("searchResults");
-
-    if (!q){
-      res.innerHTML = "";
-      return;
-    }
-
+    const q = safeString(document.getElementById("searchInput").value,"").toLowerCase().trim();
+    const res=document.getElementById("searchResults");
+    if (!q){ res.innerHTML=""; return; }
     res.innerHTML = `<div class="muted">Searching...</div>`;
-
     try{
-      const snap = await db.collection("users")
-        .orderBy("username")
-        .startAt(q)
-        .endAt(q + "\uf8ff")
-        .limit(20)
-        .get();
-
-      let html = "";
-      snap.forEach(doc=>{
-        const u = doc.data() || {};
-        const uname = safeString(u.username, "");
-        if (!uname) return;
-
-        html += `
-          <div class="card">
-            <div class="row">
-              <div class="avatar">${initialLetter(uname)}</div>
-              <div style="flex:1;">
-                <div style="font-weight:900;" class="click" onclick="openProfile('${escapeAttr(doc.id)}')">${formatNameWithVerified(uname, !!u.verified)}</div>
-                <div class="muted">${escapeHtml(doc.id)}</div>
-              </div>
-              <button class="secondary" onclick="startChatWith('${escapeAttr(doc.id)}','${escapeAttr(uname)}')">Message</button>
-            </div>
+      const snap = await db.collection("users").orderBy("username").startAt(q).endAt(q+"\uf8ff").limit(20).get();
+      let html=""; snap.forEach(doc=>{
+        const u=doc.data()||{}; const uname=safeString(u.username,""); if (!uname) return;
+        html += `<div class="card"><div class="row">
+          <div class="avatar">${initialLetter(uname)}</div>
+          <div style="flex:1;">
+            <div style="font-weight:900;" class="click" onclick="openProfile('${escapeAttr(doc.id)}')">${formatNameWithVerified(uname,!!u.verified)}</div>
+            <div class="muted">${escapeHtml(doc.id)}</div>
           </div>
-        `;
+          <button class="secondary" onclick="startChatWith('${escapeAttr(doc.id)}','${escapeAttr(uname)}')">Message</button>
+        </div></div>`;
       });
-
       res.innerHTML = html || `<div class="muted">No matches.</div>`;
-    } catch(e){
-      console.error(e);
-      res.innerHTML = `<div class="card">Search error: ${escapeHtml(e.message || String(e))}</div>`;
-    }
+    }catch(e){ res.innerHTML = `<div class="card">Search error: ${escapeHtml(e.message || String(e))}</div>`; }
   }
 
-  // =========================
-  // MESSAGES
-  // =========================
-  function chatId(a,b){
-    return (a < b) ? `${a}_${b}` : `${b}_${a}`;
+  async function buildForYou(){
+    const card=document.getElementById("forYouCard");
+    try{
+      const snap=await db.collection("posts").orderBy("timestamp","desc").limit(10).get();
+      let html=""; snap.forEach(doc=>{
+        const p=doc.data()||{}; const text=safeString(p.text,"");
+        html += `<div class="row" style="margin-top:8px;">
+          <div class="avatar">${initialLetter(p.username||"u")}</div>
+          <div class="click" style="margin-left:8px; font-weight:700;" onclick="openProfile('${escapeAttr(p.uid)}')">${formatNameWithVerified(safeString(p.username,"user"),!!p.verified)}</div>
+          <div class="muted" style="margin-left:8px;">${timeAgo(p.timestamp)}</div>
+        </div>
+        ${text?`<div style="margin:6px 0 0 50px;">${escapeHtml(text.slice(0,120))}${text.length>120?"…":""}</div>`:""}
+        <div class="divider"></div>`;
+      });
+      card.insertAdjacentHTML("beforeend", html || `<div class="muted" style="margin-top:6px;">Nothing yet.</div>`);
+    }catch(e){ card.insertAdjacentHTML("beforeend", `<div class="muted">ForYou error: ${escapeHtml(e.message||String(e))}</div>`); }
+  }
+  async function refreshForYou(){ document.getElementById("forYouCard").innerHTML = `<div class="row"><div style="font-weight:900;">For you</div><div class="space"></div><button class="secondary" onclick="refreshForYou()" style="font-size:12px; padding:6px 10px;">Refresh</button></div><div class="muted" style="margin-top:6px;">New & popular posts</div>`; buildForYou(); }
+
+  async function buildTrending(){
+    const list=document.getElementById("trendingList"); list.innerHTML = `<div class="muted">Loading…</div>`;
+    try{
+      // naive “trending”: most likes among recent 50
+      const snap=await db.collection("posts").orderBy("timestamp","desc").limit(50).get();
+      const arr=[]; snap.forEach(doc=>{ const d=doc.data()||{}; arr.push({id:doc.id, text:safeString(d.text,""), likes:(safeArray(d.likes).length||0), uid:d.uid, username:safeString(d.username,"user"), verified:!!d.verified, timestamp:d.timestamp}); });
+      arr.sort((a,b)=>b.likes-a.likes);
+      const top = arr.slice(0,5);
+      let html="";
+      top.forEach(p=>{
+        html += `<div class="row" style="margin:8px 0;">
+          <div class="avatar">${initialLetter(p.username)}</div>
+          <div style="flex:1; margin-left:8px;">
+            <div style="font-weight:900;" class="click" onclick="openProfile('${escapeAttr(p.uid)}')">${formatNameWithVerified(p.username,p.verified)}</div>
+            <div class="muted">${p.likes} likes • ${timeAgo(p.timestamp)}</div>
+            ${p.text?`<div>${escapeHtml(p.text.slice(0,120))}${p.text.length>120?"…":""}</div>`:""}
+          </div>
+        </div>`;
+      });
+      list.innerHTML = html || `<div class="muted">No trending yet.</div>`;
+    }catch(e){ list.innerHTML = `<div class="muted">Trending error: ${escapeHtml(e.message||String(e))}</div>`; }
   }
 
-  function setChatAI(){
-    activeChatUid = "AI";
-    document.getElementById("chatWith").textContent = "Chatting with: EchoBot";
-    ensureChatListener();
+  /* =========================
+     NOTIFICATIONS (per-user)
+     ========================= */
+  function startNotificationsListener(){
+    if (notifUnsub) { notifUnsub(); notifUnsub=null; }
+    const body=document.getElementById("notifsBody");
+    body.innerHTML = `<div class="muted">Loading notifications…</div>`;
+    notifUnsub = db.collection("notifications").doc(currentUser.uid).collection("items").orderBy("timestamp","desc").limit(50)
+      .onSnapshot((snap)=>{
+        if (snap.empty){ body.innerHTML = `<div class="card">No notifications yet.</div>`; return; }
+        let html="";
+        snap.forEach(d=>{
+          const n=d.data()||{}; const title=safeString(n.title,""); const detail=safeString(n.detail,""); const type=safeString(n.type,"note");
+          html += `<div class="card">
+            <div style="font-weight:900;"><i class="fa-solid ${typeIcon(type)}" style="margin-right:6px;"></i>${escapeHtml(title)}</div>
+            ${detail?`<div class="muted" style="margin-top:6px;">${escapeHtml(detail)}</div>`:""}
+            <div class="muted" style="margin-top:6px;">${timeAgo(n.timestamp)}</div>
+          </div>`;
+        });
+        body.innerHTML = html;
+      }, (err)=>{
+        console.error("notif listen", err);
+        body.innerHTML = `<div class="card">Notifications error: ${escapeHtml(err.message||String(err))}</div>`;
+      });
+  }
+  function typeIcon(type){
+    if (type==="like") return "fa-heart";
+    if (type==="comment") return "fa-comment";
+    if (type==="follow") return "fa-user-plus";
+    if (type==="post") return "fa-bullhorn";
+    return "fa-bell";
+  }
+  async function addNotification(targetUid, type, title, detail){
+    try{
+      await db.collection("notifications").doc(targetUid).collection("items").add({
+        type: safeString(type,"note"),
+        title: safeString(title,""),
+        detail: safeString(detail,""),
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    }catch(e){ /* optional */ }
   }
 
-  function startChatWith(uid, username){
-    activeChatUid = uid;
-    document.getElementById("chatWith").textContent = "Chatting with: " + safeString(username, uid);
-    route("messages");
-    ensureChatListener();
-  }
-
+  /* =========================
+     MESSAGES (with AI stub)
+     ========================= */
+  function chatId(a,b){ return (a<b)?`${a}_${b}`:`${b}_${a}`; }
+  function setChatAI(){ activeChatUid="AI"; document.getElementById("chatWith").textContent="Chatting with: EchoBot"; ensureChatListener(); }
+  function startChatWith(uid,username){ activeChatUid=uid; document.getElementById("chatWith").textContent="Chatting with: "+safeString(username,uid); route("messages"); ensureChatListener(); }
   function ensureChatListener(){
     if (!currentUser) return;
-
-    if (chatUnsub){
-      chatUnsub();
-      chatUnsub = null;
-    }
-
-    const me = currentUser.uid;
-    const other = activeChatUid === "AI" ? "AI" : activeChatUid;
-    const cid = chatId(me, other);
-
-    const box = document.getElementById("chatBox");
-    box.innerHTML = `<div class="muted">Loading chat...</div>`;
-
-    chatUnsub = db.collection("messages")
-      .doc(cid)
-      .collection("messages")
-      .orderBy("timestamp","asc")
-      .limit(200)
-      .onSnapshot(async (snap)=>{
-        let html = "";
-        for (const doc of snap.docs){
-          const m = doc.data() || {};
-          const mine = m.uid === currentUser.uid;
-
-          let uname = safeString(m.username, m.uid === "AI" ? "EchoBot" : "user");
-          let verified = !!m.verified;
-
-          // If not AI, fetch latest verified status to show blue check everywhere
-          if (m.uid && m.uid !== "AI"){
-            try{
-              const u = await ensureUserCached(m.uid);
-              if (u){
-                uname = u.username || uname;
-                verified = !!u.verified;
-              }
-            } catch(e){}
-          }
-
-          const text = safeString(m.text, "");
-
-          html += `
-            <div class="card" style="margin:8px 0; padding:10px; border-radius:14px; ${mine ? "border-color: rgba(29,161,242,.6);" : ""}">
-              <div style="font-weight:900;">${formatNameWithVerified(uname, verified)}</div>
-              <div>${escapeHtml(text)}</div>
-            </div>
-          `;
-        }
-        box.innerHTML = html || `<div class="muted">No messages yet.</div>`;
-        box.scrollTop = box.scrollHeight;
-      }, (err)=>{
-        console.error("Chat listen error:", err);
-        box.innerHTML = `<div class="card">Chat error: ${escapeHtml(err.message || String(err))}</div>`;
-      });
+    if (chatUnsub){ chatUnsub(); chatUnsub=null; }
+    const me=currentUser.uid; const other=activeChatUid==="AI"?"AI":activeChatUid; const cid=chatId(me,other);
+    const box=document.getElementById("chatBox"); box.innerHTML=`<div class="muted">Loading chat...</div>`;
+    chatUnsub = db.collection("messages").doc(cid).collection("messages").orderBy("timestamp","asc").limit(200).onSnapshot(async (snap)=>{
+      let html="";
+      for (const doc of snap.docs){
+        const m=doc.data()||{}; const mine=m.uid===currentUser.uid;
+        let uname=safeString(m.username, m.uid==="AI"?"EchoBot":"user"); let verified=!!m.verified;
+        if (m.uid && m.uid!=="AI"){ try{ const u=await ensureUserCached(m.uid); if (u){ uname=u.username||uname; verified=!!u.verified; } }catch{} }
+        html += `<div class="card" style="margin:8px 0; padding:10px; border-radius:14px; ${mine?"border-color: rgba(29,161,242,.6);":""}">
+          <div style="font-weight:900;">${formatNameWithVerified(uname,verified)}</div>
+          <div>${escapeHtml(safeString(m.text,""))}</div>
+        </div>`;
+      }
+      box.innerHTML = html || `<div class="muted">No messages yet.</div>`;
+      box.scrollTop = box.scrollHeight;
+    }, (err)=>{ console.error("Chat listen error:", err); box.innerHTML=`<div class="card">Chat error: ${escapeHtml(err.message||String(err))}</div>`; });
   }
 
   async function sendMessage(){
-    const status = document.getElementById("msgStatus");
-    status.textContent = "";
-
-    const input = document.getElementById("chatInput");
-    const text = safeString(input.value, "").trim();
-    if (!text) return;
-
-    const me = currentUser.uid;
-    const other = activeChatUid === "AI" ? "AI" : activeChatUid;
-    const cid = chatId(me, other);
-
+    const status=document.getElementById("msgStatus"); status.textContent="";
+    const input=document.getElementById("chatInput"); const text=safeString(input.value,"").trim(); if (!text) return;
+    const me=currentUser.uid; const other=activeChatUid==="AI"?"AI":activeChatUid; const cid=chatId(me,other);
     try{
-      await db.collection("messages")
-        .doc(cid)
-        .collection("messages")
-        .add({
-          uid: me,
-          username: safeString(userData?.username, "user"),
-          verified: !!userData?.verified,
-          text: text,
-          timestamp: firebase.firestore.FieldValue.serverTimestamp()
-        });
-
-      input.value = "";
-
-      if (other === "AI"){
-        aiReply(cid, text);
-      }
-    } catch(e){
-      console.error(e);
-      status.textContent = "Send failed: " + (e.message || String(e));
-    }
+      await db.collection("messages").doc(cid).collection("messages").add({
+        uid: me, username: safeString(userData?.username,"user"), verified: !!userData?.verified, text, timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      input.value="";
+      if (other==="AI"){ aiReply(cid, text); }
+    }catch(e){ console.error(e); status.textContent="Send failed: " + (e.message||String(e)); }
   }
 
   async function aiReply(cid, userText){
-    const t = (userText || "").toLowerCase();
-    let msg = "Tell me more.";
-
-    if (t.includes("hi") || t.includes("hello")) msg = "Hey! What are you up to today?";
-    else if (t.includes("help")) msg = "What do you want help with in EchoStream?";
-    else if (t.includes("joke")) msg = "Why did the dev go broke? Because he used up all his cache.";
-    else if (t.includes("bye")) msg = "Bye! Come back anytime.";
-
-    setTimeout(async ()=>{
-      try{
-        await db.collection("messages")
-          .doc(cid)
-          .collection("messages")
-          .add({
-            uid: "AI",
-            username: "EchoBot",
-            verified: true,
-            text: msg,
-            timestamp: firebase.firestore.FieldValue.serverTimestamp()
-          });
-      } catch(e){
-        console.warn("AI reply failed:", e);
-      }
-    }, 650);
+    const t=(userText||"").toLowerCase(); let msg="Tell me more.";
+    if (t.includes("hi")||t.includes("hello")) msg="Hey! What are you up to today?";
+    else if (t.includes("help")) msg="What do you want help with in EchoStream?";
+    else if (t.includes("joke")) msg="Why did the dev go broke? Because he used up all his cache.";
+    else if (t.includes("bye")) msg="Bye! Come back anytime.";
+    setTimeout(async ()=>{ try{
+      await db.collection("messages").doc(cid).collection("messages").add({
+        uid:"AI", username:"EchoBot", verified:true, text:msg, timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      }); }catch(e){ console.warn("AI reply failed:", e); } }, 650);
   }
 
-  // =========================
-  // ADMIN SETTINGS
-  // =========================
-  let adminSearchTimer = null;
-  let adminTargetUid = null;
-  let adminTargetData = null;
-
-  function adminSearchDebounced(){
-    clearTimeout(adminSearchTimer);
-    adminSearchTimer = setTimeout(adminRunSearch, 200);
-  }
-
+  /* =========================
+     ADMIN SETTINGS
+     ========================= */
+  let adminSearchTimer=null; let adminTargetUid=null; let adminTargetData=null;
+  function adminSearchDebounced(){ clearTimeout(adminSearchTimer); adminSearchTimer=setTimeout(adminRunSearch,200); }
   async function loadAdminSettings(){
     if (!isAdminUser){
-      document.getElementById("adminNote").textContent = "You are not an admin.";
-      document.getElementById("adminUserPanel").classList.add("hidden");
-      return;
+      document.getElementById("adminNote").textContent="You are not an admin.";
+      document.getElementById("adminUserPanel").classList.add("hidden"); return;
     }
-    document.getElementById("adminNote").textContent = "You are an admin.";
-    document.getElementById("adminSearchInput").value = "";
-    document.getElementById("adminSearchResults").innerHTML = "";
+    document.getElementById("adminNote").textContent="You are an admin.";
+    document.getElementById("adminSearchInput").value="";
+    document.getElementById("adminSearchResults").innerHTML="";
     document.getElementById("adminUserPanel").classList.add("hidden");
-    adminTargetUid = null;
-    adminTargetData = null;
+    adminTargetUid=null; adminTargetData=null;
   }
-
   function setAdminStatusBadge(status){
-    const el = document.getElementById("adminTargetStatusBadge");
-    const s = safeString(status, "active");
-    el.className = "status-badge";
-    if (s === "banned") el.classList.add("status-banned");
-    else if (s === "suspended") el.classList.add("status-suspended");
-    else el.classList.add("status-active");
-    el.innerHTML = `<i class="fa-solid fa-circle"></i> ${escapeHtml(s)}`;
+    const el=document.getElementById("adminTargetStatusBadge");
+    const s=safeString(status,"active");
+    el.className="pill"; el.innerHTML=`<i class="fa-solid fa-circle"></i> ${escapeHtml(s)}`;
   }
-
   async function adminRunSearch(){
     if (!isAdminUser) return;
-
-    const q = safeString(document.getElementById("adminSearchInput").value, "").toLowerCase().trim();
-    const res = document.getElementById("adminSearchResults");
-
-    if (!q){
-      res.innerHTML = "";
-      return;
-    }
-
+    const q=safeString(document.getElementById("adminSearchInput").value,"").toLowerCase().trim();
+    const res=document.getElementById("adminSearchResults");
+    if (!q){ res.innerHTML=""; return; }
     res.innerHTML = `<div class="muted">Searching...</div>`;
-
     try{
-      const snap = await db.collection("users")
-        .orderBy("username")
-        .startAt(q)
-        .endAt(q + "\uf8ff")
-        .limit(15)
-        .get();
-
-      let html = "";
-      snap.forEach(doc=>{
-        const u = doc.data() || {};
-        const uname = safeString(u.username, "user");
-        html += `
-          <div class="card" style="cursor:pointer;" onclick="adminSelectUser('${escapeAttr(doc.id)}')">
-            <div class="row">
-              <div class="avatar">${initialLetter(uname)}</div>
-              <div style="flex:1;">
-                <div style="font-weight:900;">${formatNameWithVerified(uname, !!u.verified)}</div>
-                <div class="muted">${escapeHtml(doc.id)}</div>
-              </div>
-              <span class="pill">${escapeHtml(safeString(u.status,"active"))}</span>
+      const snap=await db.collection("users").orderBy("username").startAt(q).endAt(q+"\uf8ff").limit(15).get();
+      let html=""; snap.forEach(doc=>{
+        const u=doc.data()||{}; const uname=safeString(u.username,"user");
+        html += `<div class="card" style="cursor:pointer;" onclick="adminSelectUser('${escapeAttr(doc.id)}')">
+          <div class="row">
+            <div class="avatar">${initialLetter(uname)}</div>
+            <div style="flex:1;">
+              <div style="font-weight:900;">${formatNameWithVerified(uname, !!u.verified)}</div>
+              <div class="muted">${escapeHtml(doc.id)}</div>
             </div>
+            <span class="pill">${escapeHtml(safeString(u.status,"active"))}</span>
           </div>
-        `;
+        </div>`;
       });
-
       res.innerHTML = html || `<div class="muted">No matches.</div>`;
-    } catch(e){
-      res.innerHTML = `<div class="muted">Search error: ${escapeHtml(e.message || String(e))}</div>`;
-    }
+    }catch(e){ res.innerHTML = `<div class="muted">Search error: ${escapeHtml(e.message||String(e))}</div>`; }
   }
-
   async function adminSelectUser(uid){
     if (!isAdminUser) return;
-
-    document.getElementById("adminActionStatus").textContent = "";
-    adminTargetUid = uid;
-    const panel = document.getElementById("adminUserPanel");
-    panel.classList.remove("hidden");
-
-    const snap = await db.collection("users").doc(uid).get();
-    adminTargetData = snap.exists ? (snap.data() || {}) : {};
-
-    const uname = safeString(adminTargetData.username, "user");
-
-    document.getElementById("adminTargetAvatar").textContent = initialLetter(uname);
-    document.getElementById("adminTargetName").innerHTML = formatNameWithVerified(uname, !!adminTargetData.verified);
-    document.getElementById("adminTargetUid").textContent = uid;
-
-    setAdminStatusBadge(safeString(adminTargetData.status, "active"));
+    document.getElementById("adminActionStatus").textContent="";
+    adminTargetUid=uid;
+    const panel=document.getElementById("adminUserPanel"); panel.classList.remove("hidden");
+    const snap=await db.collection("users").doc(uid).get(); adminTargetData=snap.exists?(snap.data()||{}):{};
+    const uname=safeString(adminTargetData.username,"user");
+    document.getElementById("adminTargetAvatar").textContent=initialLetter(uname);
+    document.getElementById("adminTargetName").innerHTML=formatNameWithVerified(uname, !!adminTargetData.verified);
+    document.getElementById("adminTargetUid").textContent=uid;
+    setAdminStatusBadge(safeString(adminTargetData.status,"active"));
   }
-
   async function adminSetVerified(v){
     if (!isAdminUser || !adminTargetUid) return;
-    const status = document.getElementById("adminActionStatus");
-    status.textContent = "Updating...";
-    try{
-      await db.collection("users").doc(adminTargetUid).update({ verified: !!v });
-      status.textContent = v ? "Verified set." : "Verified removed.";
-      await adminSelectUser(adminTargetUid);
-    } catch(e){
-      status.textContent = "Error: " + (e.message || String(e));
-    }
+    const status=document.getElementById("adminActionStatus"); status.textContent="Updating...";
+    try{ await db.collection("users").doc(adminTargetUid).update({ verified:!!v }); status.textContent = v?"Verified set.":"Verified removed."; await adminSelectUser(adminTargetUid); }
+    catch(e){ status.textContent="Error: "+(e.message||String(e)); }
   }
-
-  async function adminSuspendPreset(days){
-    if (!isAdminUser || !adminTargetUid) return;
-    const until = new Date(Date.now() + days*24*60*60*1000);
-    await adminSuspendUntil(until);
-  }
-
+  async function adminSuspendPreset(days){ if (!isAdminUser || !adminTargetUid) return; const until=new Date(Date.now()+days*24*60*60*1000); await adminSuspendUntil(until); }
   async function adminSuspendCustom(){
     if (!isAdminUser || !adminTargetUid) return;
-    const s = prompt("Suspend for how many hours? (example: 24)");
-    if (!s) return;
-    const hours = Number(s);
-    if (!Number.isFinite(hours) || hours <= 0){
-      alert("Invalid hours.");
-      return;
-    }
-    const until = new Date(Date.now() + hours*60*60*1000);
-    await adminSuspendUntil(until);
+    const s=prompt("Suspend for how many hours? (example: 24)"); if (!s) return;
+    const hours=Number(s); if (!Number.isFinite(hours)||hours<=0){ alert("Invalid hours."); return; }
+    const until=new Date(Date.now()+hours*60*60*1000); await adminSuspendUntil(until);
   }
-
   async function adminSuspendUntil(dateObj){
-    const status = document.getElementById("adminActionStatus");
-    status.textContent = "Suspending...";
+    const status=document.getElementById("adminActionStatus"); status.textContent="Suspending...";
     try{
       await db.collection("users").doc(adminTargetUid).update({
-        status: "suspended",
+        status:"suspended",
         suspendedUntil: firebase.firestore.Timestamp.fromDate(dateObj),
         banReason: firebase.firestore.FieldValue.delete()
       });
-      status.textContent = "Suspended until " + dateObj.toLocaleString();
+      status.textContent="Suspended until "+dateObj.toLocaleString();
       await adminSelectUser(adminTargetUid);
-    } catch(e){
-      status.textContent = "Error: " + (e.message || String(e));
-    }
+    }catch(e){ status.textContent="Error: "+(e.message||String(e)); }
   }
-
   async function adminBanUser(){
     if (!isAdminUser || !adminTargetUid) return;
-    const reason = prompt("Ban reason (optional):") || "";
-    const status = document.getElementById("adminActionStatus");
-    status.textContent = "Banning...";
+    const reason=prompt("Ban reason (optional):")||"";
+    const status=document.getElementById("adminActionStatus"); status.textContent="Banning...";
     try{
       await db.collection("users").doc(adminTargetUid).update({
-        status: "banned",
+        status:"banned",
         banReason: reason,
         suspendedUntil: firebase.firestore.FieldValue.delete()
       });
-      status.textContent = "User banned.";
-      await adminSelectUser(adminTargetUid);
-    } catch(e){
-      status.textContent = "Error: " + (e.message || String(e));
-    }
+      status.textContent="User banned."; await adminSelectUser(adminTargetUid);
+    }catch(e){ status.textContent="Error: "+(e.message||String(e)); }
   }
-
   async function adminClearRestrictions(){
     if (!isAdminUser || !adminTargetUid) return;
-    const status = document.getElementById("adminActionStatus");
-    status.textContent = "Clearing...";
+    const status=document.getElementById("adminActionStatus"); status.textContent="Clearing...";
     try{
       await db.collection("users").doc(adminTargetUid).update({
-        status: "active",
+        status:"active",
         banReason: firebase.firestore.FieldValue.delete(),
         suspendedUntil: firebase.firestore.FieldValue.delete()
       });
-      status.textContent = "Restrictions cleared.";
-      await adminSelectUser(adminTargetUid);
-    } catch(e){
-      status.textContent = "Error: " + (e.message || String(e));
-    }
+      status.textContent="Restrictions cleared."; await adminSelectUser(adminTargetUid);
+    }catch(e){ status.textContent="Error: "+(e.message||String(e)); }
   }
-
   async function adminDeleteUserPosts(){
     if (!isAdminUser || !adminTargetUid) return;
     if (!confirm("Delete ALL posts by this user?")) return;
-
-    const status = document.getElementById("adminActionStatus");
-    status.textContent = "Deleting posts...";
-
+    const status=document.getElementById("adminActionStatus"); status.textContent="Deleting posts...";
     try{
-      const snap = await db.collection("posts").where("uid","==",adminTargetUid).get();
-      let count = 0;
-      // Firestore has limits; for small apps this is okay.
-      const batch = db.batch();
-      snap.forEach(doc=>{
-        batch.delete(doc.ref);
-        count++;
-      });
-      await batch.commit();
-      status.textContent = `Deleted ${count} posts.`;
-    } catch(e){
-      status.textContent = "Error: " + (e.message || String(e));
-    }
+      const snap=await db.collection("posts").where("uid","==",adminTargetUid).get();
+      const batch=db.batch(); let count=0; snap.forEach(doc=>{ batch.delete(doc.ref); count++; });
+      await batch.commit(); status.textContent=`Deleted ${count} posts.`;
+    }catch(e){ status.textContent="Error: "+(e.message||String(e)); }
   }
 
-  // =========================
-  // HTML escaping
-  // =========================
-  function escapeHtml(str){
-    str = String(str ?? "");
-    return str
-      .replaceAll("&","&amp;")
-      .replaceAll("<","&lt;")
-      .replaceAll(">","&gt;")
-      .replaceAll('"',"&quot;")
-      .replaceAll("'","&#039;");
-  }
-  function escapeAttr(str){
-    return escapeHtml(str);
-  }
+  /* =========================
+     HTML escaping
+     ========================= */
+  function escapeHtml(str){ str=String(str??""); return str.replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;"); }
+  function escapeAttr(str){ return escapeHtml(str); }
 </script>
-
 </body>
 </html>
