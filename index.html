@@ -1,1953 +1,2107 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>EchoStream</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>EchoStream</title>
 
-  <!-- Firebase v9 compat -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+    <style>
+        :root{
+          --bg:#0f1115;
+          --panel:#141822;
+          --card:#171c27;
+          --text:#e9edf7;
+          --muted:#9aa3b2;
+          --line:#273047;
+          --blue:#4f7cff;
+          --red:#ff4d4d;
+          --green:#28c76f;
+          --shadow:0 10px 30px rgba(0,0,0,.35);
+          --radius:18px;
+        }
+        *{box-sizing:border-box}
+        body{
+          margin:0;
+          font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial;
+          background:linear-gradient(180deg,#0b0d12 0%, #0f1115 60%, #0b0d12 100%);
+          color:var(--text);
+          min-height:100vh;
+          overflow-x:hidden;
+        }
+        a{color:inherit;text-decoration:none}
+        .wrap{max-width:920px;margin:0 auto;padding:14px 14px 90px}
+        .topbar{
+          position:sticky;top:0;z-index:10;
+          background:rgba(15,17,21,.92);
+          backdrop-filter:blur(10px);
+          border-bottom:1px solid rgba(39,48,71,.55);
+        }
+        .topbar-inner{max-width:920px;margin:0 auto;padding:12px 14px;display:flex;align-items:center;gap:10px}
+        .burger,.gear{
+          width:42px;height:42px;border-radius:14px;
+          display:grid;place-items:center;
+          border:1px solid rgba(39,48,71,.8);
+          background:rgba(20,24,34,.8);
+          cursor:pointer;
+          user-select:none;
+        }
+        .brand{font-weight:900;letter-spacing:.35px}
+        .spacer{flex:1}
+        .icon{font-size:18px;opacity:.95}
 
-  <!-- Icons -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+        .panel{
+          background:rgba(20,24,34,.75);
+          border:1px solid rgba(39,48,71,.75);
+          border-radius:var(--radius);
+          box-shadow:var(--shadow);
+        }
+        .card{
+          background:rgba(23,28,39,.85);
+          border:1px solid rgba(39,48,71,.75);
+          border-radius:var(--radius);
+          box-shadow:var(--shadow);
+          padding:14px;
+        }
+        .row{display:flex;gap:12px;align-items:center}
+        .col{display:flex;flex-direction:column;gap:10px}
+        .muted{color:var(--muted)}
+        .btn{
+          border:none;cursor:pointer;
+          padding:12px 14px;border-radius:14px;
+          font-weight:800;
+          background:rgba(39,48,71,.7);
+          color:var(--text);
+          border:1px solid rgba(39,48,71,.85);
+        }
+        .btn.primary{background:var(--blue);border-color:rgba(79,124,255,.4)}
+        .btn.danger{background:rgba(255,77,77,.2);border-color:rgba(255,77,77,.4);color:#ffd6d6}
+        .btn.success{background:rgba(40,199,111,.2);border-color:rgba(40,199,111,.4);color:#d8ffe9}
+        .btn:disabled{opacity:.5;cursor:not-allowed}
+        input, textarea{
+          width:100%;
+          background:rgba(20,24,34,.75);
+          border:1px solid rgba(39,48,71,.85);
+          color:var(--text);
+          border-radius:14px;
+          padding:12px 12px;
+          outline:none;
+        }
+        textarea{min-height:92px;resize:vertical}
+        .small{font-size:12px}
+        .title{font-size:16px;font-weight:900;margin:0}
+        .h1{font-size:22px;font-weight:950;margin:0}
+        .divider{height:1px;background:rgba(39,48,71,.7);margin:10px 0}
+        .pill{
+          padding:5px 10px;border-radius:999px;
+          background:rgba(39,48,71,.6);
+          border:1px solid rgba(39,48,71,.85);
+          font-size:12px;color:var(--muted);
+          display:inline-flex;align-items:center;gap:6px;
+        }
+        .pill.clickable{cursor:pointer}
+        .pill.clickable:hover{filter:brightness(1.1)}
+        .verified{
+          display:inline-grid;place-items:center;
+          width:16px;height:16px;border-radius:999px;
+          background:rgba(79,124,255,.95);
+          color:white;font-size:11px;font-weight:900;
+          margin-left:6px;
+        }
+        .avatar{
+          width:44px;height:44px;border-radius:999px;
+          background:rgba(39,48,71,.8);
+          border:1px solid rgba(39,48,71,.9);
+          display:grid;place-items:center;
+          overflow:hidden;
+          flex:0 0 auto;
+          user-select:none;
+        }
+        .avatar img{width:100%;height:100%;object-fit:cover}
 
-  <style>
-    :root{
-      --bg:#ffffff; --text:#111; --muted:#666;
-      --card:#f3f3f3; --border:#ddd;
-      --accent:#1da1f2; --danger:#ff3b30;
-      --ok:#2ecc71;
-    }
-    body.dark{
-      --bg:#0b0b0b; --text:#fff; --muted:#aaa;
-      --card:#151515; --border:#2a2a2a;
-    }
-    body{
-      margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
-      background:var(--bg); color:var(--text);
-    }
+        .post-actions{display:flex;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap}
+        .action{
+          display:inline-flex;gap:8px;align-items:center;
+          padding:8px 10px;border-radius:999px;
+          border:1px solid rgba(39,48,71,.9);
+          background:rgba(20,24,34,.65);
+          cursor:pointer;
+          user-select:none;
+          white-space:nowrap;
+        }
+        .action.active{border-color:rgba(79,124,255,.7); background:rgba(79,124,255,.12)}
+        .grid{display:grid;gap:12px}
+        .two{grid-template-columns:1fr 1fr}
+        @media (max-width:860px){.two{grid-template-columns:1fr}}
 
-    header{
-      position:fixed; top:0; left:0; right:0;
-      display:flex; align-items:center; justify-content:space-between;
-      padding:14px 14px;
-      background:var(--bg);
-      border-bottom:1px solid var(--border);
-      z-index:20;
-      font-weight:800;
-    }
-    header .left{display:flex; align-items:center; gap:10px;}
-    header .icon-btn{
-      width:40px; height:40px; border-radius:999px;
-      display:flex; align-items:center; justify-content:center;
-      cursor:pointer;
-      user-select:none;
-    }
-    header .icon-btn:hover{ background:rgba(127,127,127,.12); }
+        .bottomnav{
+          position:fixed;left:0;right:0;bottom:0;z-index:20;
+          background:rgba(15,17,21,.92);
+          backdrop-filter:blur(10px);
+          border-top:1px solid rgba(39,48,71,.55);
+        }
+        .bottomnav-inner{max-width:920px;margin:0 auto;padding:10px 10px;display:flex;justify-content:space-between}
+        .tab{
+          flex:1;
+          display:flex;flex-direction:column;
+          align-items:center;gap:6px;
+          padding:8px 0;border-radius:14px;
+          color:var(--muted);
+          cursor:pointer;
+          user-select:none;
+        }
+        .tab.active{color:var(--text); background:rgba(39,48,71,.35)}
+        .tab .ico{font-size:18px}
 
-    main{
-      padding:72px 14px 88px;
-      max-width:640px; margin:0 auto;
-    }
+        .drawer-backdrop{
+          position:fixed;inset:0;z-index:30;
+          background:rgba(0,0,0,.55);
+          display:none;
+        }
+        .drawer{
+          position:fixed;top:0;bottom:0;left:0;z-index:31;
+          width:min(320px,86vw);
+          background:rgba(20,24,34,.96);
+          border-right:1px solid rgba(39,48,71,.85);
+          padding:14px;
+          transform:translateX(-105%);
+          transition:.22s ease;
+          overflow:auto;
+        }
+        .drawer.open{transform:translateX(0)}
+        .drawer-backdrop.open{display:block}
+        .drawer .item{
+          padding:12px;border-radius:14px;
+          border:1px solid rgba(39,48,71,.8);
+          background:rgba(23,28,39,.6);
+          cursor:pointer;
+          display:flex;align-items:center;gap:10px;
+          margin-bottom:10px;
+          color:var(--text);
+          user-select:none;
+        }
+        .drawer .item .ico{width:22px;text-align:center}
 
-    nav{
-      position:fixed; bottom:0; left:0; right:0;
-      display:flex; justify-content:space-around; align-items:center;
-      padding:10px 0;
-      background:var(--bg);
-      border-top:1px solid var(--border);
-      z-index:20;
-    }
-    nav .tab{
-      width:20%;
-      display:flex; flex-direction:column; align-items:center;
-      gap:6px;
-      color:var(--muted);
-      cursor:pointer;
-      user-select:none;
-      padding:6px 0;
-    }
-    nav .tab.active{ color:var(--accent); }
-    nav i{ font-size:20px; }
+        .toast{
+          position:fixed;left:50%;transform:translateX(-50%);
+          bottom:92px;z-index:50;
+          background:rgba(23,28,39,.95);
+          border:1px solid rgba(39,48,71,.85);
+          padding:10px 12px;border-radius:14px;
+          box-shadow:var(--shadow);
+          display:none;
+          max-width:min(680px,92vw);
+        }
+        .toast.show{display:block}
 
-    .hidden{ display:none !important; }
+        .post-img{
+          width:100%;margin-top:10px;border-radius:16px;
+          border:1px solid rgba(39,48,71,.85);
+          overflow:hidden;
+          background:#0b0d12;
+        }
+        .post-img img{width:100%;display:block}
 
-    .card{
-      background:var(--card);
-      border:1px solid var(--border);
-      border-radius:16px;
-      padding:14px;
-      margin-bottom:12px;
-    }
+        .comment{
+          padding:10px;border-radius:14px;
+          background:rgba(20,24,34,.55);
+          border:1px solid rgba(39,48,71,.75);
+          margin-top:8px;
+        }
 
-    textarea, input, select{
-      width:100%;
-      box-sizing:border-box;
-      padding:10px;
-      border-radius:12px;
-      border:1px solid var(--border);
-      background:var(--bg);
-      color:var(--text);
-      outline:none;
-    }
-    textarea{ min-height:84px; resize:vertical; }
+        .hint{font-size:12px;color:var(--muted);margin-top:6px}
+        .linkish{cursor:pointer}
+        .linkish:hover{text-decoration:underline}
 
-    button{
-      border:none;
-      background:var(--accent);
-      color:#fff;
-      padding:10px 14px;
-      border-radius:999px;
-      font-weight:700;
-      cursor:pointer;
-    }
-    button.secondary{
-      background:transparent;
-      color:var(--text);
-      border:1px solid var(--border);
-    }
-    button.danger{ background:var(--danger); }
-    button.ok{ background:var(--ok); }
-    button:disabled{ opacity:.6; cursor:not-allowed; }
+        .modal-backdrop{
+          position:fixed;inset:0;z-index:60;
+          background:rgba(0,0,0,.6);
+          display:none;
+          align-items:center;
+          justify-content:center;
+          padding:16px;
+        }
+        .modal-backdrop.open{display:flex}
+        .modal{
+          width:min(720px,94vw);
+          max-height:min(80vh,720px);
+          overflow:auto;
+          background:rgba(20,24,34,.98);
+          border:1px solid rgba(39,48,71,.85);
+          border-radius:18px;
+          box-shadow:var(--shadow);
+          padding:14px;
+        }
 
-    .row{ display:flex; gap:10px; align-items:center; }
-    .space{ flex:1; }
+        #fab{
+          position:fixed; right:20px; bottom:105px; z-index:40;
+          width:64px; height:64px; border-radius:999px;
+          display:grid; place-items:center;
+          font-size:32px; font-weight:900;
+          box-shadow:0 12px 40px rgba(0,0,0,.45);
+        }
 
-    .avatar{
-      width:42px; height:42px;
-      border-radius:999px;
-      background:#666;
-      display:flex; align-items:center; justify-content:center;
-      color:#fff;
-      font-weight:800;
-      flex:0 0 auto;
-    }
-    .post-image{
-      margin-top:10px;
-      max-width:100%;
-      border-radius:14px;
-      border:1px solid var(--border);
-    }
-
-    .muted{ color:var(--muted); font-size:13px; }
-    .click{ cursor:pointer; }
-    .click:hover{ text-decoration:underline; }
-
-    .post-actions{
-      display:flex; gap:18px;
-      margin-top:10px;
-      color:var(--muted);
-      user-select:none;
-    }
-    .post-actions span{ cursor:pointer; }
-    .post-actions span:hover{ color:var(--text); }
-
-    .comment{
-      display:flex; gap:10px;
-      margin-top:10px;
-      padding-top:10px;
-      border-top:1px solid var(--border);
-    }
-    .comment .avatar{ width:34px; height:34px; font-size:14px; }
-
-    /* Drawer */
-    .drawer-backdrop{
-      position:fixed; inset:0;
-      background:rgba(0,0,0,.45);
-      z-index:50;
-      display:none;
-    }
-    .drawer-backdrop.show{ display:block; }
-
-    .drawer{
-      position:fixed; top:0; left:-320px;
-      width:300px; height:100%;
-      background:var(--bg);
-      border-right:1px solid var(--border);
-      z-index:60;
-      padding:14px;
-      transition:left .2s ease;
-    }
-    .drawer.show{ left:0; }
-
-    .drawer .item{
-      padding:12px 10px;
-      border-radius:12px;
-      cursor:pointer;
-      display:flex; gap:10px; align-items:center;
-    }
-    .drawer .item:hover{ background:rgba(127,127,127,.12); }
-
-    /* Modal */
-    .modal{
-      position:fixed; inset:0;
-      background:rgba(0,0,0,.55);
-      display:none;
-      align-items:center; justify-content:center;
-      z-index:80;
-      padding:14px;
-    }
-    .modal.show{ display:flex; }
-    .modal .box{
-      width:100%;
-      max-width:520px;
-      background:var(--bg);
-      border:1px solid var(--border);
-      border-radius:16px;
-      padding:16px;
-    }
-
-    .pill{
-      display:inline-flex;
-      align-items:center;
-      gap:6px;
-      padding:6px 10px;
-      border:1px solid var(--border);
-      border-radius:999px;
-      font-size:12px;
-      color:var(--muted);
-      background:rgba(127,127,127,.06);
-      user-select:none;
-    }
-
-    .verified{
-      color:var(--accent);
-      margin-left:6px;
-      font-size:12px;
-      vertical-align:middle;
-    }
-
-    .status-badge{
-      display:inline-flex;
-      gap:6px;
-      align-items:center;
-      padding:6px 10px;
-      border-radius:999px;
-      border:1px solid var(--border);
-      font-size:12px;
-      user-select:none;
-    }
-    .status-active{ color:var(--ok); }
-    .status-suspended{ color:#f39c12; }
-    .status-banned{ color:var(--danger); }
-
-    .divider{ height:1px; background:var(--border); margin:10px 0; }
-
-    /* login style upgrade */
-    .login-hero{
-      padding:18px;
-      border-radius:18px;
-      border:1px solid var(--border);
-      background:linear-gradient(180deg, rgba(29,161,242,.12), rgba(127,127,127,.06));
-    }
-    .login-title{ font-size:22px; font-weight:900; margin:0 0 8px; }
-    .login-sub{ margin:0 0 14px; color:var(--muted); }
-  </style>
+        /* 3-dot menu */
+        .postTopRow{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+        .menuWrap{position:relative}
+        .moreBtn{
+          width:40px;height:40px;border-radius:14px;
+          border:1px solid rgba(39,48,71,.85);
+          background:rgba(20,24,34,.65);
+          color:var(--text);
+          cursor:pointer;
+          font-weight:900;
+          line-height:0;
+        }
+        .menu{
+          position:absolute; right:0; top:44px; z-index:80;
+          min-width:190px;
+          border-radius:14px;
+          border:1px solid rgba(39,48,71,.9);
+          background:rgba(20,24,34,.98);
+          overflow:hidden;
+          box-shadow:var(--shadow);
+          display:none;
+        }
+        .menu.open{display:block}
+        .menu button{
+          width:100%;
+          text-align:left;
+          background:transparent;
+          border:0;
+          color:var(--text);
+          padding:10px 12px;
+          cursor:pointer;
+          font-weight:800;
+        }
+        .menu button:hover{background:rgba(39,48,71,.35)}
+        .menu .danger{color:#ffd6d6}
+    </style>
 </head>
 
 <body>
-
-<header>
-  <div class="left">
-    <div class="icon-btn" onclick="openDrawer()"><i class="fa-solid fa-bars"></i></div>
-    <div id="headerTitle">EchoStream</div>
-  </div>
-  <div class="row" style="gap:6px;">
-    <div id="headerBack" class="icon-btn hidden" onclick="goBack()"><i class="fa-solid fa-arrow-left"></i></div>
-    <div class="icon-btn" onclick="route('settings', true)"><i class="fa-solid fa-gear"></i></div>
-  </div>
-</header>
-
-<!-- Drawer -->
-<div id="drawerBackdrop" class="drawer-backdrop" onclick="closeDrawer()"></div>
-<div id="drawer" class="drawer">
-  <div class="row">
-    <div style="font-weight:900;">Menu</div>
-    <div class="space"></div>
-    <div class="icon-btn" onclick="closeDrawer()"><i class="fa-solid fa-xmark"></i></div>
-  </div>
-  <div style="height:8px;"></div>
-  <div class="item" onclick="route('feed', true); closeDrawer();"><i class="fa-solid fa-house"></i> Feed</div>
-  <div class="item" onclick="route('search', true); closeDrawer();"><i class="fa-solid fa-magnifying-glass"></i> Search</div>
-  <div class="item" onclick="route('notifications', true); closeDrawer();"><i class="fa-solid fa-bell"></i> Notifications</div>
-  <div class="item" onclick="route('messages', true); closeDrawer();"><i class="fa-solid fa-message"></i> Messages</div>
-  <div class="item" onclick="route('profile', true); closeDrawer();"><i class="fa-solid fa-user"></i> Profile</div>
-  <div class="item" onclick="route('settings', true); closeDrawer();"><i class="fa-solid fa-gear"></i> Settings</div>
+<div class="topbar">
+    <div class="topbar-inner">
+        <div class="burger" id="btnDrawer"><span class="icon">☰</span></div>
+        <div class="brand">EchoStream</div>
+        <div class="spacer"></div>
+        <div class="gear" id="btnTopSettings"><span class="icon">⚙</span></div>
+    </div>
 </div>
 
-<main>
-
-  <!-- LOGIN -->
-  <div id="loginView" class="card hidden">
-    <div class="login-hero">
-      <div class="login-title">Welcome to EchoStream</div>
-      <p class="login-sub">Sign in to post, follow, message, and get verified.</p>
-      <button onclick="login()"><i class="fa-brands fa-google"></i> Sign in with Google</button>
-      <div class="muted" style="margin-top:10px;" id="loginStatus"></div>
-    </div>
-  </div>
-
-  <!-- BLOCKED -->
-  <div id="blockedView" class="hidden">
-    <div class="card">
-      <h2 style="margin:0 0 8px;" id="blockedTitle">Account restricted</h2>
-      <div class="muted" id="blockedText">Your account can’t use EchoStream right now.</div>
-      <div style="height:12px;"></div>
-      <button class="danger" onclick="logout()">Logout</button>
-    </div>
-  </div>
-
-  <!-- FEED -->
-  <div id="feedView" class="hidden">
-    <div class="card">
-      <div class="muted" style="margin-bottom:8px;">Post</div>
-      <textarea id="postText" placeholder="What’s happening?"></textarea>
-
-      <div style="height:10px;"></div>
-      <input id="postImage" type="file" accept="image/*"/>
-
-      <div class="row" style="margin-top:10px;">
-        <button onclick="createPost()">Post</button>
-        <div class="space"></div>
-        <span class="muted" id="postStatus"></span>
-      </div>
+<div class="drawer-backdrop" id="drawerBackdrop"></div>
+<div class="drawer" id="drawer">
+    <div class="row" style="justify-content:space-between;margin-bottom:12px">
+        <div class="title">Menu</div>
+        <button class="btn" id="btnCloseDrawer" style="padding:8px 10px;border-radius:12px">✕</button>
     </div>
 
-    <div id="posts"></div>
-  </div>
-
-  <!-- SEARCH -->
-  <div id="searchView" class="hidden">
-    <div class="card">
-      <div class="muted" style="margin-bottom:8px;">Search users</div>
-      <input id="searchInput" placeholder="Search by username..." oninput="doSearch()"/>
-      <div class="muted" style="margin-top:10px;">
-        Tip: Search also shows a “For You” preview when empty (coming soon).
-      </div>
-    </div>
-    <div id="searchResults"></div>
-  </div>
-
-  <!-- NOTIFICATIONS -->
-  <div id="notificationsView" class="hidden">
-    <div class="card">
-      <div style="font-weight:900; font-size:18px;">Notifications</div>
-      <div class="muted" style="margin-top:6px;">Likes, follows, and comments will show here.</div>
-    </div>
-    <div id="notifList"></div>
-  </div>
-
-  <!-- MESSAGES -->
-  <div id="messagesView" class="hidden">
-    <div class="card">
-      <div class="row">
-        <div style="font-weight:800;">Chat</div>
-        <div class="space"></div>
-        <button class="secondary" onclick="setChatAI()">EchoBot</button>
-      </div>
-      <div class="muted" id="chatWith" style="margin-top:6px;">Chatting with: EchoBot</div>
+    <div class="item" data-go="feed"><div class="ico">🏠</div><div>Feed</div></div>
+    <div class="item" data-go="search"><div class="ico">🔎</div><div>Search</div></div>
+    <div class="item" data-go="notifications"><div class="ico">🔔</div><div>Notifications</div></div>
+    <div class="item" data-go="profile"><div class="ico">👤</div><div>Profile</div></div>
+    <div class="item" data-go="settings"><div class="ico">⚙</div><div>Settings</div></div>
+    <div class="item" data-go="admin" id="drawerAdmin" style="display:none">
+        <div class="ico">🛡</div><div>Admin</div>
     </div>
 
-    <div class="card" style="padding:10px;">
-      <div id="chatBox" style="height:320px; overflow:auto;"></div>
-    </div>
-
-    <div class="card">
-      <input id="chatInput" placeholder="Type a message..."/>
-      <div class="row" style="margin-top:10px;">
-        <button onclick="sendMessage()">Send</button>
-        <div class="space"></div>
-        <span class="muted" id="msgStatus"></span>
-      </div>
-    </div>
-  </div>
-
-  <!-- PROFILE -->
-  <div id="profileView" class="hidden"></div>
-
-  <!-- SETTINGS HUB -->
-  <div id="settingsView" class="hidden">
-    <div class="card">
-      <div class="row">
-        <div class="avatar" id="settingsAvatar">?</div>
-        <div style="flex:1;">
-          <div style="font-weight:900;" id="settingsName">Your account</div>
-          <div class="muted" id="settingsSub">Loading...</div>
-        </div>
-      </div>
-
-      <div class="divider"></div>
-
-      <div class="drawer item" style="position:static; width:auto; height:auto; padding:0; border:none;">
-        <div class="item" onclick="route('settings-account')">
-          <i class="fa-solid fa-user"></i>
-          <div>
-            <div style="font-weight:900;">Your account</div>
-            <div class="muted">Username, bio, info</div>
-          </div>
-        </div>
-
-        <div class="item" onclick="route('settings-privacy')">
-          <i class="fa-solid fa-shield"></i>
-          <div>
-            <div style="font-weight:900;">Privacy & safety</div>
-            <div class="muted">Basic privacy options</div>
-          </div>
-        </div>
-
-        <div class="item" id="adminSettingsEntry" onclick="route('settings-admin')" style="display:none;">
-          <i class="fa-solid fa-screwdriver-wrench"></i>
-          <div>
-            <div style="font-weight:900;">Admin settings</div>
-            <div class="muted">Verify / suspend / ban</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="divider"></div>
-
-      <label class="row" style="gap:10px; margin-top:6px;">
-        <input type="checkbox" id="darkToggle" style="width:auto;" />
-        <span>Dark mode</span>
-      </label>
-
-      <div style="height:12px;"></div>
-      <button class="danger" onclick="logout()">Logout</button>
-    </div>
-  </div>
-
-  <!-- SETTINGS: ACCOUNT -->
-  <div id="settingsAccountView" class="hidden">
-    <div class="card">
-      <div class="row">
-        <div style="font-weight:900; font-size:18px;">Your account</div>
-        <div class="space"></div>
-        <span id="accountVerifiedPill" class="pill hidden"><i class="fa-solid fa-circle-check"></i> Verified</span>
-        <span id="accountAdminPill" class="pill hidden"><i class="fa-solid fa-shield"></i> Admin</span>
-      </div>
-
-      <div class="divider"></div>
-
-      <div class="muted">Username</div>
-      <input id="accountUsername" placeholder="username" maxlength="20"/>
-      <div class="row" style="margin-top:10px;">
-        <button onclick="saveUsernameFromSettings()">Save username</button>
-        <div class="space"></div>
-        <span class="muted" id="accountStatus"></span>
-      </div>
-
-      <div class="divider"></div>
-
-      <div class="muted">Bio</div>
-      <textarea id="accountBio" placeholder="Write a bio..."></textarea>
-      <div class="row" style="margin-top:10px;">
-        <button onclick="saveBioFromSettings()">Save bio</button>
-        <div class="space"></div>
-        <span class="muted" id="bioStatus"></span>
-      </div>
-
-      <div class="divider"></div>
-
-      <div class="muted">Email</div>
-      <div style="font-weight:900;" id="accountEmail">-</div>
-
-      <div style="height:10px;"></div>
-
-      <div class="muted">UID</div>
-      <div style="font-weight:900; word-break:break-all;" id="accountUid">-</div>
-    </div>
-  </div>
-
-  <!-- SETTINGS: PRIVACY -->
-  <div id="settingsPrivacyView" class="hidden">
-    <div class="card">
-      <div style="font-weight:900; font-size:18px;">Privacy & safety</div>
-      <div class="muted" style="margin-top:8px;">
-        Placeholder page (you can add options later).
-      </div>
-    </div>
-  </div>
-
-  <!-- SETTINGS: ADMIN -->
-  <div id="settingsAdminView" class="hidden">
-    <div class="card">
-      <div style="font-weight:900; font-size:18px;">Admin settings</div>
-      <div class="muted" id="adminNote" style="margin-top:6px;">Loading admin status...</div>
-    </div>
-
-    <div class="card">
-      <div style="font-weight:900;">User lookup</div>
-      <div class="muted" style="margin-top:6px;">Search by username to verify/ban/suspend users.</div>
-
-      <div style="height:10px;"></div>
-      <input id="adminSearchInput" placeholder="Search username..." oninput="adminSearchDebounced()"/>
-      <div style="height:10px;"></div>
-
-      <div id="adminSearchResults"></div>
-    </div>
-
-    <div id="adminUserPanel" class="card hidden">
-      <div class="row">
-        <div class="avatar" id="adminTargetAvatar">?</div>
-        <div style="flex:1;">
-          <div style="font-weight:900;" id="adminTargetName">-</div>
-          <div class="muted" id="adminTargetUid">-</div>
-        </div>
-        <span class="status-badge" id="adminTargetStatusBadge">Status</span>
-      </div>
-
-      <div class="divider"></div>
-
-      <div class="row" style="flex-wrap:wrap;">
-        <button class="ok" onclick="adminSetVerified(true)"><i class="fa-solid fa-circle-check"></i> Verify</button>
-        <button class="secondary" onclick="adminSetVerified(false)"><i class="fa-regular fa-circle-xmark"></i> Remove verify</button>
-      </div>
-
-      <div style="height:10px;"></div>
-
-      <div class="row" style="flex-wrap:wrap;">
-        <button class="secondary" onclick="adminSuspendPreset(1)"><i class="fa-solid fa-clock"></i> Suspend 1 day</button>
-        <button class="secondary" onclick="adminSuspendPreset(7)"><i class="fa-solid fa-clock"></i> Suspend 7 days</button>
-        <button class="secondary" onclick="adminSuspendCustom()"><i class="fa-solid fa-clock"></i> Suspend custom</button>
-      </div>
-
-      <div style="height:10px;"></div>
-
-      <div class="row" style="flex-wrap:wrap;">
-        <button class="danger" onclick="adminBanUser()"><i class="fa-solid fa-ban"></i> Ban</button>
-        <button class="secondary" onclick="adminClearRestrictions()"><i class="fa-solid fa-unlock"></i> Unban/Unsuspend</button>
-      </div>
-
-      <div class="divider"></div>
-
-      <div style="font-weight:900;">Danger zone</div>
-      <div class="muted" style="margin-top:6px;">Optional tools.</div>
-
-      <div style="height:10px;"></div>
-      <button class="danger" onclick="adminDeleteUserPosts()">Delete all posts by user</button>
-
-      <div style="height:10px;"></div>
-      <div class="muted" id="adminActionStatus"></div>
-    </div>
-  </div>
-
-</main>
-
-<!-- Bottom Nav (5 tabs: Home, Search, AI, Notifs, Profile) -->
-<nav>
-  <div class="tab" id="tab-feed" onclick="route('feed', true)">
-    <i class="fa-solid fa-house"></i><div class="muted" style="font-size:12px;">Home</div>
-  </div>
-  <div class="tab" id="tab-search" onclick="route('search', true)">
-    <i class="fa-solid fa-magnifying-glass"></i><div class="muted" style="font-size:12px;">Search</div>
-  </div>
-  <div class="tab" id="tab-ai" onclick="route('messages', true); setChatAI();">
-    <i class="fa-solid fa-wand-magic-sparkles"></i><div class="muted" style="font-size:12px;">AI</div>
-  </div>
-  <div class="tab" id="tab-notifications" onclick="route('notifications', true)">
-    <i class="fa-solid fa-bell"></i><div class="muted" style="font-size:12px;">Notifs</div>
-  </div>
-  <div class="tab" id="tab-profile" onclick="route('profile', true)">
-    <i class="fa-solid fa-user"></i><div class="muted" style="font-size:12px;">Profile</div>
-  </div>
-</nav>
-
-<!-- Username Modal -->
-<div id="usernameModal" class="modal">
-  <div class="box">
-    <h3 style="margin:0 0 8px;">Pick a username</h3>
-    <p class="muted" style="margin:0 0 12px;">Unique, lowercase letters/numbers/underscore only.</p>
-    <input id="usernameInput" placeholder="username" maxlength="20"/>
-    <div class="row" style="margin-top:12px;">
-      <button onclick="saveUsername()">Save</button>
-      <div class="space"></div>
-      <span class="muted" id="usernameStatus"></span>
-    </div>
-  </div>
-</div>
-
-<!-- Followers/Following Modal -->
-<div id="listModal" class="modal">
-  <div class="box">
-    <div class="row">
-      <div style="font-weight:900;" id="listTitle">List</div>
-      <div class="space"></div>
-      <div class="icon-btn" onclick="closeListModal()"><i class="fa-solid fa-xmark"></i></div>
-    </div>
     <div class="divider"></div>
-    <div id="listBody" class="muted">Loading...</div>
-  </div>
+
+    <div class="item" id="btnLogout">
+        <div class="ico">⎋</div><div>Logout</div>
+    </div>
+
+    <div class="hint">Admin permissions are enforced by Firestore rules.</div>
 </div>
 
-<script>
-  // =========================
-  // FIREBASE CONFIG (yours)
-  // =========================
-  firebase.initializeApp({
-    apiKey: "AIzaSyCmY_zfNcH5XnEaQxlqaTW1D8EUR670-Zo",
-    authDomain: "echostream-a102a.firebaseapp.com",
-    projectId: "echostream-a102a",
-    storageBucket: "echostream-a102a.appspot.com",
-    messagingSenderId: "789062222400",
-    appId: "1:789062222400:web:73d478269135a77d7d55a5"
-  });
+<div class="wrap" id="app"></div>
 
-  const auth = firebase.auth();
-  const db = firebase.firestore();
+<div class="bottomnav">
+    <div class="bottomnav-inner">
+        <div class="tab active" data-tab="feed"><div class="ico">🏠</div><div class="small">Home</div></div>
+        <div class="tab" data-tab="search"><div class="ico">🔎</div><div class="small">Search</div></div>
+        <div class="tab" data-tab="notifications"><div class="ico">🔔</div><div class="small">Alerts</div></div>
+        <div class="tab" data-tab="profile"><div class="ico">👤</div><div class="small">Profile</div></div>
+    </div>
+</div>
 
-  let storage = null;
-  try { storage = firebase.storage(); } catch(e) { storage = null; }
+<div class="toast" id="toast"></div>
 
-  let currentUser = null;
-  let userData = null;
-  let isAdminUser = false;
+<div class="modal-backdrop" id="modalBackdrop">
+    <div class="modal" id="modal"></div>
+</div>
 
-  // MUST exist (fixes "activeChatUid not defined")
-  let activeChatUid = "AI";
+<button class="btn primary" id="fab" style="display:none">+</button>
 
-  // listeners
-  let chatUnsub = null;
-  let feedUnsub = null;
-  let notifUnsub = null;
+<script type="module">
+    import { installUpdates } from "./updates.js";
+    import { installMessaging } from "./messages.js";
+    import { installCalls } from "./calls.js";
+     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import {
+      getAuth, onAuthStateChanged,
+      createUserWithEmailAndPassword, signInWithEmailAndPassword,
+      signOut, updateProfile
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import {
+      getFirestore, doc, setDoc, getDoc, updateDoc,
+      collection, addDoc, query, where, orderBy, limit,
+      getDocs, onSnapshot, serverTimestamp, increment,
+      deleteDoc, writeBatch, runTransaction
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import {
+      getStorage, ref, uploadBytes, getDownloadURL
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
-  // Simple cache for user profiles (verified badge)
-  const userCache = new Map(); // uid -> {username, verified, status, bio}
-  const userCachePromises = new Map(); // uid -> Promise
+    const firebaseConfig = {
+  apiKey: "AIzaSyCmY_zfNcH5XnEaQxlqaTW1D8EUR670-Zo",
+  authDomain: "echostream-a102a.firebaseapp.com",
+  databaseURL: "https://echostream-a102a-default-rtdb.firebaseio.com",
+  projectId: "echostream-a102a",
+  storageBucket: "echostream-a102a.firebasestorage.app",
+  messagingSenderId: "789062222400",
+  appId: "1:789062222400:web:73d478269135a77d7d55a5",
+  measurementId: "G-QCJ1240EC5"
+};
 
-  // route stack (settings back button)
-  const routeStack = [];
+const fbApp = initializeApp(firebaseConfig);
+const auth = getAuth(fbApp);
+const db = getFirestore(fbApp);
+const storage = getStorage(fbApp);
+installCalls({ auth, db });
+installMessaging({ auth, db, storage });
 
-  // =========================
-  // UI helpers
-  // =========================
-  function openDrawer(){
-    document.getElementById("drawerBackdrop").classList.add("show");
-    document.getElementById("drawer").classList.add("show");
-  }
-  function closeDrawer(){
-    document.getElementById("drawerBackdrop").classList.remove("show");
-    document.getElementById("drawer").classList.remove("show");
-  }
+/* 🔑 THIS WAS THE MISSING PIECE */
+window.auth = auth;
+window.db = db;
+window.storage = storage;
 
-  function setActiveTab(page){
-    // clear
-    ["feed","search","ai","notifications","profile"].forEach(p=>{
-      const el = document.getElementById("tab-"+p);
-      if (!el) return;
-      el.classList.toggle("active", p===page);
+/* ---------------------------- */
+
+const $ = (sel) => document.querySelector(sel);
+const appEl = $("#app");
+const toastEl = $("#toast");
+const modalBackdrop = $("#modalBackdrop");
+const modalEl = $("#modal");
+const fab = $("#fab");
+
+function safe(s){
+  return (s ?? "").toString()
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
+
+    function toast(msg){
+      toastEl.textContent = msg;
+      toastEl.classList.add("show");
+      setTimeout(() => toastEl.classList.remove("show"), 2400);
+    }
+
+    function openModal(html){
+      modalEl.innerHTML = html;
+      modalBackdrop.classList.add("open");
+    }
+    function closeModal(){
+      modalBackdrop.classList.remove("open");
+      modalEl.innerHTML = "";
+    }
+    modalBackdrop.addEventListener("click", (e) => {
+      if (e.target === modalBackdrop) closeModal();
     });
-  }
 
-  function showView(id){
-    const views = [
-      "loginView","blockedView",
-      "feedView","searchView","notificationsView","messagesView","profileView",
-      "settingsView","settingsAccountView","settingsPrivacyView","settingsAdminView"
-    ];
-    views.forEach(v => document.getElementById(v).classList.add("hidden"));
-    document.getElementById(id).classList.remove("hidden");
-  }
-
-  function safeString(x, fallback=""){
-    return (typeof x === "string" && x.trim().length) ? x : fallback;
-  }
-  function safeArray(x){
-    return Array.isArray(x) ? x : [];
-  }
-  function initialLetter(name){
-    const s = safeString(name, "?");
-    return (s[0] ? s[0].toUpperCase() : "?");
-  }
-  function timeAgo(ts){
-    if (!ts || !ts.toDate) return "now";
-    const seconds = Math.floor((Date.now() - ts.toDate()) / 1000);
-    if (seconds < 60) return seconds + "s";
-    if (seconds < 3600) return Math.floor(seconds/60) + "m";
-    if (seconds < 86400) return Math.floor(seconds/3600) + "h";
-    return Math.floor(seconds/86400) + "d";
-  }
-
-  function setHeader(title, canBack=false){
-    document.getElementById("headerTitle").textContent = title;
-    document.getElementById("headerBack").classList.toggle("hidden", !canBack);
-  }
-
-  function goBack(){
-    if (routeStack.length > 1){
-      routeStack.pop();
-      const prev = routeStack[routeStack.length - 1];
-      internalRoute(prev, false);
-    } else {
-      route("settings", true);
+    function timeAgo(ts){
+      if(!ts) return "";
+      const d = ts.toDate ? ts.toDate() : new Date(ts);
+      const sec = Math.floor((Date.now() - d.getTime())/1000);
+      if(sec < 60) return `${sec}s`;
+      const min = Math.floor(sec/60);
+      if(min < 60) return `${min}m`;
+      const hr = Math.floor(min/60);
+      if(hr < 24) return `${hr}h`;
+      const day = Math.floor(hr/24);
+      return `${day}d`;
     }
-  }
 
-  function formatNameWithVerified(username, verified){
-    const u = escapeHtml(username);
-    if (verified) return `${u} <i class="fa-solid fa-circle-check verified" title="Verified"></i>`;
-    return u;
-  }
+    function initials(name){
+      const t = (name || "").trim();
+      if(!t) return "U";
+      const parts = t.split(/\s+/);
+      if(parts.length === 1) return parts[0].slice(0,1).toUpperCase();
+      return (parts[0].slice(0,1) + parts[1].slice(0,1)).toUpperCase();
+    }
 
-  async function ensureUserCached(uid){
-    if (!uid) return null;
-    if (userCache.has(uid)) return userCache.get(uid);
-    if (userCachePromises.has(uid)) return userCachePromises.get(uid);
+    function avatarHTML(user, size=44){
+      const photo = user?.photoURL || "";
+      const username = user?.username || "user";
+      const display = user?.displayName || username;
+      const ini = initials(display);
+      const avatarInner = photo
+        ? `<img src="${safe(photo)}" alt="avatar">`
+        : `<span style="font-weight:900">${safe(ini)}</span>`;
+      return `<div class="avatar" style="width:${size}px;height:${size}px">${avatarInner}</div>`;
+    }
 
-    const p = (async ()=>{
-      try{
-        const snap = await db.collection("users").doc(uid).get();
-        const d = snap.exists ? (snap.data() || {}) : {};
-        const obj = {
-          username: safeString(d.username, "user"),
-          verified: !!d.verified,
-          status: safeString(d.status, "active"),
-          bio: safeString(d.bio, "")
-        };
-        userCache.set(uid, obj);
-        return obj;
-      } finally {
-        userCachePromises.delete(uid);
-      }
-    })();
+    let currentUser = null;
+    let me = null;
+    let route = "feed";
+    let isAdmin = false;
 
-    userCachePromises.set(uid, p);
-    return p;
-  }
+    let unsubFeed = null;
+    let unsubNotifs = null;
 
-  // =========================
-  // AUTH
-  // =========================
-  function login(){
-    const st = document.getElementById("loginStatus");
-    st.textContent = "";
-    auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch((e)=>{
-      st.textContent = e.message || String(e);
+    const myBlocks = new Set();
+    const myMutes = new Set();
+
+    const drawer = $("#drawer");
+    const drawerBackdrop = $("#drawerBackdrop");
+
+    function openDrawer(){ drawer.classList.add("open"); drawerBackdrop.classList.add("open"); }
+    function closeDrawer(){ drawer.classList.remove("open"); drawerBackdrop.classList.remove("open"); }
+
+    $("#btnDrawer").addEventListener("click", openDrawer);
+    $("#btnCloseDrawer").addEventListener("click", closeDrawer);
+    drawerBackdrop.addEventListener("click", closeDrawer);
+
+    $("#btnTopSettings").addEventListener("click", () => setRoute("settings"));
+
+    drawer.querySelectorAll(".item[data-go]").forEach((item) => {
+      item.addEventListener("click", () => setRoute(item.dataset.go));
     });
-  }
-  function logout(){
-    auth.signOut().then(()=>location.reload());
-  }
 
-  function showBlocked(title, text){
-    showView("blockedView");
-    setHeader("EchoStream", false);
-    document.getElementById("blockedTitle").textContent = title;
-    document.getElementById("blockedText").textContent = text;
-  }
+    document.querySelectorAll(".tab").forEach((t) => {
+      t.addEventListener("click", () => setRoute(t.dataset.tab));
+    });
 
-  async function checkIfAdmin(uid){
-    try{
-      const doc = await db.collection("admins").doc(uid).get();
-      return doc.exists;
-    } catch(e){
-      return false;
-    }
-  }
-
-  function updateSettingsHeaderInfo(){
-    const name = safeString(userData?.username, safeString(currentUser?.displayName, "Your account"));
-    const email = safeString(currentUser?.email, "");
-    document.getElementById("settingsAvatar").textContent = initialLetter(name);
-    document.getElementById("settingsName").innerHTML = formatNameWithVerified(name, !!userData?.verified);
-    document.getElementById("settingsSub").textContent = email || (currentUser?.uid || "");
-  }
-
-  async function enforceAccountStatus(uid){
-    const snap = await db.collection("users").doc(uid).get();
-    if (!snap.exists) return true;
-    const d = snap.data() || {};
-    const status = safeString(d.status, "active");
-    const suspendedUntil = d.suspendedUntil;
-
-    if (status === "banned"){
-      showBlocked("Banned", safeString(d.banReason, "Your account has been banned."));
-      await auth.signOut();
-      return false;
-    }
-    if (status === "suspended"){
-      if (suspendedUntil && suspendedUntil.toDate){
-        const until = suspendedUntil.toDate();
-        if (until.getTime() > Date.now()){
-          showBlocked("Suspended", "Your account is suspended until " + until.toLocaleString());
-          await auth.signOut();
-          return false;
-        } else {
-          try{
-            await db.collection("users").doc(uid).update({
-              status: "active",
-              suspendedUntil: firebase.firestore.FieldValue.delete()
-            });
-          } catch(e){}
-        }
-      } else {
-        showBlocked("Suspended", "Your account is suspended.");
-        await auth.signOut();
-        return false;
-      }
-    }
-    return true;
-  }
-
-  auth.onAuthStateChanged(async (user) => {
-    if (!user){
-      currentUser = null;
-      userData = null;
-      isAdminUser = false;
-      routeStack.length = 0;
-
-      // stop listeners
-      if (feedUnsub) { feedUnsub(); feedUnsub = null; }
-      if (chatUnsub) { chatUnsub(); chatUnsub = null; }
-      if (notifUnsub){ notifUnsub(); notifUnsub = null; }
-
-      showView("loginView");
-      setHeader("EchoStream", false);
-      setActiveTab("");
-      return;
-    }
-
-    currentUser = user;
-
-    const ok = await enforceAccountStatus(user.uid);
-    if (!ok) return;
-
-    isAdminUser = await checkIfAdmin(user.uid);
-    document.getElementById("adminSettingsEntry").style.display = isAdminUser ? "block" : "none";
-
-    // Load or create user doc
-    const userRef = db.collection("users").doc(user.uid);
-    const snap = await userRef.get();
-
-    if (!snap.exists){
-      const auto = safeString(user.displayName, "user").replace(/\s/g,"").toLowerCase();
-      await userRef.set({
-        username: auto,
-        bio: "",
-        verified: false,
-        status: "active",
-        followers: [],
-        following: [],
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    function highlightTabs(){
+      document.querySelectorAll(".tab").forEach((t) => {
+        t.classList.toggle("active", t.dataset.tab === route);
       });
-      userData = { username: auto, bio:"", verified:false, status:"active", followers: [], following: [] };
-      document.getElementById("usernameModal").classList.add("show");
-    } else {
-      userData = snap.data() || {};
-      if (!userData.username){
-        userData.username = safeString(user.displayName, "user").replace(/\s/g,"").toLowerCase();
-        await userRef.update({ username: userData.username });
-      }
-      if (typeof userData.bio !== "string") userData.bio = "";
     }
 
-    // cache self
-    userCache.set(user.uid, {
-      username: safeString(userData?.username, "user"),
-      verified: !!userData?.verified,
-      status: safeString(userData?.status, "active"),
-      bio: safeString(userData?.bio, "")
-    });
-
-    // dark mode init
-    const dark = localStorage.getItem("darkMode") === "true";
-    document.body.classList.toggle("dark", dark);
-    document.getElementById("darkToggle").checked = dark;
-
-    // default route
-    route("feed", true);
-
-    // start listeners
-    setChatAI();
-    startNotificationsListener();
-
-    updateSettingsHeaderInfo();
-  });
-
-  document.getElementById("darkToggle").addEventListener("change", (e)=>{
-    const v = !!e.target.checked;
-    document.body.classList.toggle("dark", v);
-    localStorage.setItem("darkMode", String(v));
-  });
-
-  // =========================
-  // ROUTING
-  // =========================
-  function route(page, resetStack=false){
-    internalRoute(page, resetStack);
-  }
-
-  function internalRoute(page, resetStack){
-    if (!currentUser){
-      showView("loginView");
-      setHeader("EchoStream", false);
-      return;
+    function setRoute(r){
+      route = r;
+      highlightTabs();
+      render();
+      closeDrawer();
     }
 
-    closeDrawer();
-
-    if (resetStack){
-      routeStack.length = 0;
-      routeStack.push(page);
-    } else {
-      const current = routeStack[routeStack.length-1];
-      if (current !== page) routeStack.push(page);
-    }
-
-    // tabs
-    if (page === "feed"){
-      setHeader("EchoStream", false);
-      showView("feedView");
-      setActiveTab("feed");
-      startFeedListener();
-      return;
-    }
-    if (page === "search"){
-      setHeader("Search", false);
-      showView("searchView");
-      setActiveTab("search");
-      document.getElementById("searchInput").value = "";
-      document.getElementById("searchResults").innerHTML = "";
-      return;
-    }
-    if (page === "notifications"){
-      setHeader("Notifications", false);
-      showView("notificationsView");
-      setActiveTab("notifications");
-      return;
-    }
-    if (page === "messages"){
-      setHeader("Messages", false);
-      showView("messagesView");
-      setActiveTab("ai"); // AI tab highlights messages
-      ensureChatListener();
-      return;
-    }
-    if (page === "profile"){
-      setHeader("Profile", false);
-      showView("profileView");
-      setActiveTab("profile");
-      openProfile(currentUser.uid);
-      return;
-    }
-
-    // settings stack pages
-    if (page === "settings"){
-      setHeader("Settings", false);
-      showView("settingsView");
-      updateSettingsHeaderInfo();
-      setActiveTab(""); // do not highlight tabs
-      return;
-    }
-    if (page === "settings-account"){
-      setHeader("Your account", true);
-      showView("settingsAccountView");
-      fillAccountSettings();
-      return;
-    }
-    if (page === "settings-privacy"){
-      setHeader("Privacy & safety", true);
-      showView("settingsPrivacyView");
-      return;
-    }
-    if (page === "settings-admin"){
-      setHeader("Admin settings", true);
-      showView("settingsAdminView");
-      loadAdminSettings();
-      return;
-    }
-  }
-
-  // =========================
-  // USERNAME / BIO
-  // =========================
-  function containsBannedWord(name){
-    const blocked = ["admin", "moderator"];
-    const n = (name || "").toLowerCase();
-    return blocked.some(w => n.includes(w));
-  }
-
-  async function saveUsernameCore(name){
-    name = safeString(name, "").toLowerCase();
-
-    if (name.length < 3) throw new Error("Too short (min 3).");
-    if (!/^[a-z0-9_]+$/.test(name)) throw new Error("Only a-z 0-9 _");
-    if (containsBannedWord(name)) throw new Error("Pick a different username.");
-
-    const taken = await db.collection("users").where("username","==",name).limit(1).get();
-    if (!taken.empty && taken.docs[0].id !== currentUser.uid) throw new Error("Username taken.");
-
-    await db.collection("users").doc(currentUser.uid).update({ username: name });
-    userData.username = name;
-
-    const cached = await ensureUserCached(currentUser.uid);
-    cached.username = name;
-    userCache.set(currentUser.uid, cached);
-
-    updateSettingsHeaderInfo();
-  }
-
-  async function saveUsername(){
-    const status = document.getElementById("usernameStatus");
-    status.textContent = "";
-    try{
-      const name = safeString(document.getElementById("usernameInput").value, "");
-      await saveUsernameCore(name);
-      document.getElementById("usernameModal").classList.remove("show");
-    } catch(e){
-      status.textContent = e.message || String(e);
-    }
-  }
-
-  async function saveUsernameFromSettings(){
-    const status = document.getElementById("accountStatus");
-    status.textContent = "";
-    try{
-      const name = safeString(document.getElementById("accountUsername").value, "");
-      await saveUsernameCore(name);
-      status.textContent = "Saved.";
-      setTimeout(()=>status.textContent="", 1200);
-    } catch(e){
-      status.textContent = e.message || String(e);
-    }
-  }
-
-  async function saveBioFromSettings(){
-    const status = document.getElementById("bioStatus");
-    status.textContent = "";
-    try{
-      const bio = safeString(document.getElementById("accountBio").value, "");
-      await db.collection("users").doc(currentUser.uid).update({ bio });
-      userData.bio = bio;
-
-      const cached = await ensureUserCached(currentUser.uid);
-      cached.bio = bio;
-      userCache.set(currentUser.uid, cached);
-
-      status.textContent = "Saved.";
-      setTimeout(()=>status.textContent="", 1200);
-    } catch(e){
-      status.textContent = e.message || String(e);
-    }
-  }
-
-  function fillAccountSettings(){
-    const name = safeString(userData?.username, "user");
-    document.getElementById("accountUsername").value = name;
-    document.getElementById("accountBio").value = safeString(userData?.bio, "");
-    document.getElementById("accountEmail").textContent = safeString(currentUser?.email, "-");
-    document.getElementById("accountUid").textContent = safeString(currentUser?.uid, "-");
-
-    document.getElementById("accountVerifiedPill").classList.toggle("hidden", !userData?.verified);
-    document.getElementById("accountAdminPill").classList.toggle("hidden", !isAdminUser);
-  }
-
-  // =========================
-  // POSTS
-  // =========================
-  async function createPost(){
-    const status = document.getElementById("postStatus");
-    status.textContent = "";
-
-    const text = safeString(document.getElementById("postText").value, "").trim();
-    const file = document.getElementById("postImage").files[0];
-
-    if (!text && !file){
-      status.textContent = "Write something first.";
-      return;
-    }
-
-    let imageUrl = "";
-
-    if (file && storage){
-      try{
-        const path = `posts/${currentUser.uid}/${Date.now()}_${file.name}`;
-        const ref = storage.ref(path);
-        await ref.put(file);
-        imageUrl = await ref.getDownloadURL();
-      } catch(e){
-        console.warn("Storage upload skipped:", e);
-      }
-    }
-
-    const uname = safeString(userData?.username, "user");
-    const verified = !!userData?.verified;
-
-    await db.collection("posts").add({
-      uid: currentUser.uid,
-      username: uname,
-      verified: verified,
-      text: text,
-      imageUrl: imageUrl,
-      likes: [],
-      comments: [],
-      shares: [],
-      timestamp: firebase.firestore.FieldValue.serverTimestamp()
-    });
-
-    document.getElementById("postText").value = "";
-    document.getElementById("postImage").value = "";
-    status.textContent = "Posted.";
-    setTimeout(()=>status.textContent="", 1200);
-  }
-
-  function renderPost(doc){
-    const post = doc.data() || {};
-    const postId = doc.id;
-
-    const likes = safeArray(post.likes);
-    const comments = safeArray(post.comments);
-    const shares = safeArray(post.shares);
-    const liked = likes.includes(currentUser.uid);
-
-    const avatar = initialLetter(post.username || "u");
-    const img = safeString(post.imageUrl, "");
-
-    const nameSpanId = `postname-${postId}`;
-
-    let commentsHtml = "";
-    for (const c of comments){
-      const cu = safeString(c.username, "user");
-      const ct = safeString(c.text, "");
-      const cv = !!c.verified;
-      commentsHtml += `
-        <div class="comment">
-          <div class="avatar">${initialLetter(cu)}</div>
-          <div style="flex:1;">
-            <div style="font-weight:800;">${formatNameWithVerified(cu, cv)}</div>
-            <div class="muted">${escapeHtml(ct)}</div>
-          </div>
-        </div>
-      `;
-    }
-
-    const initialNameHtml = formatNameWithVerified(safeString(post.username,"user"), !!post.verified);
-
-    setTimeout(async ()=>{
-      try{
-        const u = await ensureUserCached(post.uid);
-        const el = document.getElementById(nameSpanId);
-        if (el && u) el.innerHTML = formatNameWithVerified(u.username, !!u.verified);
-      } catch(e){}
-    }, 0);
-
-    return `
-      <div class="card">
-        <div class="row">
-          <div class="avatar">${avatar}</div>
-          <div style="flex:1;">
-            <div style="font-weight:900;">
-              <span class="click" id="${nameSpanId}" onclick="openProfile('${escapeAttr(post.uid)}')">${initialNameHtml}</span>
-            </div>
-            <div class="muted">${timeAgo(post.timestamp)}</div>
-          </div>
-        </div>
-
-        ${post.text ? `<div style="margin-top:10px;">${escapeHtml(post.text)}</div>` : ""}
-
-        ${img ? `<img class="post-image" src="${escapeAttr(img)}" alt="post image"/>` : ""}
-
-        <div class="post-actions">
-          <span onclick="toggleLike('${escapeAttr(postId)}')">
-            <i class="${liked ? "fa-solid" : "fa-regular"} fa-heart"></i> ${likes.length}
-          </span>
-          <span onclick="toggleComments('${escapeAttr(postId)}')">
-            <i class="fa-regular fa-comment"></i> ${comments.length}
-          </span>
-          <span onclick="sharePost('${escapeAttr(postId)}')">
-            <i class="fa-solid fa-retweet"></i> ${shares.length}
-          </span>
-        </div>
-
-        <div id="comments-${escapeAttr(postId)}" class="hidden" style="margin-top:12px;">
-          ${commentsHtml}
-          <div style="height:10px;"></div>
-          <input id="commentInput-${escapeAttr(postId)}" placeholder="Write a comment..."/>
-          <div class="row" style="margin-top:10px;">
-            <button onclick="addComment('${escapeAttr(postId)}')">Send</button>
-            <div class="space"></div>
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
-  function startFeedListener(){
-    if (feedUnsub) return;
-    const postsDiv = document.getElementById("posts");
-    postsDiv.innerHTML = `<div class="muted">Loading feed...</div>`;
-
-    feedUnsub = db.collection("posts")
-      .orderBy("timestamp","desc")
-      .onSnapshot((snap)=>{
-        let html = "";
-        snap.forEach(doc => { html += renderPost(doc); });
-        postsDiv.innerHTML = html || `<div class="muted">No posts yet.</div>`;
-      }, (err)=>{
-        console.error("Feed listen error:", err);
-        postsDiv.innerHTML = `<div class="muted">Feed error: ${escapeHtml(err.message || String(err))}</div>`;
-      });
-  }
-
-  async function toggleLike(postId){
-    const ref = db.collection("posts").doc(postId);
-    const snap = await ref.get();
-    const data = snap.data() || {};
-    let likes = safeArray(data.likes);
-
-    const ownerUid = safeString(data.uid,"");
-
-    if (likes.includes(currentUser.uid)){
-      likes = likes.filter(x => x !== currentUser.uid);
-    } else {
-      likes.push(currentUser.uid);
-      // notification (best-effort)
-      if (ownerUid && ownerUid !== currentUser.uid){
-        pushNotification(ownerUid, { type:"like", fromUid: currentUser.uid, postId });
-      }
-    }
-    await ref.update({ likes: likes });
-  }
-
-  function toggleComments(postId){
-    const el = document.getElementById(`comments-${postId}`);
-    if (!el) return;
-    el.classList.toggle("hidden");
-  }
-
-  // ✅ BUG FIX: no serverTimestamp inside arrayUnion. Use Date.now()
-  async function addComment(postId){
-    const input = document.getElementById(`commentInput-${postId}`);
-    if (!input) return;
-    const text = safeString(input.value, "").trim();
-    if (!text) return;
-
-    const postRef = db.collection("posts").doc(postId);
-    const postSnap = await postRef.get();
-    const postData = postSnap.data() || {};
-    const ownerUid = safeString(postData.uid,"");
-
-    const comment = {
-      uid: currentUser.uid,
-      username: safeString(userData?.username, "user"),
-      verified: !!userData?.verified,
-      text: text,
-      timestamp: Date.now() // ✅ FIX
-    };
-
-    await postRef.update({
-      comments: firebase.firestore.FieldValue.arrayUnion(comment)
-    });
-
-    // notification (best-effort)
-    if (ownerUid && ownerUid !== currentUser.uid){
-      pushNotification(ownerUid, { type:"comment", fromUid: currentUser.uid, postId, text });
-    }
-
-    input.value = "";
-  }
-
-  async function sharePost(postId){
-    const ref = db.collection("posts").doc(postId);
-    const snap = await ref.get();
-    const data = snap.data() || {};
-    const ownerUid = safeString(data.uid,"");
-
-    await ref.update({
-      shares: firebase.firestore.FieldValue.arrayUnion(currentUser.uid)
-    });
-
-    if (ownerUid && ownerUid !== currentUser.uid){
-      pushNotification(ownerUid, { type:"share", fromUid: currentUser.uid, postId });
-    }
-  }
-
-  // =========================
-  // PROFILES + FOLLOW LIST
-  // =========================
-  async function openProfile(uid){
-    showView("profileView");
-    setActiveTab("profile");
-    setHeader("Profile", false);
-
-    const profile = document.getElementById("profileView");
-    profile.innerHTML = `<div class="muted">Loading profile...</div>`;
-
-    try{
-      const userSnap = await db.collection("users").doc(uid).get();
-      if (!userSnap.exists){
-        profile.innerHTML = `<div class="card">User not found.</div>`;
-        return;
-      }
-      const u = userSnap.data() || {};
-      const username = safeString(u.username, "user");
-      const verified = !!u.verified;
-      const bio = safeString(u.bio, "");
-      const followers = safeArray(u.followers);
-      const following = safeArray(u.following);
-
-      const status = safeString(u.status, "active");
-      const isMe = uid === currentUser.uid;
-      const iFollow = followers.includes(currentUser.uid);
-
-      let postsHtml = "";
-      const postsSnap = await db.collection("posts")
-        .where("uid","==",uid)
-        .orderBy("timestamp","desc")
-        .get();
-
-      postsSnap.forEach(doc=>{
-        const p = doc.data() || {};
-        const txt = safeString(p.text, "");
-        const img = safeString(p.imageUrl, "");
-        postsHtml += `
-          <div class="card">
-            ${txt ? `<div>${escapeHtml(txt)}</div>` : ""}
-            ${img ? `<img class="post-image" src="${escapeAttr(img)}" alt="post image"/>` : ""}
-            <div class="muted" style="margin-top:8px;">${timeAgo(p.timestamp)}</div>
-          </div>
-        `;
-      });
-
-      const statusClass = status === "banned" ? "status-banned" : (status === "suspended" ? "status-suspended" : "status-active");
-
-      profile.innerHTML = `
-        <div class="card" style="text-align:center;">
-          <div class="avatar" style="width:64px;height:64px;margin:0 auto;font-size:24px;">${initialLetter(username)}</div>
-          <div style="margin-top:10px; font-size:20px; font-weight:900;">
-            ${formatNameWithVerified(username, verified)}
-          </div>
-          ${bio ? `<div class="muted" style="margin-top:8px;">${escapeHtml(bio)}</div>` : `<div class="muted" style="margin-top:8px;">No bio yet.</div>`}
-
-          <div style="margin-top:10px;">
-            <span class="status-badge ${statusClass}"><i class="fa-solid fa-circle"></i> ${escapeHtml(status)}</span>
-          </div>
-
-          <div class="row" style="justify-content:center; gap:18px; margin-top:12px;">
-            <div class="click" onclick="openFollowList('${escapeAttr(uid)}','followers')">
-              <div style="font-weight:900;">${followers.length}</div>
-              <div class="muted">Followers</div>
-            </div>
-            <div class="click" onclick="openFollowList('${escapeAttr(uid)}','following')">
-              <div style="font-weight:900;">${following.length}</div>
-              <div class="muted">Following</div>
-            </div>
-          </div>
-
-          ${isMe ? "" : `
-            <div style="margin-top:12px;">
-              <button onclick="toggleFollow('${escapeAttr(uid)}')">${iFollow ? "Unfollow" : "Follow"}</button>
-              <button class="secondary" style="margin-left:8px;" onclick="startChatWith('${escapeAttr(uid)}','${escapeAttr(username)}')">Message</button>
-            </div>
-          `}
-        </div>
-
-        <div style="font-weight:900; margin:10px 0 8px;">Posts</div>
-        ${postsHtml || `<div class="muted">No posts yet.</div>`}
-      `;
-    } catch(e){
-      console.error(e);
-      profile.innerHTML = `<div class="card">Profile error: ${escapeHtml(e.message || String(e))}</div>`;
-    }
-  }
-
-  async function openFollowList(uid, type){
-    document.getElementById("listTitle").textContent = type === "followers" ? "Followers" : "Following";
-    document.getElementById("listBody").innerHTML = `<div class="muted">Loading...</div>`;
-    document.getElementById("listModal").classList.add("show");
-
-    try{
-      const snap = await db.collection("users").doc(uid).get();
-      if (!snap.exists){
-        document.getElementById("listBody").innerHTML = `<div class="muted">User not found.</div>`;
-        return;
-      }
-      const data = snap.data() || {};
-      const arr = type === "followers" ? safeArray(data.followers) : safeArray(data.following);
-
-      if (!arr.length){
-        document.getElementById("listBody").innerHTML = `<div class="muted">None yet.</div>`;
+    async function computeAdmin(){
+      isAdmin = false;
+
+      const adminEl = $("#drawerAdmin");
+      if(!currentUser?.uid){
+        if(adminEl) adminEl.style.display = "none";
         return;
       }
 
-      const docs = await Promise.all(arr.map(id => db.collection("users").doc(id).get()));
-      let html = "";
-      docs.forEach((d, idx)=>{
-        const id = arr[idx];
-        const ud = d.exists ? (d.data() || {}) : {};
-        const uname = safeString(ud.username, "user");
-        const ver = !!ud.verified;
+      try{
+        const a = await getDoc(doc(db,"admins", currentUser.uid));
+        isAdmin = a.exists();
+      }catch{
+        isAdmin = false;
+      }
 
-        html += `
-          <div class="card" style="margin:10px 0; cursor:pointer;" onclick="closeListModal(); openProfile('${escapeAttr(id)}')">
-            <div class="row">
-              <div class="avatar">${initialLetter(uname)}</div>
-              <div style="flex:1;">
-                <div style="font-weight:900;">${formatNameWithVerified(uname, ver)}</div>
-                <div class="muted">${escapeHtml(id)}</div>
-              </div>
-            </div>
-          </div>
-        `;
-      });
-
-      document.getElementById("listBody").innerHTML = html;
-    } catch(e){
-      document.getElementById("listBody").innerHTML = `<div class="muted">Error: ${escapeHtml(e.message || String(e))}</div>`;
-    }
-  }
-
-  function closeListModal(){
-    document.getElementById("listModal").classList.remove("show");
-  }
-
-  async function toggleFollow(targetUid){
-    const meUid = currentUser.uid;
-
-    const myRef = db.collection("users").doc(meUid);
-    const targetRef = db.collection("users").doc(targetUid);
-
-    const [mySnap, targetSnap] = await Promise.all([myRef.get(), targetRef.get()]);
-    const my = mySnap.data() || {};
-    const t = targetSnap.data() || {};
-
-    let following = safeArray(my.following);
-    let followers = safeArray(t.followers);
-
-    const iAlreadyFollow = following.includes(targetUid);
-
-    if (iAlreadyFollow){
-      following = following.filter(x => x !== targetUid);
-      followers = followers.filter(x => x !== meUid);
-    } else {
-      following.push(targetUid);
-      followers.push(meUid);
-      // notification (best-effort)
-      pushNotification(targetUid, { type:"follow", fromUid: meUid });
+      if(adminEl) adminEl.style.display = isAdmin ? "flex" : "none";
     }
 
-    await Promise.all([
-      myRef.update({ following }),
-      targetRef.update({ followers })
-    ]);
+    async function ensureUserDoc(u){
+      const refU = doc(db, "users", u.uid);
+      const snap = await getDoc(refU);
 
-    if (meUid === currentUser.uid) userData.following = following;
+      if(!snap.exists()){
+        const base = (u.email || "user")
+          .split("@")[0]
+          .toLowerCase()
+          .replace(/[^a-z0-9_]/g,"");
 
-    openProfile(targetUid);
-  }
+        const username = (base || "user").slice(0,18);
 
-  // =========================
-  // SEARCH
-  // =========================
-  let searchTimer = null;
-  function doSearch(){
-    clearTimeout(searchTimer);
-    searchTimer = setTimeout(runSearch, 200);
-  }
-
-  async function runSearch(){
-    const q = safeString(document.getElementById("searchInput").value, "").toLowerCase().trim();
-    const res = document.getElementById("searchResults");
-
-    if (!q){
-      res.innerHTML = "";
-      return;
-    }
-
-    res.innerHTML = `<div class="muted">Searching...</div>`;
-
-    try{
-      const snap = await db.collection("users")
-        .orderBy("username")
-        .startAt(q)
-        .endAt(q + "\uf8ff")
-        .limit(20)
-        .get();
-
-      let html = "";
-      snap.forEach(doc=>{
-        const u = doc.data() || {};
-        const uname = safeString(u.username, "");
-        if (!uname) return;
-
-        html += `
-          <div class="card">
-            <div class="row">
-              <div class="avatar">${initialLetter(uname)}</div>
-              <div style="flex:1;">
-                <div style="font-weight:900;" class="click" onclick="openProfile('${escapeAttr(doc.id)}')">${formatNameWithVerified(uname, !!u.verified)}</div>
-                <div class="muted">${escapeHtml(doc.id)}</div>
-              </div>
-              <button class="secondary" onclick="startChatWith('${escapeAttr(doc.id)}','${escapeAttr(uname)}')">Message</button>
-            </div>
-          </div>
-        `;
-      });
-
-      res.innerHTML = html || `<div class="muted">No matches.</div>`;
-    } catch(e){
-      console.error(e);
-      res.innerHTML = `<div class="card">Search error: ${escapeHtml(e.message || String(e))}</div>`;
-    }
-  }
-
-  // =========================
-  // MESSAGES
-  // =========================
-  function chatId(a,b){
-    return (a < b) ? `${a}_${b}` : `${b}_${a}`;
-  }
-
-  function setChatAI(){
-    activeChatUid = "AI";
-    document.getElementById("chatWith").textContent = "Chatting with: EchoBot";
-    ensureChatListener();
-  }
-
-  function startChatWith(uid, username){
-    activeChatUid = uid;
-    document.getElementById("chatWith").textContent = "Chatting with: " + safeString(username, uid);
-    route("messages", true);
-    ensureChatListener();
-  }
-
-  function ensureChatListener(){
-    if (!currentUser) return;
-
-    if (chatUnsub){
-      chatUnsub();
-      chatUnsub = null;
-    }
-
-    const me = currentUser.uid;
-    const other = activeChatUid === "AI" ? "AI" : activeChatUid;
-    const cid = chatId(me, other);
-
-    const box = document.getElementById("chatBox");
-    box.innerHTML = `<div class="muted">Loading chat...</div>`;
-
-    chatUnsub = db.collection("messages")
-      .doc(cid)
-      .collection("messages")
-      .orderBy("timestamp","asc")
-      .limit(200)
-      .onSnapshot(async (snap)=>{
-        let html = "";
-        for (const doc of snap.docs){
-          const m = doc.data() || {};
-          const mine = m.uid === currentUser.uid;
-
-          let uname = safeString(m.username, m.uid === "AI" ? "EchoBot" : "user");
-          let verified = !!m.verified;
-
-          if (m.uid && m.uid !== "AI"){
-            try{
-              const u = await ensureUserCached(m.uid);
-              if (u){
-                uname = u.username || uname;
-                verified = !!u.verified;
-              }
-            } catch(e){}
-          }
-
-          const text = safeString(m.text, "");
-
-          html += `
-            <div class="card" style="margin:8px 0; padding:10px; border-radius:14px; ${mine ? "border-color: rgba(29,161,242,.6);" : ""}">
-              <div style="font-weight:900;">${formatNameWithVerified(uname, verified)}</div>
-              <div>${escapeHtml(text)}</div>
-            </div>
-          `;
-        }
-        box.innerHTML = html || `<div class="muted">No messages yet.</div>`;
-        box.scrollTop = box.scrollHeight;
-      }, (err)=>{
-        console.error("Chat listen error:", err);
-        box.innerHTML = `<div class="card">Chat error: ${escapeHtml(err.message || String(err))}</div>`;
-      });
-  }
-
-  async function sendMessage(){
-    const status = document.getElementById("msgStatus");
-    status.textContent = "";
-
-    const input = document.getElementById("chatInput");
-    const text = safeString(input.value, "").trim();
-    if (!text) return;
-
-    const me = currentUser.uid;
-    const other = activeChatUid === "AI" ? "AI" : activeChatUid;
-    const cid = chatId(me, other);
-
-    try{
-      await db.collection("messages")
-        .doc(cid)
-        .collection("messages")
-        .add({
-          uid: me,
-          username: safeString(userData?.username, "user"),
-          verified: !!userData?.verified,
-          text: text,
-          timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        await setDoc(refU, {
+          uid: u.uid,
+          email: u.email || "",
+          username,
+          displayName: u.displayName || username,
+          photoURL: u.photoURL || "",
+          bio: "",
+          verified: false,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
         });
+      }else{
+        const data = snap.data();
+        const patch = {};
 
-      input.value = "";
+        if((data.email || "") !== (u.email || "")) patch.email = u.email || "";
 
-      // AI only replies when chatting with AI.
-      if (other === "AI"){
-        aiReply(cid, text);
+        // only patch photoURL if u.photoURL is a real non-empty string
+        if(u.photoURL && (data.photoURL || "") !== u.photoURL){
+          patch.photoURL = u.photoURL;
+        }
+
+        if(Object.keys(patch).length){
+          patch.updatedAt = serverTimestamp();
+          await updateDoc(refU, patch);
+        }
       }
-    } catch(e){
-      console.error(e);
-      status.textContent = "Send failed: " + (e.message || String(e));
+
+      const meSnap = await getDoc(refU);
+      me = meSnap.exists() ? meSnap.data() : null;
     }
-  }
 
-  async function aiReply(cid, userText){
-    const t = (userText || "").toLowerCase();
+    async function loadMyMutesBlocks(){
+      myBlocks.clear();
+      myMutes.clear();
+      if(!currentUser?.uid) return;
 
-    // slightly smarter set of responses to avoid “same thing”
-    let msg = "Tell me more.";
-
-    if (t.includes("hi") || t.includes("hello")) msg = "Hey! Want to test posts, comments, or search?";
-    else if (t.includes("test")) msg = "Try: post something, like it, comment, follow someone, then check Notifications.";
-    else if (t.includes("help")) msg = "I can help with features: bio, notifications, trending, moderation.";
-    else if (t.includes("joke")) msg = "Why did the dev go broke? Because he used up all his cache.";
-    else if (t.includes("bye")) msg = "Bye! Come back anytime.";
-
-    setTimeout(async ()=>{
       try{
-        await db.collection("messages")
-          .doc(cid)
-          .collection("messages")
-          .add({
-            uid: "AI",
-            username: "EchoBot",
-            verified: true,
-            text: msg,
-            timestamp: firebase.firestore.FieldValue.serverTimestamp()
-          });
-      } catch(e){
-        console.warn("AI reply failed:", e);
-      }
-    }, 650);
-  }
+        const b = await getDocs(query(collection(db,"users", currentUser.uid, "blocks"), limit(2000)));
+        b.forEach(d => myBlocks.add(d.id));
+      }catch{}
 
-  // =========================
-  // NOTIFICATIONS (best-effort)
-  // =========================
-  async function pushNotification(toUid, payload){
-    // This can fail if your rules don't allow it. That's OK — app still works.
-    try{
-      await db.collection("notifications").add({
-        toUid,
-        fromUid: safeString(payload.fromUid,""),
-        type: safeString(payload.type,""),
-        postId: safeString(payload.postId,""),
-        text: safeString(payload.text,""),
-        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-        read: false
-      });
-    } catch(e){
-      // don't crash app
-      console.warn("Notification write failed:", e.message || e);
+      try{
+        const m = await getDocs(query(collection(db,"users", currentUser.uid, "mutes"), limit(2000)));
+        m.forEach(d => myMutes.add(d.id));
+      }catch{}
     }
-  }
 
-  function startNotificationsListener(){
-    if (!currentUser) return;
-    if (notifUnsub) return;
+    async function muteUser(targetUid){
+      if(!currentUser?.uid || !targetUid) return;
+      await setDoc(doc(db,"users", currentUser.uid, "mutes", targetUid), { createdAt: serverTimestamp() });
+      myMutes.add(targetUid);
+      toast("Muted ✅");
+      render();
+    }
 
-    const list = document.getElementById("notifList");
-    list.innerHTML = `<div class="muted">Loading notifications...</div>`;
+    async function blockUser(targetUid){
+      if(!currentUser?.uid || !targetUid) return;
+      await setDoc(doc(db,"users", currentUser.uid, "blocks", targetUid), { createdAt: serverTimestamp() });
+      myBlocks.add(targetUid);
+      toast("Blocked ✅");
+      render();
+    }
 
-    notifUnsub = db.collection("notifications")
-      .where("toUid","==",currentUser.uid)
-      .orderBy("createdAt","desc")
-      .limit(30)
-      .onSnapshot(async (snap)=>{
-        let html = "";
-        for (const doc of snap.docs){
-          const n = doc.data() || {};
-          const fromUid = safeString(n.fromUid,"");
-          const type = safeString(n.type,"");
-          const postId = safeString(n.postId,"");
-          const text = safeString(n.text,"");
-          const read = !!n.read;
+    async function reportPost(post){
+      if(!currentUser?.uid || !post?.id) return toast("Login first");
+      const reason = prompt("Report reason (optional):") || "";
+      await addDoc(collection(db,"reports"), {
+        postId: post.id,
+        postText: post.text || "",
+        postOwnerUid: post.uid || "",
+        postOwnerUsername: post.username || "",
+        reporterUid: currentUser.uid,
+        reporterEmail: currentUser.email || "",
+        reason,
+        status: "open",
+        createdAt: serverTimestamp()
+      });
+      toast("Reported ✅");
+    }
 
-          let fromName = "user";
-          let fromVerified = false;
-          if (fromUid){
-            try{
-              const u = await ensureUserCached(fromUid);
-              if (u){
-                fromName = u.username;
-                fromVerified = !!u.verified;
-              }
-            } catch(e){}
+    async function deletePost(post){
+      if(!currentUser?.uid || !post?.id) return;
+      const can = (post.uid === currentUser.uid) || isAdmin;
+      if(!can) return toast("You can't delete this.");
+      if(!confirm("Delete this post?")) return;
+      await deleteDoc(doc(db,"posts", post.id));
+      toast("Deleted ✅");
+    }
+
+    async function adminCloseReport(reportId){
+      if(!isAdmin) return toast("Not admin.");
+      await updateDoc(doc(db,"reports", reportId), {
+        status: "closed",
+        closedAt: serverTimestamp(),
+        closedBy: currentUser.uid
+      });
+      toast("Closed ✅");
+    }
+
+    async function adminDeleteReportedPost(postId){
+      if(!isAdmin) return toast("Not admin.");
+      if(!confirm("Admin delete post?")) return;
+      await deleteDoc(doc(db,"posts", postId));
+      toast("Post deleted ✅");
+    }
+
+    async function isFollowing(myUid, targetUid){
+      if(!myUid || !targetUid || myUid === targetUid) return false;
+      const s = await getDoc(doc(db,"follows", myUid, "following", targetUid));
+      return s.exists();
+    }
+
+    async function followUser(targetUid){
+      if(!currentUser?.uid) return toast("Login first");
+      if(currentUser.uid === targetUid) return toast("You can't follow yourself");
+
+      const myUid = currentUser.uid;
+      const batch = writeBatch(db);
+      batch.set(doc(db,"follows", myUid, "following", targetUid), { uid: targetUid, createdAt: serverTimestamp() });
+      batch.set(doc(db,"follows", targetUid, "followers", myUid), { uid: myUid, createdAt: serverTimestamp() });
+      await batch.commit();
+    }
+
+    async function unfollowUser(targetUid){
+      if(!currentUser?.uid) return;
+      if(currentUser.uid === targetUid) return;
+
+      const myUid = currentUser.uid;
+      const batch = writeBatch(db);
+      batch.delete(doc(db,"follows", myUid, "following", targetUid));
+      batch.delete(doc(db,"follows", targetUid, "followers", myUid));
+      await batch.commit();
+    }
+
+    async function countFollowers(uid){
+      const snap = await getDocs(query(collection(db,"follows", uid, "followers"), limit(2000)));
+      return snap.size;
+    }
+
+    async function countFollowing(uid){
+      const snap = await getDocs(query(collection(db,"follows", uid, "following"), limit(2000)));
+      return snap.size;
+    }
+
+    async function listFollow(uid, mode){
+      const snap = await getDocs(query(collection(db,"follows", uid, mode), orderBy("createdAt","desc"), limit(80)));
+      const uids = snap.docs.map(d=>d.id);
+      const users = [];
+
+      for(const id of uids){
+        const s = await getDoc(doc(db,"users", id));
+        if(s.exists()) users.push(s.data());
+      }
+      return users;
+    }
+    async function toggleLike(postId, postOwnerUid){
+      if(!currentUser?.uid) return toast("Login first");
+      const uid = currentUser.uid;
+
+      try{
+        await runTransaction(db, async (tx) => {
+          const postRef = doc(db,"posts", postId);
+          const likeRef = doc(db,"posts", postId, "likes", uid);
+
+          const likeSnap = await tx.get(likeRef);
+          if(likeSnap.exists()){
+            tx.delete(likeRef);
+            tx.update(postRef, { likeCount: increment(-1) });
+          }else{
+            tx.set(likeRef, { uid, createdAt: serverTimestamp() });
+            tx.update(postRef, { likeCount: increment(1) });
+          }
+        });
+      }catch(e){
+        toast(e?.message || "Like failed");
+        return;
+      }
+
+      try{
+        if(postOwnerUid && postOwnerUid !== currentUser.uid){
+          await addDoc(collection(db,"notifications", postOwnerUid, "items"), {
+            type: "like",
+            fromUid: currentUser.uid,
+            fromUsername: me?.username || "user",
+            postId,
+            createdAt: serverTimestamp(),
+            read: false
+          });
+        }
+      }catch{}
+    }
+
+    async function addComment(postId, postOwnerUid){
+      if(!currentUser?.uid) return toast("Login first");
+
+      openModal(`
+        <div class="row" style="justify-content:space-between;align-items:center">
+          <div class="title">Add comment</div>
+          <button class="btn" id="mClose">Close</button>
+        </div>
+        <div class="divider"></div>
+        <textarea id="cText" placeholder="Write a comment..."></textarea>
+        <div class="row" style="justify-content:flex-end;margin-top:10px">
+          <button class="btn primary" id="cSend">Send</button>
+        </div>
+      `);
+
+      const closeBtn = $("#mClose");
+      if(closeBtn) closeBtn.onclick = closeModal;
+
+      const sendBtn = $("#cSend");
+      if(!sendBtn) return;
+
+      sendBtn.onclick = async () => {
+        const text = ($("#cText").value || "").trim();
+        if(!text) return toast("Write something.");
+
+        try{
+          await addDoc(collection(db,"posts", postId, "comments"), {
+            uid: currentUser.uid,
+            username: me?.username || "user",
+            verified: !!me?.verified,
+            text,
+            createdAt: serverTimestamp()
+          });
+
+          await updateDoc(doc(db,"posts", postId), { commentCount: increment(1) });
+
+          try{
+            if(postOwnerUid && postOwnerUid !== currentUser.uid){
+              await addDoc(collection(db,"notifications", postOwnerUid, "items"), {
+                type: "comment",
+                fromUid: currentUser.uid,
+                fromUsername: me?.username || "user",
+                postId,
+                textPreview: text.slice(0, 90),
+                createdAt: serverTimestamp(),
+                read: false
+              });
+            }
+          }catch{}
+
+          closeModal();
+          toast("Comment added ✅");
+        }catch(e){
+          toast(e?.message || "Comment failed");
+        }
+      };
+    }
+
+    async function openComments(postId, postOwnerUid){
+      openModal(`
+        <div class="row" style="justify-content:space-between;align-items:center">
+          <div class="title">Comments</div>
+          <button class="btn" id="mClose">Close</button>
+        </div>
+        <div class="divider"></div>
+        <div class="row" style="align-items:flex-start">
+          ${avatarHTML(me, 40)}
+          <div style="flex:1">
+            <textarea id="cText" placeholder="Write a comment..."></textarea>
+            <div class="row" style="justify-content:flex-end;margin-top:10px">
+              <button class="btn primary" id="cSend">Send</button>
+            </div>
+          </div>
+        </div>
+        <div class="divider"></div>
+        <div id="cList"><div class="muted small">Loading...</div></div>
+      `);
+
+      $("#mClose").onclick = closeModal;
+
+      const qC = query(collection(db,"posts", postId, "comments"), orderBy("createdAt","desc"), limit(50));
+      const snap = await getDocs(qC);
+      const comments = snap.docs.map(d=>({id:d.id, ...d.data()}));
+
+      $("#cList").innerHTML = comments.length
+        ? comments.map(commentCardHTML).join("")
+        : `<div class="muted small">No comments yet.</div>`;
+
+      wireClickableUsers();
+
+      $("#cSend").onclick = async () => {
+        const text = ($("#cText").value || "").trim();
+        if(!text) return toast("Write something.");
+
+        try{
+          await addDoc(collection(db,"posts", postId, "comments"), {
+            uid: currentUser.uid,
+            username: me?.username || "user",
+            displayName: me?.displayName || me?.username || "User",
+            verified: !!me?.verified,
+            text,
+            createdAt: serverTimestamp()
+          });
+
+          await updateDoc(doc(db,"posts", postId), { commentCount: increment(1) });
+
+          if(postOwnerUid && postOwnerUid !== currentUser.uid){
+            await addDoc(collection(db,"notifications", postOwnerUid, "items"), {
+              type: "comment",
+              fromUid: currentUser.uid,
+              fromUsername: me?.username || "user",
+              fromDisplayName: me?.displayName || me?.username || "User",
+              postId,
+              textPreview: text.slice(0, 90),
+              createdAt: serverTimestamp(),
+              read: false
+            });
           }
 
-          let label = "";
-          if (type === "like") label = "liked your post";
-          else if (type === "comment") label = "commented on your post";
-          else if (type === "follow") label = "followed you";
-          else if (type === "share") label = "shared your post";
-          else label = "sent a notification";
+          const snap2 = await getDocs(qC);
+          const comments2 = snap2.docs.map(d => ({ id: d.id, ...d.data() }));
 
-          html += `
-            <div class="card" style="opacity:${read ? "0.75" : "1"};">
-              <div style="font-weight:900;">
-                <span class="click" onclick="openProfile('${escapeAttr(fromUid)}')">${formatNameWithVerified(fromName, fromVerified)}</span>
-                <span class="muted"> ${escapeHtml(label)}</span>
+          $("#cList").innerHTML = comments2.length
+            ? comments2.map(commentCardHTML).join("")
+            : `<div class="muted small">No comments yet.</div>`;
+
+          $("#cText").value = "";
+          wireClickableUsers();
+        }catch(e){
+          toast(e?.message || "Comment failed");
+        }
+      };
+    }
+
+    async function showLikes(postId){
+      openModal(`
+        <div class="row" style="justify-content:space-between;align-items:center">
+          <div class="title">Likes</div>
+          <button class="btn" id="mClose">Close</button>
+        </div>
+        <div class="divider"></div>
+        <div id="likeList"><div class="muted small">Loading...</div></div>
+      `);
+      $("#mClose").onclick = closeModal;
+
+      try{
+        const likesSnap = await getDocs(query(collection(db,"posts", postId, "likes"), orderBy("createdAt","desc"), limit(120)));
+        const likeUids = likesSnap.docs.map(d=>d.id);
+
+        if(!likeUids.length){
+          $("#likeList").innerHTML = `<div class="muted small">No likes yet.</div>`;
+          return;
+        }
+
+        const users = [];
+        for(const uid of likeUids){
+          const s = await getDoc(doc(db,"users", uid));
+          if(s.exists()) users.push(s.data());
+        }
+
+        $("#likeList").innerHTML = `<div class="grid">${users.map(userRowHTML).join("")}</div>`;
+        wireClickableUsers();
+        await wireFollowButtons();
+      }catch{
+        $("#likeList").innerHTML = `<div class="muted small">Failed to load likes.</div>`;
+      }
+    }
+
+    function userRowHTML(u){
+      const uid = safe(u?.uid || "");
+      const username = safe(u?.username || "user");
+      const verified = u?.verified ? `<span class="verified">✓</span>` : "";
+      const bio = safe(u?.bio || "");
+
+      const followBtn = (currentUser?.uid && uid && currentUser.uid !== uid)
+        ? `<button class="btn primary" data-followtoggle="${uid}" style="padding:10px 12px;border-radius:12px">Follow</button>`
+        : "";
+
+      return `
+        <div class="card" style="background:rgba(20,24,34,.55)">
+          <div class="row" style="justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center">
+            <div class="row" style="gap:10px;align-items:center">
+              ${avatarHTML(u, 46)}
+              <div>
+                <div style="font-weight:900">
+                  <span class="clickableUser" data-uid="${uid}">${username}</span>${verified}
+                </div>
+                <div class="muted small">${bio}</div>
               </div>
-              ${text ? `<div class="muted" style="margin-top:6px;">"${escapeHtml(text)}"</div>` : ""}
-              ${postId ? `<div class="muted" style="margin-top:6px;">Post: ${escapeHtml(postId)}</div>` : ""}
-              <div style="height:8px;"></div>
-              <button class="secondary" onclick="markNotifRead('${escapeAttr(doc.id)}')">Mark read</button>
+            </div>
+            ${followBtn}
+          </div>
+        </div>
+      `;
+    }
+
+    function commentCardHTML(c){
+      const uid = safe(c?.uid || "");
+      const username = safe(c?.username || "user");
+      const verified = c?.verified ? `<span class="verified">✓</span>` : "";
+      const when = c?.createdAt ? timeAgo(c.createdAt) : "";
+      const text = safe(c?.text || "");
+
+      return `
+        <div class="comment">
+          <div class="row" style="justify-content:space-between;align-items:flex-start">
+            <div>
+              <b><span class="clickableUser" data-uid="${uid}">${username}</span></b>${verified}
+            </div>
+            <div class="muted small">${when}</div>
+          </div>
+          <div style="margin-top:6px;white-space:pre-wrap">${text}</div>
+        </div>
+      `;
+    }
+
+    function postCardHTML(p){
+      const postId = safe(p?.id || "");
+      const uidP = safe(p?.uid || "");
+      const username = safe(p?.username || "user");
+      const displayName = safe(p?.displayName || username);
+      const verified = p?.verified ? `<span class="verified">✓</span>` : "";
+      const created = p?.createdAt ? timeAgo(p.createdAt) : "";
+      const likeCount = Number(p?.likeCount || 0);
+      const commentCount = Number(p?.commentCount || 0);
+      const text = safe(p?.text || "");
+
+      const img = p?.imageURL || p?.imageUrl || "";
+
+      const imageHTML = img
+        ? `
+          <div class="post-img clickableImage" data-img="${safe(img)}">
+            <img src="${safe(img)}" alt="post image">
+          </div>
+        `
+        : "";
+
+      const canDelete = !!currentUser?.uid && (currentUser.uid === p?.uid || isAdmin);
+
+      return `
+        <div class="card" id="post_${postId}">
+          <div class="postTopRow">
+            <div class="row" style="align-items:flex-start">
+              <div id="postAvatar_${postId}">
+                ${avatarHTML({ username, photoURL: p?.photoURL || "" }, 44)}
+              </div>
+
+              <div style="flex:1">
+                <div style="font-weight:900">
+                  <span class="clickableUser" data-uid="${uidP}">${displayName}</span>
+                  ${verified}
+                </div>
+                <div class="muted small">@${username}${created ? ` · ${created}` : ""}</div>
+              </div>
+
+              <div class="menuWrap">
+                <button class="moreBtn" data-more="${postId}" aria-label="More">⋯</button>
+                <div class="menu" id="menu_${postId}">
+                  <button data-report="${postId}">Report</button>
+                  <button data-mute="${uidP}">Mute user</button>
+                  <button data-block="${uidP}">Block user</button>
+                  ${canDelete ? `<button class="danger" data-deletepost="${postId}">Delete post</button>` : ``}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          ${text ? `<div style="margin-top:10px;white-space:pre-wrap">${text}</div>` : ""}
+          ${imageHTML}
+
+          <div class="post-actions">
+            <div class="action" data-showlikes="${postId}">
+              <span>👥</span><span class="small">Likes</span>
+            </div>
+
+            <div class="action" data-like="${postId}" data-owner="${uidP}">
+              <span>♡</span><span class="small">Like</span>
+              <span class="small muted" id="likeCount_${postId}">${likeCount}</span>
+            </div>
+
+            <div class="action" data-opencomments="${postId}" data-owner="${uidP}">
+              <span>💬</span><span class="small">Comments</span>
+              <span class="small muted" id="commentCount_${postId}">${commentCount}</span>
+            </div>
+
+            <div class="action" data-addcomment="${postId}" data-owner="${uidP}">
+              <span>＋</span><span class="small">Add</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function closeAllPostMenus(){
+      document.querySelectorAll(".menu.open").forEach(m => m.classList.remove("open"));
+    }
+
+    function wireClickableUsers(){
+      document.querySelectorAll(".clickableUser").forEach((el) => {
+        if(el.__wired) return;
+        el.__wired = true;
+        el.classList.add("linkish");
+        el.addEventListener("click", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const uid = el.getAttribute("data-uid");
+          if(uid) openUserProfile(uid);
+        });
+      });
+    }
+
+    function wireClickableImages(){
+      document.querySelectorAll(".clickableImage").forEach((el) => {
+        if(el.__wired) return;
+        el.__wired = true;
+        el.style.cursor = "pointer";
+
+        el.addEventListener("click", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+
+          const img = el.getAttribute("data-img");
+          if(!img) return;
+
+          openModal(`
+            <div class="row" style="justify-content:space-between;align-items:center">
+              <div class="title">Image</div>
+              <button class="btn" id="mClose">Close</button>
+            </div>
+            <div class="divider"></div>
+            <div style="display:flex;justify-content:center">
+              <img src="${img}" style="max-width:100%;max-height:70vh;border-radius:16px;border:1px solid rgba(39,48,71,.85)" />
+            </div>
+          `);
+
+          $("#mClose").onclick = closeModal;
+        });
+      });
+    }
+
+    async function wireFollowButtons(){
+      document.querySelectorAll("[data-followtoggle]").forEach((btn) => {
+        if(btn.__wired) return;
+        btn.__wired = true;
+
+        btn.addEventListener("click", async (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+
+          const targetUid = btn.getAttribute("data-followtoggle");
+          if(!targetUid || !currentUser?.uid) return;
+
+          try{
+            const now = await isFollowing(currentUser.uid, targetUid);
+
+            if(now){
+              await unfollowUser(targetUid);
+              btn.textContent = "Follow";
+              btn.classList.add("primary");
+              toast("Unfollowed");
+            }else{
+              await followUser(targetUid);
+              btn.textContent = "Following";
+              btn.classList.remove("primary");
+              toast("Followed ✅");
+            }
+          }catch(err){
+            toast(err?.message || "Follow failed");
+          }
+        });
+      });
+
+      if(currentUser?.uid){
+        const btns = [...document.querySelectorAll("[data-followtoggle]")];
+        for(const btn of btns){
+          const targetUid = btn.getAttribute("data-followtoggle");
+          if(!targetUid) continue;
+          const now = await isFollowing(currentUser.uid, targetUid);
+          btn.textContent = now ? "Following" : "Follow";
+          btn.classList.toggle("primary", !now);
+        }
+      }
+    }
+
+    async function afterRenderCommon(postsForLikeState){
+      wireClickableUsers();
+      await wireFollowButtons();
+      wireClickableImages();
+
+      document.querySelectorAll("[data-like]").forEach((btn) => {
+        if(btn.__wired) return;
+        btn.__wired = true;
+        btn.addEventListener("click", async (e) => {
+          e.stopPropagation();
+          const postId = btn.getAttribute("data-like");
+          const owner = btn.getAttribute("data-owner") || "";
+          await toggleLike(postId, owner);
+        });
+      });
+
+      document.querySelectorAll("[data-opencomments]").forEach((btn) => {
+        if(btn.__wired) return;
+        btn.__wired = true;
+        btn.addEventListener("click", async (e) => {
+          e.stopPropagation();
+          const postId = btn.getAttribute("data-opencomments");
+          const owner = btn.getAttribute("data-owner") || "";
+          await openComments(postId, owner);
+        });
+      });
+
+      document.querySelectorAll("[data-addcomment]").forEach((btn) => {
+        if(btn.__wired) return;
+        btn.__wired = true;
+        btn.addEventListener("click", async (e) => {
+          e.stopPropagation();
+          const postId = btn.getAttribute("data-addcomment");
+          const owner = btn.getAttribute("data-owner") || "";
+          await addComment(postId, owner);
+        });
+      });
+
+      document.querySelectorAll("[data-showlikes]").forEach((btn) => {
+        if(btn.__wired) return;
+        btn.__wired = true;
+        btn.addEventListener("click", async (e) => {
+          e.stopPropagation();
+          const postId = btn.getAttribute("data-showlikes");
+          if(postId) await showLikes(postId);
+        });
+      });
+
+      document.querySelectorAll("[data-more]").forEach((btn) => {
+        if(btn.__wired) return;
+        btn.__wired = true;
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const postId = btn.getAttribute("data-more");
+          const menu = document.querySelector(`#menu_${postId}`);
+          if(!menu) return;
+          const open = menu.classList.contains("open");
+          closeAllPostMenus();
+          if(!open) menu.classList.add("open");
+        });
+      });
+
+      document.querySelectorAll("[data-report]").forEach((btn) => {
+        if(btn.__wired) return;
+        btn.__wired = true;
+        btn.addEventListener("click", async (e) => {
+          e.stopPropagation();
+          closeAllPostMenus();
+          const postId = btn.getAttribute("data-report");
+          const post = postsForLikeState?.find(x => x.id === postId);
+          if(post) await reportPost(post);
+        });
+      });
+
+      document.querySelectorAll("[data-mute]").forEach((btn) => {
+        if(btn.__wired) return;
+        btn.__wired = true;
+        btn.addEventListener("click", async (e) => {
+          e.stopPropagation();
+          closeAllPostMenus();
+          const uidTarget = btn.getAttribute("data-mute");
+          if(uidTarget){
+            if(confirm("Mute this user?")) await muteUser(uidTarget);
+          }
+        });
+      });
+
+      document.querySelectorAll("[data-block]").forEach((btn) => {
+        if(btn.__wired) return;
+        btn.__wired = true;
+        btn.addEventListener("click", async (e) => {
+          e.stopPropagation();
+          closeAllPostMenus();
+          const uidTarget = btn.getAttribute("data-block");
+          if(uidTarget){
+            if(confirm("Block this user?")) await blockUser(uidTarget);
+          }
+        });
+      });
+
+      document.querySelectorAll("[data-deletepost]").forEach((btn) => {
+        if(btn.__wired) return;
+        btn.__wired = true;
+        btn.addEventListener("click", async (e) => {
+          e.stopPropagation();
+          closeAllPostMenus();
+          const postId = btn.getAttribute("data-deletepost");
+          const post = postsForLikeState?.find(x => x.id === postId);
+          if(post) await deletePost(post);
+        });
+      });
+    }
+
+    document.addEventListener("click", () => closeAllPostMenus(), { passive:true });
+
+    async function markLikedStates(posts){
+      if(!currentUser?.uid) return;
+      const uidU = currentUser.uid;
+      for(const p of posts){
+        try{
+          const s = await getDoc(doc(db,"posts", p.id, "likes", uidU));
+          const likeBtn = document.querySelector(`[data-like="${p.id}"]`);
+          if(likeBtn){
+            likeBtn.classList.toggle("active", s.exists());
+            const firstSpan = likeBtn.querySelector("span");
+            if(firstSpan) firstSpan.textContent = s.exists() ? "♥️" : "♡";
+          }
+        }catch{}
+      }
+    }
+
+    async function hydrateAvatars(posts){
+      const uids = [...new Set(posts.map(p=>p.uid).filter(Boolean))];
+      const map = {};
+      const snaps = await Promise.all(uids.map(uid => getDoc(doc(db,"users", uid))));
+      snaps.forEach((s,i) => { if(s.exists()) map[uids[i]] = s.data(); });
+
+      for(const p of posts){
+        const u = map[p.uid];
+        if(!u) continue;
+        const holder = document.querySelector(`#post_${p.id} #postAvatar_${p.id}`);
+        if(holder){
+          holder.innerHTML = avatarHTML(u, 44);
+        }
+      }
+    }
+
+    function renderAuth(){
+      fab.style.display = "none";
+      appEl.innerHTML = `
+        <div class="grid two">
+          <div class="card">
+            <div class="h1">EchoStream</div>
+            <div class="muted" style="margin-top:6px">Login or create a real account.</div>
+            <div class="divider"></div>
+
+            <div class="col">
+              <div>
+                <div class="small muted">Email</div>
+                <input id="authEmail" type="email" placeholder="you@email.com" autocomplete="email" />
+              </div>
+              <div>
+                <div class="small muted">Password</div>
+                <input id="authPass" type="password" placeholder="••••••••" autocomplete="current-password" />
+              </div>
+
+              <button class="btn primary" id="btnLogin">Login</button>
+              <button class="btn" id="btnSignup">Create Account</button>
+
+              <div class="hint">Real Firebase Auth + Firestore.</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="title">Features</div>
+            <div class="divider"></div>
+            <div class="col small">
+              <div class="pill">✅ Posts</div>
+              <div class="pill">✅ Likes</div>
+              <div class="pill">✅ Comments</div>
+              <div class="pill">✅ Follow / Following</div>
+              <div class="pill">🛡 Admin verify</div>
+              <div class="pill">🚩 Report + Mute + Block + Delete</div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      $("#btnLogin").onclick = async () => {
+        const email = $("#authEmail").value.trim();
+        const pass = $("#authPass").value;
+        if(!email || !pass) return toast("Enter email + password.");
+        try{
+          await signInWithEmailAndPassword(auth, email, pass);
+        }catch(e){
+          toast(e?.message || "Login failed.");
+        }
+      };
+
+      $("#btnSignup").onclick = async () => {
+        const email = $("#authEmail").value.trim();
+        const pass = $("#authPass").value;
+        if(!email || !pass) return toast("Enter email + password.");
+        try{
+          const cred = await createUserWithEmailAndPassword(auth, email, pass);
+          await updateProfile(cred.user, { displayName: email.split("@")[0] });
+          toast("Account created ✅");
+        }catch(e){
+          toast(e?.message || "Signup failed.");
+        }
+      };
+    }
+
+    async function doLogout(){
+      try{ await signOut(auth); }catch{ toast("Logout failed."); }
+    }
+    $("#btnLogout").addEventListener("click", doLogout);
+
+    function render(){
+      if(!currentUser){
+        renderAuth();
+        highlightTabs();
+        return;
+      }
+
+      fab.style.display = "grid";
+
+      if(route === "feed") return renderFeed();
+      if(route === "search") return renderSearch();
+      if(route === "notifications") return renderNotifications();
+      if(route === "profile") return renderProfile();
+      if(route === "settings") return renderSettings();
+      if(route === "admin") return renderAdmin();
+
+      route = "feed";
+      highlightTabs();
+      return renderFeed();
+    }
+
+    function filterMutedBlocked(posts){
+      return posts.filter(p => {
+        const author = p.uid || "";
+        if(!author) return true;
+        if(myBlocks.has(author)) return false;
+        if(myMutes.has(author)) return false;
+        return true;
+      });
+    }
+
+    function renderSettings(){
+      appEl.innerHTML = `
+        <div class="card">
+          <div class="title">Settings</div>
+          <div class="divider"></div>
+
+          <div class="row" style="justify-content:space-between">
+            <span>Email</span>
+            <span class="muted small">${safe(me?.email || "")}</span>
+          </div>
+
+          <div class="divider"></div>
+
+          <!-- FIX: different id so it doesn't conflict with drawer -->
+          <button class="btn danger" id="btnLogoutSettings">Logout</button>
+        </div>
+      `;
+
+      $("#btnLogoutSettings").onclick = doLogout;
+    }
+
+    function renderFeed(){
+      appEl.innerHTML = `
+        <div class="card">
+          <div class="row" style="justify-content:space-between;align-items:center">
+            <div class="title">Feed</div>
+            <div class="pill user-line">
+              <span class="display-name">
+                ${safe(me?.displayName || "")}
+              </span>
+              <span class="username">
+                @${safe(me?.username || "user")}
+              </span>
+              ${me?.verified ? '<span class="verified">✔</span>' : ''}
+            </div>
+          </div>
+          <div class="divider"></div>
+          <div id="feedList" class="grid">
+            <div class="muted small">Loading…</div>
+          </div>
+        </div>
+      `;
+
+      if(unsubFeed) { unsubFeed(); unsubFeed = null; }
+
+      const qFeed = query(collection(db,"posts"), orderBy("createdAt","desc"), limit(50));
+      unsubFeed = onSnapshot(
+        qFeed,
+        async (snap) => {
+          const list = $("#feedList");
+
+          try{
+            const postsRaw = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            const posts = filterMutedBlocked(postsRaw);
+
+            if(!posts.length){
+              list.innerHTML = `<div class="muted small">No posts yet. Tap + to post.</div>`;
+              return;
+            }
+
+            list.innerHTML = posts.map(postCardHTML).join("");
+            await hydrateAvatars(posts);
+            await markLikedStates(posts);
+            await afterRenderCommon(posts);
+
+          }catch(err){
+            console.error(err);
+            list.innerHTML = `<div class="muted small">Feed render error: ${safe(err?.message || err)}</div>`;
+          }
+        },
+        (err) => {
+          console.error(err);
+          $("#feedList").innerHTML = `<div class="muted small">Feed load error: ${safe(err?.message || err)}</div>`;
+        }
+      );
+    }
+
+    function renderSearch(){
+      appEl.innerHTML = `
+        <div class="card">
+          <div class="title">Search</div>
+          <div class="divider"></div>
+          <input id="searchInput" placeholder="Search usernames..." />
+          <div class="hint">Tip: type a username and press Enter.</div>
+          <div class="divider"></div>
+          <div id="searchResults" class="grid"></div>
+        </div>
+      `;
+
+      const input = $("#searchInput");
+      const results = $("#searchResults");
+
+      input.addEventListener("keydown", async (e) => {
+        if(e.key !== "Enter") return;
+        const term = (input.value || "").trim().toLowerCase();
+        if(!term) return;
+
+        results.innerHTML = `<div class="muted small">Searching…</div>`;
+
+        try{
+          const snap = await getDocs(query(collection(db,"users"), limit(50)));
+          const users = snap.docs.map(d=>d.data())
+            .filter(u => (u.username||"").toLowerCase().includes(term))
+            .slice(0, 30);
+
+          results.innerHTML = users.length
+            ? users.map(userRowHTML).join("")
+            : `<div class="muted small">No users found.</div>`;
+
+          await afterRenderCommon([]);
+        }catch(e2){
+          results.innerHTML = `<div class="muted small">${safe(e2?.message || "Search failed")}</div>`;
+        }
+      });
+    }
+
+    function renderNotifications(){
+      appEl.innerHTML = `
+        <div class="card">
+          <div class="row" style="justify-content:space-between;align-items:center">
+            <div class="title">Notifications</div>
+            <div class="pill">Real-time</div>
+          </div>
+          <div class="divider"></div>
+          <div id="notifList" class="grid">
+            <div class="muted small">Loading…</div>
+          </div>
+        </div>
+      `;
+
+      if(unsubNotifs) { unsubNotifs(); unsubNotifs = null; }
+
+      const qN = query(collection(db,"notifications", currentUser.uid, "items"), orderBy("createdAt","desc"), limit(60));
+      unsubNotifs = onSnapshot(qN, async (snap) => {
+        const notifs = snap.docs.map(d=>({id:d.id, ...d.data()}));
+        const host = $("#notifList");
+        if(!notifs.length){
+          host.innerHTML = `<div class="muted small">No notifications yet.</div>`;
+          return;
+        }
+
+        const uids = [...new Set(notifs.map(n=>n.fromUid).filter(Boolean))];
+        const map = {};
+        const snaps = await Promise.all(uids.map(uid => getDoc(doc(db,"users", uid))));
+        snaps.forEach((s,i)=>{ if(s.exists()) map[uids[i]] = s.data(); });
+
+        host.innerHTML = notifs.map(n => {
+          const from = map[n.fromUid] || {username:n.fromUsername || "user"};
+          const when = n.createdAt ? timeAgo(n.createdAt) : "";
+          const type = n.type || "event";
+          const line = type === "like"
+            ? `liked your post`
+            : type === "comment"
+              ? `commented: "${safe(n.textPreview || "")}"`
+              : `notification`;
+          return `
+            <div class="card" style="background:rgba(20,24,34,.55)">
+              <div class="row" style="justify-content:space-between;align-items:flex-start">
+                <div class="row" style="align-items:flex-start">
+                  ${avatarHTML(from, 42)}
+                  <div>
+                    <div style="font-weight:900">
+                      <span class="clickableUser" data-uid="${safe(from.uid || n.fromUid || "")}">${safe(from.username || "user")}</span>
+                      ${from.verified ? `<span class="verified">✓</span>` : ""}
+                    </div>
+                    <div class="muted small">${line}</div>
+                  </div>
+                </div>
+                <div class="muted small">${when}</div>
+              </div>
             </div>
           `;
-        }
-        list.innerHTML = html || `<div class="muted">No notifications yet.</div>`;
-      }, (err)=>{
-        console.error("Notifications error:", err);
-        list.innerHTML = `<div class="card">Notifications error: ${escapeHtml(err.message || String(err))}</div>`;
+        }).join("");
+
+        await afterRenderCommon([]);
+      }, () => {
+        $("#notifList").innerHTML = `<div class="muted small">Failed to load notifications.</div>`;
       });
-  }
-
-  async function markNotifRead(id){
-    try{
-      await db.collection("notifications").doc(id).update({ read:true });
-    } catch(e){
-      console.warn("Mark read failed:", e);
     }
-  }
+    async function renderProfile(){
+      try{
+        const s = await getDoc(doc(db,"users", currentUser.uid));
+        if(s.exists()) me = s.data();
+      }catch{}
 
-  // =========================
-  // ADMIN SETTINGS
-  // =========================
-  let adminSearchTimer = null;
-  let adminTargetUid = null;
-  let adminTargetData = null;
+      const followers = await countFollowers(currentUser.uid);
+      const following = await countFollowing(currentUser.uid);
 
-  function adminSearchDebounced(){
-    clearTimeout(adminSearchTimer);
-    adminSearchTimer = setTimeout(adminRunSearch, 200);
-  }
-
-  async function loadAdminSettings(){
-    if (!isAdminUser){
-      document.getElementById("adminNote").textContent = "You are not an admin.";
-      document.getElementById("adminUserPanel").classList.add("hidden");
-      return;
-    }
-    document.getElementById("adminNote").textContent = "You are an admin.";
-    document.getElementById("adminSearchInput").value = "";
-    document.getElementById("adminSearchResults").innerHTML = "";
-    document.getElementById("adminUserPanel").classList.add("hidden");
-    adminTargetUid = null;
-    adminTargetData = null;
-  }
-
-  function setAdminStatusBadge(status){
-    const el = document.getElementById("adminTargetStatusBadge");
-    const s = safeString(status, "active");
-    el.className = "status-badge";
-    if (s === "banned") el.classList.add("status-banned");
-    else if (s === "suspended") el.classList.add("status-suspended");
-    else el.classList.add("status-active");
-    el.innerHTML = `<i class="fa-solid fa-circle"></i> ${escapeHtml(s)}`;
-  }
-
-  async function adminRunSearch(){
-    if (!isAdminUser) return;
-
-    const q = safeString(document.getElementById("adminSearchInput").value, "").toLowerCase().trim();
-    const res = document.getElementById("adminSearchResults");
-
-    if (!q){
-      res.innerHTML = "";
-      return;
-    }
-
-    res.innerHTML = `<div class="muted">Searching...</div>`;
-
-    try{
-      const snap = await db.collection("users")
-        .orderBy("username")
-        .startAt(q)
-        .endAt(q + "\uf8ff")
-        .limit(15)
-        .get();
-
-      let html = "";
-      snap.forEach(doc=>{
-        const u = doc.data() || {};
-        const uname = safeString(u.username, "user");
-        html += `
-          <div class="card" style="cursor:pointer;" onclick="adminSelectUser('${escapeAttr(doc.id)}')">
-            <div class="row">
-              <div class="avatar">${initialLetter(uname)}</div>
-              <div style="flex:1;">
-                <div style="font-weight:900;">${formatNameWithVerified(uname, !!u.verified)}</div>
-                <div class="muted">${escapeHtml(doc.id)}</div>
+      appEl.innerHTML = `
+        <div id="profileOnlyView" class="grid two">
+          <div class="card">
+            <div class="row" style="justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+              <div class="row" style="align-items:center">
+                ${avatarHTML(me, 64)}
+                <div style="min-width:0">
+                  <div style="font-weight:950;font-size:18px;line-height:1.2">
+                    ${safe(me?.displayName || me?.username || "user")}
+                    ${me?.verified ? `<span class="verified">✓</span>` : ""}
+                  </div>
+                  <div class="muted small">@${safe(me?.username || "user")}</div>
+                  <div class="muted small" style="margin-top:6px;white-space:pre-wrap">${safe(me?.bio || "")}</div>
+                </div>
               </div>
-              <span class="pill">${escapeHtml(safeString(u.status,"active"))}</span>
+
+              <button class="btn primary" id="btnOpenEditProfile" style="padding:10px 12px;border-radius:12px">
+                Edit profile
+              </button>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="row" style="justify-content:space-between;gap:10px;flex-wrap:wrap">
+              <div class="pill clickable" id="pillFollowers">Followers: <b>${followers}</b></div>
+              <div class="pill clickable" id="pillFollowing">Following: <b>${following}</b></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="title">Your posts</div>
+            <div class="divider"></div>
+            <div id="myPosts" class="grid"><div class="muted small">Loading…</div></div>
+          </div>
+        </div>
+
+        <div id="editProfileView" class="grid two" style="display:none;">
+          <div class="card">
+            <div class="row" style="justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+              <div class="title">Edit Profile</div>
+              <button class="btn" id="btnCloseEditProfile" style="padding:10px 12px;border-radius:12px">← Back</button>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="grid">
+              <div>
+                <div class="small muted">Display name</div>
+                <input id="pDisplayName" value="${safe(me?.displayName || "")}" placeholder="Your name (shown on posts)" maxlength="32" />
+              </div>
+
+              <div>
+                <div class="small muted">Username</div>
+                <input id="pUsername" value="${safe(me?.username || "")}" maxlength="18" />
+              </div>
+
+              <div>
+                <div class="small muted">Bio</div>
+                <textarea id="pBio" placeholder="Your bio...">${safe(me?.bio || "")}</textarea>
+              </div>
+
+              <div>
+                <div class="small muted">Profile picture</div>
+                <input id="pPhoto" type="file" accept="image/*" />
+              </div>
+
+              <button class="btn primary" id="btnSaveProfile">Save Profile</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="title">Preview</div>
+            <div class="divider"></div>
+            <div class="muted small">Tap “Save Profile” to apply.</div>
+          </div>
+        </div>
+      `;
+
+      const profileOnlyView = document.getElementById("profileOnlyView");
+      const editProfileView = document.getElementById("editProfileView");
+
+      const showProfileOnly = () => {
+        editProfileView.style.display = "none";
+        profileOnlyView.style.display = "grid";
+      };
+      const showEditProfile = () => {
+        profileOnlyView.style.display = "none";
+        editProfileView.style.display = "grid";
+      };
+
+      document.getElementById("btnOpenEditProfile").onclick = showEditProfile;
+      document.getElementById("btnCloseEditProfile").onclick = showProfileOnly;
+
+      document.getElementById("pillFollowers").onclick = async () => {
+        const users = await listFollow(currentUser.uid, "followers");
+        openModal(`
+          <div class="row" style="justify-content:space-between;align-items:center">
+            <div class="title">Followers</div>
+            <button class="btn" id="mClose">Close</button>
+          </div>
+          <div class="divider"></div>
+          <div class="grid">${users.length ? users.map(userRowHTML).join("") : `<div class="muted small">No followers yet.</div>`}</div>
+        `);
+        document.getElementById("mClose").onclick = closeModal;
+        await afterRenderCommon([]);
+      };
+
+      document.getElementById("pillFollowing").onclick = async () => {
+        const users = await listFollow(currentUser.uid, "following");
+        openModal(`
+          <div class="row" style="justify-content:space-between;align-items:center">
+            <div class="title">Following</div>
+            <button class="btn" id="mClose">Close</button>
+          </div>
+          <div class="divider"></div>
+          <div class="grid">${users.length ? users.map(userRowHTML).join("") : `<div class="muted small">Not following anyone yet.</div>`}</div>
+        `);
+        document.getElementById("mClose").onclick = closeModal;
+        await afterRenderCommon([]);
+      };
+
+      document.getElementById("btnSaveProfile").onclick = async () => {
+        if (!currentUser?.uid) return toast("Login first");
+
+        const username = (document.getElementById("pUsername").value || "").trim();
+        const displayName = (document.getElementById("pDisplayName").value || "").trim();
+        const bio = (document.getElementById("pBio").value || "").trim();
+
+        if (!username) return toast("Username required.");
+        if (username.length > 18) return toast("Max 18 chars.");
+
+        try {
+          const snap = await getDocs(query(collection(db, "users"), where("username", "==", username)));
+          if (!snap.empty && snap.docs[0].id !== currentUser.uid) {
+            return toast("Username already taken.");
+          }
+
+          let photoURL = me?.photoURL || "";
+          const file = document.getElementById("pPhoto")?.files?.[0];
+          if (file) {
+            const path = `avatars/${currentUser.uid}/${Date.now()}_${file.name}`;
+            const r = ref(storage, path);
+            await uploadBytes(r, file);
+            photoURL = await getDownloadURL(r);
+          }
+
+          await updateDoc(doc(db, "users", currentUser.uid), {
+            username,
+            displayName: displayName || username,
+            bio,
+            photoURL,
+            updatedAt: serverTimestamp()
+          });
+
+          me = { ...(me || {}), username, displayName: displayName || username, bio, photoURL };
+
+          toast("Profile saved ✅");
+
+          showProfileOnly();
+          renderProfile();
+        } catch (e) {
+          console.error(e);
+          toast(e?.message || "Save failed");
+        }
+      };
+
+      try{
+        const qMine = query(collection(db,"posts"), where("uid","==", currentUser.uid), orderBy("createdAt","desc"), limit(50));
+        const snap = await getDocs(qMine);
+        const postsRaw = snap.docs.map(d=>({id:d.id, ...d.data()}));
+        const posts = filterMutedBlocked(postsRaw);
+
+        document.getElementById("myPosts").innerHTML =
+          posts.length ? posts.map(postCardHTML).join("") : `<div class="muted small">No posts yet.</div>`;
+
+        await hydrateAvatars(posts);
+        await markLikedStates(posts);
+        await afterRenderCommon(posts);
+      }catch{
+        document.getElementById("myPosts").innerHTML = `<div class="muted small">Failed to load posts.</div>`;
+      }
+
+      showProfileOnly();
+    }
+
+    async function renderAdmin(){
+      if(!isAdmin){
+        appEl.innerHTML = `<div class="card"><div class="title">Admin</div><div class="divider"></div><div class="muted">Not authorized.</div></div>`;
+        return;
+      }
+
+      appEl.innerHTML = `
+        <div class="card">
+          <div class="row" style="justify-content:space-between;align-items:center;flex-wrap:wrap">
+            <div class="title">Admin Panel</div>
+            <div class="pill">Secure</div>
+          </div>
+          <div class="divider"></div>
+
+          <div class="grid two">
+            <div class="card" style="background:rgba(20,24,34,.55)">
+              <div class="title">Reports</div>
+              <div class="divider"></div>
+              <div id="reportList" class="grid"><div class="muted small">Loading…</div></div>
+            </div>
+
+            <div class="card" style="background:rgba(20,24,34,.55)">
+              <div class="title">Find user</div>
+              <div class="divider"></div>
+              <input id="adminSearch" placeholder="Search username..." />
+              <div class="hint">Press Enter to search (top users, filtered).</div>
+              <div class="divider"></div>
+              <div id="adminResults" class="grid"></div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      try{
+        const qR = query(collection(db,"reports"), orderBy("createdAt","desc"), limit(60));
+        const snapR = await getDocs(qR);
+        const reports = snapR.docs.map(d => ({ id:d.id, ...d.data() }));
+        $("#reportList").innerHTML = reports.length
+          ? reports.map(reportRowHTML).join("")
+          : `<div class="muted small">No reports.</div>`;
+        wireReportAdminButtons();
+      }catch(e){
+        $("#reportList").innerHTML = `<div class="muted small">${safe(e?.message || "Failed to load reports")}</div>`;
+      }
+
+      const input = $("#adminSearch");
+      const host = $("#adminResults");
+
+      input.addEventListener("keydown", async (e) => {
+        if(e.key !== "Enter") return;
+        const term = (input.value || "").trim().toLowerCase();
+        if(!term) return;
+
+        host.innerHTML = `<div class="muted small">Searching…</div>`;
+
+        try{
+          const snap = await getDocs(query(collection(db,"users"), limit(120)));
+          const users = snap.docs.map(d=>d.data())
+            .filter(u => (u.username||"").toLowerCase().includes(term))
+            .slice(0, 60);
+
+          host.innerHTML = users.length
+            ? users.map(adminUserRowHTML).join("")
+            : `<div class="muted small">No users found.</div>`;
+
+          wireAdminButtons();
+          wireClickableUsers();
+        }catch(e2){
+          host.innerHTML = `<div class="muted small">${safe(e2?.message || "Search failed")}</div>`;
+        }
+      });
+    }
+
+    function reportRowHTML(r){
+      const id = safe(r?.id || "");
+      const postId = safe(r?.postId || "");
+      const reason = safe(r?.reason || "");
+      const status = safe(r?.status || "open");
+      const who = safe(r?.reporterEmail || r?.reporterUid || "");
+      const owner = safe(r?.postOwnerUsername || r?.postOwnerUid || "");
+      const txt = safe((r?.postText || "").slice(0, 120));
+
+      return `
+        <div class="card" style="background:rgba(20,24,34,.55)">
+          <div class="row" style="justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap">
+            <div style="min-width:240px;flex:1">
+              <div style="font-weight:900">Report <span class="pill">${status}</span></div>
+              <div class="muted small">Post: <b>${postId}</b> • Owner: <b>${owner}</b></div>
+              <div class="muted small">Reporter: ${who}</div>
+              <div class="divider"></div>
+              <div class="small" style="white-space:pre-wrap">${txt}</div>
+              ${reason ? `<div class="hint">Reason: ${reason}</div>` : ``}
+            </div>
+
+            <div class="col" style="min-width:190px">
+              <button class="btn" data-adminclose="${id}">Close report</button>
+              <button class="btn danger" data-admindeletepost="${postId}">Delete post</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    /* ✅ FIXED: THIS FUNCTION NOW CLOSES PROPERLY */
+    function wireReportAdminButtons(){
+      document.querySelectorAll("[data-adminclose]").forEach((btn) => {
+        if(btn.__wired) return;
+        btn.__wired = true;
+
+        btn.addEventListener("click", async (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+
+          const rid = btn.getAttribute("data-adminclose");
+          if(rid) await adminCloseReport(rid);
+
+          renderAdmin();
+        });
+      });
+
+      document.querySelectorAll("[data-admindeletepost]").forEach((btn) => {
+        if (btn.__wired) return;
+        btn.__wired = true;
+
+        btn.addEventListener("click", async (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+
+          const postId = btn.getAttribute("data-admindeletepost");
+          if (postId) await adminDeleteReportedPost(postId);
+
+          renderAdmin();
+        });
+      });
+    }
+
+    function adminUserRowHTML(u){
+      const uid = safe(u?.uid || "");
+      const username = safe(u?.username || "user");
+      const verified = u?.verified ? `<span class="verified">✓</span>` : "";
+      const bio = safe(u?.bio || "");
+      const btnText = u?.verified ? "Remove verify" : "Verify";
+      const btnClass = u?.verified ? "" : "primary";
+
+      return `
+        <div class="card" style="background:rgba(20,24,34,.55)">
+          <div class="row" style="justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center">
+            <div class="row" style="gap:10px;align-items:center">
+              ${avatarHTML(u, 46)}
+              <div>
+                <div style="font-weight:900">
+                  <span class="clickableUser" data-uid="${uid}">${username}</span>${verified}
+                </div>
+                <div class="muted small">${bio}</div>
+              </div>
+            </div>
+            <button class="btn ${btnClass}" data-verifyuid="${uid}">${btnText}</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function wireAdminButtons(){
+      document.querySelectorAll("[data-verifyuid]").forEach((btn) => {
+        if(btn.__wired) return;
+        btn.__wired = true;
+        btn.addEventListener("click", async () => {
+          const uid = btn.getAttribute("data-verifyuid");
+          if(!uid) return;
+
+          try{
+            const s = await getDoc(doc(db,"users", uid));
+            if(!s.exists()) return toast("User not found");
+            const cur = !!s.data().verified;
+
+            await updateDoc(doc(db,"users", uid), { verified: !cur, updatedAt: serverTimestamp() });
+            toast(!cur ? "Verified ✅" : "Verification removed");
+
+            if(currentUser?.uid === uid){
+              const s2 = await getDoc(doc(db,"users", uid));
+              if(s2.exists()) me = s2.data();
+            }
+
+            renderAdmin();
+          }catch(e){
+            toast(e?.message || "Verify failed");
+          }
+        });
+      });
+    }
+
+    async function openUserProfile(uid){
+      if(!uid) return;
+      try{
+        const uSnap = await getDoc(doc(db,"users", uid));
+        if(!uSnap.exists()) return toast("User not found");
+        const user = uSnap.data();
+
+        const [followers, following] = await Promise.all([countFollowers(uid), countFollowing(uid)]);
+        const showFollow = currentUser?.uid && currentUser.uid !== uid;
+        const followingNow = showFollow ? await isFollowing(currentUser.uid, uid) : false;
+
+        appEl.innerHTML = `
+          <div class="grid two">
+            <div class="card">
+              <div class="row" style="align-items:center">
+                ${avatarHTML(user, 64)}
+                <div style="min-width:0">
+                  <div style="font-weight:950;font-size:18px">
+                    ${safe(user.username || "user")}${user.verified ? `<span class="verified">✓</span>` : ""}
+                  </div>
+                  <div class="muted small">${safe(user.bio || "")}</div>
+                </div>
+              </div>
+
+              <div class="divider"></div>
+
+              <div class="row" style="justify-content:space-between;gap:10px;flex-wrap:wrap">
+                <div class="pill clickable" id="uFollowers">Followers: <b>${followers}</b></div>
+                <div class="pill clickable" id="uFollowing">Following: <b>${following}</b></div>
+                ${showFollow ? `<button class="btn ${followingNow ? "" : "primary"}" id="uFollowBtn">${followingNow ? "Following" : "Follow"}</button>` : ""}
+              </div>
+
+              <div class="divider"></div>
+              <button class="btn" id="backBtn">← Back</button>
+            </div>
+
+            <div class="card">
+              <div class="title">${safe(user.username || "user")}'s posts</div>
+              <div class="divider"></div>
+              <div id="uPosts" class="grid"><div class="muted small">Loading…</div></div>
             </div>
           </div>
         `;
-      });
 
-      res.innerHTML = html || `<div class="muted">No matches.</div>`;
-    } catch(e){
-      res.innerHTML = `<div class="muted">Search error: ${escapeHtml(e.message || String(e))}</div>`;
+        $("#backBtn").onclick = () => setRoute("feed");
+
+        $("#uFollowers").onclick = async () => {
+          const users = await listFollow(uid, "followers");
+          openModal(`
+            <div class="row" style="justify-content:space-between;align-items:center">
+              <div class="title">Followers</div>
+              <button class="btn" id="mClose">Close</button>
+            </div>
+            <div class="divider"></div>
+            <div class="grid">${users.length ? users.map(userRowHTML).join("") : `<div class="muted small">No followers yet.</div>`}</div>
+          `);
+          $("#mClose").onclick = closeModal;
+          await afterRenderCommon([]);
+        };
+
+        $("#uFollowing").onclick = async () => {
+          const users = await listFollow(uid, "following");
+          openModal(`
+            <div class="row" style="justify-content:space-between;align-items:center">
+              <div class="title">Following</div>
+              <button class="btn" id="mClose">Close</button>
+            </div>
+            <div class="divider"></div>
+            <div class="grid">${users.length ? users.map(userRowHTML).join("") : `<div class="muted small">Not following anyone yet.</div>`}</div>
+          `);
+          $("#mClose").onclick = closeModal;
+          await afterRenderCommon([]);
+        };
+
+        if(showFollow){
+          $("#uFollowBtn").onclick = async () => {
+            const now = await isFollowing(currentUser.uid, uid);
+            if(now){
+              await unfollowUser(uid);
+              toast("Unfollowed");
+            }else{
+              await followUser(uid);
+              toast("Followed ✅");
+            }
+            openUserProfile(uid);
+          };
+        }
+
+        try{
+          const qMine = query(collection(db,"posts"), where("uid","==", uid), orderBy("createdAt","desc"), limit(50));
+          const snap = await getDocs(qMine);
+          const postsRaw = snap.docs.map(d=>({id:d.id, ...d.data()}));
+          const posts = filterMutedBlocked(postsRaw);
+          $("#uPosts").innerHTML = posts.length ? posts.map(postCardHTML).join("") : `<div class="muted small">No posts yet.</div>`;
+          await hydrateAvatars(posts);
+          await markLikedStates(posts);
+          await afterRenderCommon(posts);
+        }catch{
+          $("#uPosts").innerHTML = `<div class="muted small">Failed to load posts.</div>`;
+        }
+
+        route = "profile";
+        highlightTabs();
+      }catch(e){
+        toast(e?.message || "Profile failed");
+      }
     }
-  }
 
-  async function adminSelectUser(uid){
-    if (!isAdminUser) return;
+    fab.addEventListener("click", async () => {
+      if(!currentUser?.uid) return toast("Login first");
 
-    document.getElementById("adminActionStatus").textContent = "";
-    adminTargetUid = uid;
-    const panel = document.getElementById("adminUserPanel");
-    panel.classList.remove("hidden");
+      openModal(`
+        <div class="row" style="justify-content:space-between;align-items:center">
+          <div class="title">Create post</div>
+          <button class="btn" id="mClose">Close</button>
+        </div>
+        <div class="divider"></div>
+        <textarea id="pText" placeholder="What's happening?"></textarea>
+        <div class="divider"></div>
+        <div>
+          <div class="small muted">Optional image</div>
+          <input id="pImg" type="file" accept="image/*" />
+          <div class="hint">Image uploads to Firebase Storage, saves imageURL on the post.</div>
+        </div>
+        <div class="divider"></div>
+        <div class="row" style="justify-content:flex-end">
+          <button class="btn primary" id="pSend">Post</button>
+        </div>
+      `);
 
-    const snap = await db.collection("users").doc(uid).get();
-    adminTargetData = snap.exists ? (snap.data() || {}) : {};
+      $("#mClose").onclick = closeModal;
 
-    const uname = safeString(adminTargetData.username, "user");
+      $("#pSend").onclick = async () => {
+        const text = ($("#pText").value || "").trim();
+        const file = $("#pImg").files?.[0];
 
-    document.getElementById("adminTargetAvatar").textContent = initialLetter(uname);
-    document.getElementById("adminTargetName").innerHTML = formatNameWithVerified(uname, !!adminTargetData.verified);
-    document.getElementById("adminTargetUid").textContent = uid;
+        if(!text && !file) return toast("Write something or add an image.");
 
-    setAdminStatusBadge(safeString(adminTargetData.status, "active"));
-  }
+        try{
+          let imageURL = "";
+          if(file){
+            const path = `posts/${currentUser.uid}/${Date.now()}_${file.name}`;
+            const r = ref(storage, path);
+            await uploadBytes(r, file);
+            imageURL = await getDownloadURL(r);
+          }
 
-  async function adminSetVerified(v){
-    if (!isAdminUser || !adminTargetUid) return;
-    const status = document.getElementById("adminActionStatus");
-    status.textContent = "Updating...";
-    try{
-      await db.collection("users").doc(adminTargetUid).update({ verified: !!v });
-      status.textContent = v ? "Verified set." : "Verified removed.";
-      userCache.delete(adminTargetUid);
-      await adminSelectUser(adminTargetUid);
-    } catch(e){
-      status.textContent = "Error: " + (e.message || String(e));
-    }
-  }
+          await addDoc(collection(db,"posts"), {
+            uid: currentUser.uid,
+            username: me?.username || "user",
+            displayName: me?.displayName || me?.username || "User",
+            verified: !!me?.verified,
+            photoURL: me?.photoURL || "",
+            text,
+            imageURL,
+            likeCount: 0,
+            commentCount: 0,
+            createdAt: serverTimestamp()
+          });
 
-  async function adminSuspendPreset(days){
-    if (!isAdminUser || !adminTargetUid) return;
-    const until = new Date(Date.now() + days*24*60*60*1000);
-    await adminSuspendUntil(until);
-  }
+          closeModal();
+          toast("Posted ✅");
+        }catch(e){
+          toast(e?.message || "Post failed");
+        }
+      };
+    });
 
-  async function adminSuspendCustom(){
-    if (!isAdminUser || !adminTargetUid) return;
-    const s = prompt("Suspend for how many hours? (example: 24)");
-    if (!s) return;
-    const hours = Number(s);
-    if (!Number.isFinite(hours) || hours <= 0){
-      alert("Invalid hours.");
-      return;
-    }
-    const until = new Date(Date.now() + hours*60*60*1000);
-    await adminSuspendUntil(until);
-  }
+    onAuthStateChanged(auth, async (u) => {
+      currentUser = u;
 
-  async function adminSuspendUntil(dateObj){
-    const status = document.getElementById("adminActionStatus");
-    status.textContent = "Suspending...";
-    try{
-      await db.collection("users").doc(adminTargetUid).update({
-        status: "suspended",
-        suspendedUntil: firebase.firestore.Timestamp.fromDate(dateObj),
-        banReason: firebase.firestore.FieldValue.delete()
-      });
-      status.textContent = "Suspended until " + dateObj.toLocaleString();
-      userCache.delete(adminTargetUid);
-      await adminSelectUser(adminTargetUid);
-    } catch(e){
-      status.textContent = "Error: " + (e.message || String(e));
-    }
-  }
+      if(!u){
+        me = null;
+        if(unsubFeed) { unsubFeed(); unsubFeed = null; }
+        if(unsubNotifs) { unsubNotifs(); unsubNotifs = null; }
+        setRoute("feed");
+        renderAuth();
+        return;
+      }
 
-  async function adminBanUser(){
-    if (!isAdminUser || !adminTargetUid) return;
-    const reason = prompt("Ban reason (optional):") || "";
-    const status = document.getElementById("adminActionStatus");
-    status.textContent = "Banning...";
-    try{
-      await db.collection("users").doc(adminTargetUid).update({
-        status: "banned",
-        banReason: reason,
-        suspendedUntil: firebase.firestore.FieldValue.delete()
-      });
-      status.textContent = "User banned.";
-      userCache.delete(adminTargetUid);
-      await adminSelectUser(adminTargetUid);
-    } catch(e){
-      status.textContent = "Error: " + (e.message || String(e));
-    }
-  }
+      try{
+        await ensureUserDoc(u);
+        await computeAdmin();
+        await loadMyMutesBlocks();
+        toast("Signed in ✅");
+        installUpdates({ auth, db });
+        render();
+      }catch(e){
+        toast(e?.message || "Could not load profile.");
+        render();
+      }
+    });
 
-  async function adminClearRestrictions(){
-    if (!isAdminUser || !adminTargetUid) return;
-    const status = document.getElementById("adminActionStatus");
-    status.textContent = "Clearing...";
-    try{
-      await db.collection("users").doc(adminTargetUid).update({
-        status: "active",
-        banReason: firebase.firestore.FieldValue.delete(),
-        suspendedUntil: firebase.firestore.FieldValue.delete()
-      });
-      status.textContent = "Restrictions cleared.";
-      userCache.delete(adminTargetUid);
-      await adminSelectUser(adminTargetUid);
-    } catch(e){
-      status.textContent = "Error: " + (e.message || String(e));
-    }
-  }
-
-  async function adminDeleteUserPosts(){
-    if (!isAdminUser || !adminTargetUid) return;
-    if (!confirm("Delete ALL posts by this user?")) return;
-
-    const status = document.getElementById("adminActionStatus");
-    status.textContent = "Deleting posts...";
-
-    try{
-      const snap = await db.collection("posts").where("uid","==",adminTargetUid).get();
-      let count = 0;
-      const batch = db.batch();
-      snap.forEach(doc=>{
-        batch.delete(doc.ref);
-        count++;
-      });
-      await batch.commit();
-      status.textContent = `Deleted ${count} posts.`;
-    } catch(e){
-      status.textContent = "Error: " + (e.message || String(e));
-    }
-  }
-
-  // =========================
-  // HTML escaping
-  // =========================
-  function escapeHtml(str){
-    str = String(str ?? "");
-    return str
-      .replaceAll("&","&amp;")
-      .replaceAll("<","&lt;")
-      .replaceAll(">","&gt;")
-      .replaceAll('"',"&quot;")
-      .replaceAll("'","&#039;");
-  }
-  function escapeAttr(str){ return escapeHtml(str); }
+    setRoute("feed");
 </script>
-
 </body>
 </html>
